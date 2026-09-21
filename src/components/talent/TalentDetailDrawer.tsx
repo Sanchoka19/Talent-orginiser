@@ -259,9 +259,22 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
   };
 
   const handleDeleteDocument = (docId: string, docName: string) => {
-    const updatedDocs = talent.documents.filter((d) => d.id !== docId);
-    updateTalent(talent.id, { documents: updatedDocs });
-    toast.success(isKa ? `დოკუმენტი „${docName}“ წაიშალა` : `Document "${docName}" removed`);
+    confirm({
+      title: isKa ? 'დოკუმენტის წაშლა' : 'Delete Document',
+      message: isKa
+        ? `დარწმუნებული ხართ, რომ გსურთ დოკუმენტის „${docName}“ წაშლა?`
+        : `Are you sure you want to delete the document "${docName}"?`,
+      itemName: docName,
+      confirmLabel: isKa ? 'წაშლა' : 'Delete',
+      cancelLabel: isKa ? 'გაუქმება' : 'Cancel',
+      variant: 'danger',
+      icon: 'trash',
+      onConfirm: () => {
+        const updatedDocs = talent.documents.filter((d) => d.id !== docId);
+        updateTalent(talent.id, { documents: updatedDocs });
+        toast.success(isKa ? `დოკუმენტი „${docName}“ წაიშალა` : `Document "${docName}" removed`);
+      }
+    });
   };
 
   const handleDelete = () => {

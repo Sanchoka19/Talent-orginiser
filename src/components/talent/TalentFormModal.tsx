@@ -5,6 +5,7 @@ import { PhoneInput } from '../common/PhoneInput';
 import { useApp } from '../../context/AppContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useToast } from '../../context/ToastContext';
+import { useConfirm } from '../../context/ConfirmContext';
 import { Plus, Trash2, FileText, ChevronDown, Check, X, UploadCloud, Calendar, Sparkles, Loader2 } from 'lucide-react';
 import { extractContractExpiryDate } from '../../utils/contractParser';
 
@@ -53,6 +54,7 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
   const { talents, addTalent, updateTalent } = useApp();
   const { t, language } = useLanguage();
   const toast = useToast();
+  const { confirm } = useConfirm();
   const isKa = language === 'ka';
 
   const [firstName, setFirstName] = useState('');
@@ -272,8 +274,23 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
     }
   };
 
-  const handleRemoveDoc = (id: string) => {
-    setDocuments((prev) => prev.filter((d) => d.id !== id));
+  const handleRemoveDoc = (id: string, name?: string) => {
+    const doc = documents.find((d) => d.id === id);
+    const docName = name?.trim() || doc?.name?.trim() || (isKa ? 'დოკუმენტი' : 'Document');
+    confirm({
+      title: isKa ? 'დოკუმენტის წაშლა' : 'Delete Document',
+      message: isKa
+        ? `დარწმუნებული ხართ, რომ გსურთ დოკუმენტის „${docName}“ წაშლა?`
+        : `Are you sure you want to delete the document "${docName}"?`,
+      itemName: docName,
+      confirmLabel: isKa ? 'წაშლა' : 'Delete',
+      cancelLabel: isKa ? 'გაუქმება' : 'Cancel',
+      variant: 'danger',
+      icon: 'trash',
+      onConfirm: () => {
+        setDocuments((prev) => prev.filter((d) => d.id !== id));
+      }
+    });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -872,10 +889,24 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
                         <button
                           type="button"
                           onClick={() => {
-                            setDocuments(prev => prev.map(d => d.id === doc.id ? { ...d, file: null } : d));
-                            if (fileInputRefs.current[doc.id]) fileInputRefs.current[doc.id]!.value = '';
+                            confirm({
+                              title: isKa ? 'ფაილის წაშლა' : 'Remove File',
+                              message: isKa
+                                ? `დარწმუნებული ხართ, რომ გსურთ ატვირთული ფაილის „${doc.file?.name}“ წაშლა?`
+                                : `Are you sure you want to remove the uploaded file "${doc.file?.name}"?`,
+                              itemName: doc.file?.name,
+                              confirmLabel: isKa ? 'წაშლა' : 'Delete',
+                              cancelLabel: isKa ? 'გაუქმება' : 'Cancel',
+                              variant: 'danger',
+                              icon: 'trash',
+                              onConfirm: () => {
+                                setDocuments(prev => prev.map(d => d.id === doc.id ? { ...d, file: null } : d));
+                                if (fileInputRefs.current[doc.id]) fileInputRefs.current[doc.id]!.value = '';
+                              }
+                            });
                           }}
                           style={{ background: 'transparent', border: 'none', color: '#EF4444', cursor: 'pointer', padding: '2px', display: 'flex' }}
+                          title={isKa ? 'ფაილის წაშლა' : 'Remove File'}
                         ><X size={13} /></button>
                       </div>
                     </div>
@@ -909,7 +940,7 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
                     </select>
                     <button
                       type="button"
-                      onClick={() => handleRemoveDoc(doc.id)}
+                      onClick={() => handleRemoveDoc(doc.id, doc.name)}
                       className="btn btn-secondary btn-icon"
                       style={{ width: '30px', height: '30px', color: '#EF4444', flexShrink: 0 }}
                       title="Remove"

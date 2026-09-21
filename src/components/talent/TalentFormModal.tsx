@@ -487,82 +487,48 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
           <label className="form-label">{t('primary_role_spec')} *</label>
           
           {/* Main Dropdown Input with Chevron */}
-          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+          <div
+            style={{ position: 'relative', display: 'flex', alignItems: 'center', cursor: 'pointer' }}
+            onClick={() => {
+              setIsSpecDropdownOpen((prev) => !prev);
+              setIsFiltering(false);
+              setIsCreatingCustomSpec(false);
+            }}
+          >
             <input
               ref={specInputRef}
               type="text"
               required
               className="form-input"
               value={primarySkill}
+              readOnly={!isSpecDropdownOpen}
               onChange={(e) => {
                 setPrimarySkill(e.target.value);
                 setIsFiltering(true);
-                if (!isSpecDropdownOpen) setIsSpecDropdownOpen(true);
               }}
-              onFocus={(e) => {
+              onFocus={() => {
                 setIsSpecDropdownOpen(true);
-                setIsFiltering(false);
-                setIsCreatingCustomSpec(false);
-                e.target.select();
-              }}
-              onClick={() => {
-                if (!isSpecDropdownOpen) {
-                  setIsSpecDropdownOpen(true);
-                  setIsFiltering(false);
-                }
-                setIsCreatingCustomSpec(false);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  if (isSpecDropdownOpen) {
-                    if (filteredSpecializations.length === 1) {
-                      handleSelectSpec(filteredSpecializations[0]);
-                    } else if (filteredSpecializations.length > 1 && isFiltering) {
-                      handleSelectSpec(filteredSpecializations[0]);
-                    } else if (primarySkill.trim()) {
-                      handleSelectSpec(primarySkill.trim());
-                    }
-                  }
-                } else if (e.key === 'Escape') {
-                  setIsSpecDropdownOpen(false);
-                  setIsFiltering(false);
-                }
               }}
               placeholder={t('select_specialization')}
               style={{
+                width: '100%',
                 paddingRight: '36px',
-                background: '#FFFFFF',
-                borderColor: isSpecDropdownOpen ? 'var(--brand-secondary)' : 'var(--border-subtle)',
-                boxShadow: isSpecDropdownOpen ? '0 0 0 2px var(--brand-secondary-glow)' : 'none'
+                background: isSpecDropdownOpen ? 'var(--bg-surface)' : 'var(--bg-surface-secondary)',
+                borderColor: isSpecDropdownOpen ? 'var(--brand-primary)' : 'var(--border-subtle)',
+                boxShadow: isSpecDropdownOpen ? '0 0 0 3px var(--brand-primary-light)' : 'none',
+                cursor: 'pointer'
               }}
             />
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                setIsSpecDropdownOpen((prev) => {
-                  const next = !prev;
-                  if (next) {
-                    setIsFiltering(false);
-                    setTimeout(() => specInputRef.current?.focus(), 10);
-                  }
-                  return next;
-                });
-              }}
+            <div
               style={{
                 position: 'absolute',
-                right: '8px',
-                background: 'transparent',
-                border: 'none',
-                cursor: 'pointer',
+                right: '12px',
+                pointerEvents: 'none',
                 color: 'var(--color-text-secondary)',
-                padding: '4px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center'
               }}
-              tabIndex={-1}
             >
               <ChevronDown
                 size={16}
@@ -571,7 +537,7 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
                   transition: 'transform var(--transition-fast)'
                 }}
               />
-            </button>
+            </div>
           </div>
 
           {/* Dropdown Menu */}
@@ -628,7 +594,7 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
                         }}
                       >
                         <span>{spec}</span>
-                        {isSelected && <Check size={14} color="var(--color-charcoal)" strokeWidth={2.5} />}
+                        {isSelected && <Check size={14} color="#FFFFFF" strokeWidth={2.5} />}
                       </div>
                     );
                   })

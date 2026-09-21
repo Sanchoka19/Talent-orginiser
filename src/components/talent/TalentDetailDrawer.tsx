@@ -29,7 +29,8 @@ import {
   Check,
   UploadCloud,
   X,
-  Loader2
+  Loader2,
+  ChevronDown
 } from 'lucide-react';
 import { extractContractExpiryDate } from '../../utils/contractParser';
 import { getCountryFromPhone } from '../common/PhoneInput';
@@ -80,8 +81,20 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
   const [showAddDoc, setShowAddDoc] = useState(false);
   const [copiedPhone, setCopiedPhone] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
+  const statusDropdownRef = React.useRef<HTMLDivElement>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const contentScrollRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (statusDropdownRef.current && !statusDropdownRef.current.contains(e.target as Node)) {
+        setIsStatusDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleTabSelect = (tab: DrawerTab) => {
     setActiveTab(tab);
@@ -374,11 +387,14 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
             </div>
           </div>
 
-          {/* Status Selector */}
+          {/* Status Selector Custom Dropdown */}
           <div
+            ref={statusDropdownRef}
             style={{
+              position: 'relative',
               display: 'flex',
               alignItems: 'center',
+              justifyContent: 'space-between',
               gap: '12px',
               padding: '8px 12px',
               borderRadius: 'var(--radius-sm)',
@@ -390,25 +406,130 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
             <span style={{ fontSize: '0.825rem', fontWeight: 600, color: 'var(--color-text-secondary)' }}>
               {t('availability_status')}:
             </span>
-            <select
-              value={talent.status}
-              onChange={(e) => handleStatusChange(e.target.value as TalentStatus)}
+
+            <button
+              type="button"
+              onClick={() => setIsStatusDropdownOpen((prev) => !prev)}
               style={{
-                fontFamily: 'inherit',
-                fontSize: '0.85rem',
-                fontWeight: 500,
-                padding: '4px 10px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '4px 12px',
                 borderRadius: 'var(--radius-pill)',
-                border: '1px solid var(--border-subtle)',
-                background: '#FFFFFF',
+                border: talent.status === 'Active'
+                  ? '1px solid rgba(22, 163, 74, 0.3)'
+                  : talent.status === 'Rest'
+                  ? '1px solid rgba(217, 119, 6, 0.3)'
+                  : '1px solid rgba(220, 38, 38, 0.3)',
+                background: talent.status === 'Active'
+                  ? 'rgba(22, 163, 74, 0.08)'
+                  : talent.status === 'Rest'
+                  ? 'rgba(217, 119, 6, 0.08)'
+                  : 'rgba(220, 38, 38, 0.08)',
+                color: talent.status === 'Active'
+                  ? '#15803D'
+                  : talent.status === 'Rest'
+                  ? '#B45309'
+                  : '#DC2626',
+                fontSize: '0.825rem',
+                fontWeight: 650,
                 cursor: 'pointer',
-                outline: 'none'
+                transition: 'all var(--transition-fast)'
               }}
             >
-              <option value="Active">{t('status_active')}</option>
-              <option value="Rest">{t('status_rest')}</option>
-              <option value="Sick/Injured">{t('status_sick')}</option>
-            </select>
+              <span
+                style={{
+                  width: '7px',
+                  height: '7px',
+                  borderRadius: '50%',
+                  background: talent.status === 'Active'
+                    ? '#16A34A'
+                    : talent.status === 'Rest'
+                    ? '#D97706'
+                    : '#DC2626'
+                }}
+              />
+              <span>
+                {talent.status === 'Active'
+                  ? t('status_active')
+                  : talent.status === 'Rest'
+                  ? t('status_rest')
+                  : t('status_sick')}
+              </span>
+              <ChevronDown
+                size={14}
+                style={{
+                  transform: isStatusDropdownOpen ? 'rotate(180deg)' : 'none',
+                  transition: 'transform var(--transition-fast)'
+                }}
+              />
+            </button>
+
+            {/* Status Dropdown Menu */}
+            {isStatusDropdownOpen && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 'calc(100% + 6px)',
+                  right: '12px',
+                  minWidth: '160px',
+                  background: 'var(--bg-surface)',
+                  borderRadius: 'var(--radius-md)',
+                  border: '1px solid var(--border-medium)',
+                  boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.2)',
+                  zIndex: 200,
+                  overflow: 'hidden',
+                  padding: '4px 0'
+                }}
+              >
+                {(['Active', 'Rest', 'Sick/Injured'] as TalentStatus[]).map((st) => {
+                  const isSelected = talent.status === st;
+                  const dotColor = st === 'Active' ? '#16A34A' : st === 'Rest' ? '#D97706' : '#DC2626';
+                  const label = st === 'Active' ? t('status_active') : st === 'Rest' ? t('status_rest') : t('status_sick');
+
+                  return (
+                    <div
+                      key={st}
+                      onClick={() => {
+                        handleStatusChange(st);
+                        setIsStatusDropdownOpen(false);
+                      }}
+                      style={{
+                        padding: '8px 12px',
+                        fontSize: '0.825rem',
+                        fontWeight: isSelected ? 650 : 500,
+                        color: 'var(--color-text-primary)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        cursor: 'pointer',
+                        background: isSelected ? 'var(--bg-surface-secondary)' : 'transparent',
+                        transition: 'background var(--transition-fast)'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'var(--bg-surface-secondary)';
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isSelected) e.currentTarget.style.background = 'transparent';
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span
+                          style={{
+                            width: '7px',
+                            height: '7px',
+                            borderRadius: '50%',
+                            background: dotColor
+                          }}
+                        />
+                        <span>{label}</span>
+                      </div>
+                      {isSelected && <Check size={14} color={dotColor} strokeWidth={2.5} />}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Compact, Refined Warning Notice */}

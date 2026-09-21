@@ -3,7 +3,7 @@ import { ShowEvent } from '../../types/schedule';
 import { Group } from '../../types/group';
 import { HotelVenue } from '../../types/venue';
 import { useLanguage } from '../../context/LanguageContext';
-import { Users, Bus, Sparkles, Building } from 'lucide-react';
+import { Users, Bus, Sparkles, Building, Check } from 'lucide-react';
 
 interface MonthViewProps {
   currentDate: Date;
@@ -40,32 +40,43 @@ export const MonthView: React.FC<MonthViewProps> = ({
   const groupMap = new Map(groups.map((g) => [g.id, g]));
   const venueMap = new Map(venues.map((v) => [v.id, v]));
 
+  // Today's local date string (avoid UTC day shift)
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
   // Days array for grid (6 rows x 7 days = 42 cells)
   const calendarCells = [];
 
   // Previous month trailing days
   for (let i = startDayOfWeek - 1; i >= 0; i--) {
+    const prevD = prevMonthTotalDays - i;
+    const prevMonthDate = new Date(year, month - 1, prevD);
+    const dateStr = `${prevMonthDate.getFullYear()}-${String(prevMonthDate.getMonth() + 1).padStart(2, '0')}-${String(prevMonthDate.getDate()).padStart(2, '0')}`;
     calendarCells.push({
-      dayNumber: prevMonthTotalDays - i,
+      dayNumber: prevD,
       isCurrentMonth: false,
       isWeekend: false,
-      dateStr: new Date(year, month - 1, prevMonthTotalDays - i).toISOString().split('T')[0]
+      isToday: dateStr === todayStr,
+      isPast: dateStr < todayStr,
+      dateStr
     });
   }
 
   // Current month days
-  const todayStr = new Date().toISOString().split('T')[0];
   for (let d = 1; d <= totalDaysInMonth; d++) {
     const dObj = new Date(year, month, d);
     const dayOfWeek = dObj.getDay();
     const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
     const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const isToday = dateStr === todayStr;
+    const isPast = dateStr < todayStr;
 
     calendarCells.push({
       dayNumber: d,
       isCurrentMonth: true,
       isWeekend,
-      isToday: dateStr === todayStr,
+      isToday,
+      isPast,
       dateStr
     });
   }
@@ -73,11 +84,15 @@ export const MonthView: React.FC<MonthViewProps> = ({
   // Next month leading days to complete grid
   const remainingCells = 42 - calendarCells.length;
   for (let d = 1; d <= remainingCells; d++) {
+    const nextMonthDate = new Date(year, month + 1, d);
+    const dateStr = `${nextMonthDate.getFullYear()}-${String(nextMonthDate.getMonth() + 1).padStart(2, '0')}-${String(nextMonthDate.getDate()).padStart(2, '0')}`;
     calendarCells.push({
       dayNumber: d,
       isCurrentMonth: false,
       isWeekend: false,
-      dateStr: new Date(year, month + 1, d).toISOString().split('T')[0]
+      isToday: dateStr === todayStr,
+      isPast: dateStr < todayStr,
+      dateStr
     });
   }
 
@@ -155,15 +170,23 @@ export const MonthView: React.FC<MonthViewProps> = ({
                 background: !cell.isCurrentMonth
                   ? undefined
                   : cell.isToday
-                  ? '#FFFDF5'
+                  ? 'rgba(30, 106, 255, 0.05)'
+                  : cell.isPast
+                  ? 'rgba(0, 0, 0, 0.018)'
                   : 'var(--bg-surface)',
-                opacity: cell.isCurrentMonth ? 1 : 0.45,
+                opacity: !cell.isCurrentMonth ? 0.45 : cell.isPast ? 0.72 : 1,
                 position: 'relative',
                 display: 'flex',
                 flexDirection: 'column',
                 minHeight: '110px',
                 cursor: 'pointer',
-                transition: 'background 0.15s ease'
+                transition: 'opacity 0.15s ease, background 0.15s ease'
+              }}
+              onMouseEnter={(e) => {
+                if (cell.isPast && cell.isCurrentMonth) e.currentTarget.style.opacity = '1';
+              }}
+              onMouseLeave={(e) => {
+                if (cell.isPast && cell.isCurrentMonth) e.currentTarget.style.opacity = '0.72';
               }}
             >
               {/* Day Number Header */}
@@ -178,7 +201,7 @@ export const MonthView: React.FC<MonthViewProps> = ({
                 <span
                   style={{
                     fontSize: '0.825rem',
-                    fontWeight: cell.isToday ? 700 : 500,
+                    fontWeight: cell.isToday ? 700 : cell.isPast ? 500 : 600,
                     width: '24px',
                     height: '24px',
                     display: 'flex',
@@ -186,7 +209,11 @@ export const MonthView: React.FC<MonthViewProps> = ({
                     justifyContent: 'center',
                     borderRadius: '50%',
                     background: cell.isToday ? 'var(--brand-primary)' : 'transparent',
-                    color: cell.isToday ? '#FFFFFF' : 'var(--color-text-primary)'
+                    color: cell.isToday
+                      ? '#FFFFFF'
+                      : cell.isPast
+                      ? 'var(--color-text-tertiary)'
+                      : 'var(--color-text-primary)'
                   }}
                 >
                   {cell.dayNumber}
@@ -197,13 +224,18 @@ export const MonthView: React.FC<MonthViewProps> = ({
                     style={{
                       fontSize: '0.675rem',
                       fontWeight: 700,
-                      color: '#FFFFFF',
-                      background: 'var(--brand-primary)',
+                      color: cell.isPast ? 'var(--color-text-secondary)' : '#FFFFFF',
+                      background: cell.isPast ? 'var(--bg-surface-secondary)' : 'var(--brand-primary)',
+                      border: cell.isPast ? '1px solid var(--border-subtle)' : 'none',
                       padding: '1px 6px',
-                      borderRadius: 'var(--radius-pill)'
+                      borderRadius: 'var(--radius-pill)',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '3px'
                     }}
                   >
-                    {dayEvents.length} {dayEvents.length > 1 ? t('shows') : t('show')}
+                    {cell.isPast && <Check size={10} strokeWidth={2.5} style={{ opacity: 0.7 }} />}
+                    <span>{dayEvents.length} {dayEvents.length > 1 ? t('shows') : t('show')}</span>
                   </span>
                 )}
               </div>
@@ -225,6 +257,8 @@ export const MonthView: React.FC<MonthViewProps> = ({
                     return `${String(Math.floor(totalM / 60)).padStart(2, '0')}:${String(totalM % 60).padStart(2, '0')}`;
                   })();
 
+                  const isEventPast = cell.isPast || new Date(ev.endDateTime).getTime() < Date.now();
+
                   return (
                     <div
                       key={ev.id}
@@ -235,21 +269,29 @@ export const MonthView: React.FC<MonthViewProps> = ({
                       style={{
                         padding: '5px 7px',
                         borderRadius: 'var(--radius-sm)',
-                        background: 'var(--brand-primary)',
-                        color: '#FFFFFF',
+                        background: isEventPast ? 'var(--bg-surface-secondary)' : 'var(--brand-primary)',
+                        color: isEventPast ? 'var(--color-text-secondary)' : '#FFFFFF',
                         fontSize: '0.7rem',
                         fontWeight: 600,
                         lineHeight: 1.25,
-                        boxShadow: '0 2px 4px var(--brand-primary-glow)',
+                        boxShadow: isEventPast ? 'none' : '0 2px 4px var(--brand-primary-glow)',
                         cursor: 'pointer',
                         display: 'flex',
                         flexDirection: 'column',
                         gap: '2px',
-                        border: '1px solid var(--brand-primary-hover)'
+                        border: isEventPast ? '1px solid var(--border-medium)' : '1px solid var(--brand-primary-hover)',
+                        opacity: isEventPast ? 0.85 : 1,
+                        transition: 'all 0.15s ease'
                       }}
-                      title={`${ev.title}\n${t('group_label')}: ${evGroup?.name || ev.groupId}\n${t('hotel_label')}: ${evVenue?.name || ev.hotelId}\n${t('gathering_label')}: ${effectiveLobby}\n${t('show_time_label')}: ${startTime}`}
+                      onMouseEnter={(e) => {
+                        if (isEventPast) e.currentTarget.style.opacity = '1';
+                      }}
+                      onMouseLeave={(e) => {
+                        if (isEventPast) e.currentTarget.style.opacity = '0.85';
+                      }}
+                      title={`${ev.title}\n${t('group_label')}: ${evGroup?.name || ev.groupId}\n${t('hotel_label')}: ${evVenue?.name || ev.hotelId}\n${t('gathering_label')}: ${effectiveLobby}\n${t('show_time_label')}: ${startTime}${isEventPast ? `\n[${language === 'ka' ? 'დასრულებული' : 'Completed'}]` : ''}`}
                     >
-                      {/* Group Name */}
+                      {/* Group Name & Done Indicator */}
                       <div
                         style={{
                           fontWeight: 700,
@@ -259,13 +301,32 @@ export const MonthView: React.FC<MonthViewProps> = ({
                           whiteSpace: 'nowrap',
                           display: 'flex',
                           alignItems: 'center',
+                          justifyContent: 'space-between',
                           gap: '4px'
                         }}
                       >
-                        <Users size={11} strokeWidth={2} style={{ flexShrink: 0 }} />
-                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {evGroup?.name || ev.title}
-                        </span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', overflow: 'hidden' }}>
+                          <Users size={11} strokeWidth={2} style={{ flexShrink: 0, opacity: isEventPast ? 0.65 : 1 }} />
+                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {evGroup?.name || ev.title}
+                          </span>
+                        </div>
+                        {isEventPast && (
+                          <span
+                            style={{
+                              fontSize: '0.6rem',
+                              fontWeight: 650,
+                              color: 'var(--color-text-tertiary)',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '2px',
+                              flexShrink: 0
+                            }}
+                          >
+                            <Check size={9} strokeWidth={3} />
+                            <span>{language === 'ka' ? 'დასრულდა' : 'Done'}</span>
+                          </span>
+                        )}
                       </div>
 
                       {/* Times: Lobby & Show */}
@@ -275,7 +336,7 @@ export const MonthView: React.FC<MonthViewProps> = ({
                           alignItems: 'center',
                           gap: '6px',
                           fontSize: '0.64rem',
-                          color: 'rgba(255, 255, 255, 0.95)',
+                          color: isEventPast ? 'var(--color-text-tertiary)' : 'rgba(255, 255, 255, 0.95)',
                           fontWeight: 600
                         }}
                       >
@@ -283,6 +344,7 @@ export const MonthView: React.FC<MonthViewProps> = ({
                           <Bus size={10} strokeWidth={2} style={{ flexShrink: 0 }} />
                           <span>{effectiveLobby}</span>
                         </span>
+                        <span>•</span>
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
                           <Sparkles size={10} strokeWidth={2} style={{ flexShrink: 0 }} />
                           <span>{startTime}</span>
@@ -290,24 +352,26 @@ export const MonthView: React.FC<MonthViewProps> = ({
                       </div>
 
                       {/* Hotel Venue */}
-                      <div
-                        style={{
-                          fontSize: '0.65rem',
-                          fontWeight: 500,
-                          color: 'rgba(255, 255, 255, 0.85)',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '4px'
-                        }}
-                      >
-                        <Building size={10} strokeWidth={2} style={{ flexShrink: 0 }} />
-                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {evVenue?.name}
-                        </span>
-                      </div>
+                      {evVenue && (
+                        <div
+                          style={{
+                            fontSize: '0.62rem',
+                            fontWeight: 500,
+                            color: isEventPast ? 'var(--color-text-tertiary)' : 'rgba(255, 255, 255, 0.85)',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '3px'
+                          }}
+                        >
+                          <Building size={9} strokeWidth={2} style={{ flexShrink: 0 }} />
+                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {evVenue.name}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   );
                 })}

@@ -418,11 +418,11 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
           </div>
         </div>
 
-        {/* Gender, Height, Weight & (Optional in Edit mode) Status */}
+        {/* Gender, Height, Weight */}
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: editingTalent ? 'repeat(4, 1fr)' : 'repeat(3, 1fr)',
+            gridTemplateColumns: 'repeat(3, 1fr)',
             gap: '16px'
           }}
         >
@@ -463,21 +463,6 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
               onChange={(e) => setWeightKg(e.target.value === '' ? '' : Number(e.target.value))}
             />
           </div>
-
-          {editingTalent && (
-            <div className="form-group">
-              <label className="form-label">{t('availability_status')} *</label>
-              <select
-                className="form-select"
-                value={status}
-                onChange={(e) => setStatus(e.target.value as TalentStatus)}
-              >
-                <option value="Active">{t('status_active')}</option>
-                <option value="Rest">{t('status_rest')}</option>
-                <option value="Sick/Injured">{t('status_sick')}</option>
-              </select>
-            </div>
-          )}
         </div>
 
         {/* Primary Role / Specialization Dropdown (Clean, Searchable & Creatable) */}

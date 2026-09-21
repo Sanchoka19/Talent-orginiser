@@ -43,7 +43,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const [expandedDuties, setExpandedDuties] = useState<Record<string, boolean>>({});
 
   const today = new Date();
-  const todayStr = today.toISOString().split('T')[0];
+  // Build date string from LOCAL time (not UTC) to avoid timezone offset issues
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
   const localeStr = language === 'ka' ? 'ka-GE' : 'en-US';
 
 

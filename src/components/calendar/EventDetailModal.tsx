@@ -10,7 +10,6 @@ import { useToast } from '../../context/ToastContext';
 import { GenderBadge } from '../common/Badge';
 import {
   Calendar,
-  Clock,
   MapPin,
   Users,
   RotateCw,
@@ -18,7 +17,9 @@ import {
   AlertCircle,
   Sparkles,
   ArrowRightLeft,
-  Bus
+  Bus,
+  CheckCircle2,
+  LockKeyhole
 } from 'lucide-react';
 
 interface EventDetailModalProps {
@@ -51,6 +52,9 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
   const startDate = new Date(event.startDateTime);
   const endDate = new Date(event.endDateTime);
   const localeStr = language === 'ka' ? 'ka-GE' : 'en-US';
+
+  // Determine if event is in the past (read-only mode)
+  const isPast = endDate < new Date();
 
   const handleRegenerate = () => {
     confirm({
@@ -104,40 +108,81 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
         maxWidth="680px"
         footer={
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', flexWrap: 'wrap', gap: '10px' }}>
-            <button
-              onClick={handleDelete}
-              className="btn btn-secondary"
-              style={{ color: '#EF4444' }}
-            >
-              <Trash2 size={15} /> {t('cancel_show')}
-            </button>
-
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button
-                onClick={handleRegenerate}
-                className="btn btn-secondary"
-                title="Re-run fair random rotation"
-              >
-                <RotateCw size={14} /> {t('regenerate_fair_duties')}
-              </button>
-              <button onClick={onClose} className="btn btn-primary">
-                {t('close')}
-              </button>
-            </div>
+            {isPast ? (
+              /* Read-only footer for past events */
+              <>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
+                  <LockKeyhole size={13} />
+                  <span>{isKa ? 'გასული შოუ — რედაქტირება შეუძლებელია' : 'Past show — read only'}</span>
+                </div>
+                <button onClick={onClose} className="btn btn-primary">
+                  {t('close')}
+                </button>
+              </>
+            ) : (
+              /* Normal footer for upcoming events */
+              <>
+                <button
+                  onClick={handleDelete}
+                  className="btn btn-secondary"
+                  style={{ color: '#EF4444' }}
+                >
+                  <Trash2 size={15} /> {t('cancel_show')}
+                </button>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    onClick={handleRegenerate}
+                    className="btn btn-secondary"
+                    title="Re-run fair random rotation"
+                  >
+                    <RotateCw size={14} /> {t('regenerate_fair_duties')}
+                  </button>
+                  <button onClick={onClose} className="btn btn-primary">
+                    {t('close')}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         }
       >
+        {/* Completed banner for past events */}
+        {isPast && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              padding: '10px 16px',
+              borderRadius: '12px',
+              background: 'rgba(34,197,94,0.08)',
+              border: '1px solid rgba(34,197,94,0.25)',
+              color: '#15803d',
+              fontSize: '0.875rem',
+              fontWeight: 600,
+              marginBottom: '16px'
+            }}
+          >
+            <CheckCircle2 size={18} style={{ flexShrink: 0, color: '#16a34a' }} />
+            <span>{isKa ? 'შოუ დასრულებულია' : 'Show Completed'}</span>
+            <span style={{ marginLeft: 'auto', fontSize: '0.775rem', fontWeight: 500, color: '#166534', opacity: 0.8 }}>
+              {endDate.toLocaleDateString(localeStr, { day: 'numeric', month: 'short', year: 'numeric' })}
+            </span>
+          </div>
+        )}
+
         {/* Logistics Summary Card */}
         <div
           style={{
             display: 'grid',
             gridTemplateColumns: '1fr 1fr',
             gap: '16px',
-            background: 'var(--bg-surface-secondary)',
+            background: isPast ? 'rgba(0,0,0,0.02)' : 'var(--bg-surface-secondary)',
             borderRadius: 'var(--radius-md)',
             padding: '16px',
             border: '1px solid var(--border-subtle)',
-            marginBottom: '24px'
+            marginBottom: '24px',
+            opacity: isPast ? 0.85 : 1
           }}
         >
           <div>
@@ -319,14 +364,17 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
 
                           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                             <GenderBadge gender={talent.gender} />
-                            <button
-                              onClick={() => setSwapTarget({ duty, talentId })}
-                              className="btn btn-secondary"
-                              style={{ fontSize: '0.75rem', padding: '4px 10px' }}
-                              title="Manually reassign this shift"
-                            >
-                              <ArrowRightLeft size={12} /> {t('swap_duty')}
-                            </button>
+                            {/* Hide swap button for past events */}
+                            {!isPast && (
+                              <button
+                                onClick={() => setSwapTarget({ duty, talentId })}
+                                className="btn btn-secondary"
+                                style={{ fontSize: '0.75rem', padding: '4px 10px' }}
+                                title="Manually reassign this shift"
+                              >
+                                <ArrowRightLeft size={12} /> {t('swap_duty')}
+                              </button>
+                            )}
                           </div>
                         </div>
                       );

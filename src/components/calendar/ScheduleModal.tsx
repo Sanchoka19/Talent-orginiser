@@ -4,6 +4,7 @@ import { useApp } from '../../context/AppContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useToast } from '../../context/ToastContext';
 import { AlertTriangle, Calendar, Clock, Repeat, Check, Bus, Sparkles } from 'lucide-react';
+import { toLocalDateStr, todayLocalStr } from '../../utils/dateUtils';
 
 interface ScheduleModalProps {
   isOpen: boolean;
@@ -43,10 +44,13 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
   const toast = useToast();
   const isKa = language === 'ka';
 
+  // Today's date string (YYYY-MM-DD) used as the min selectable date
+  const todayStr = todayLocalStr();
+
   const [groupId, setGroupId] = useState<string>(groups[0]?.id || '');
   const [hotelId, setHotelId] = useState<string>(venues[0]?.id || '');
   const [startDate, setStartDate] = useState<string>(
-    defaultDate || new Date().toISOString().split('T')[0]
+    defaultDate && defaultDate >= todayStr ? defaultDate : todayStr
   );
   const [startTime, setStartTime] = useState<string>('19:00');
   const [endTime, setEndTime] = useState<string>('22:00');
@@ -71,7 +75,9 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
     if (isOpen) {
       if (groups.length > 0 && !groupId) setGroupId(groups[0].id);
       if (venues.length > 0 && !hotelId) setHotelId(venues[0].id);
-      const initDate = defaultDate || new Date().toISOString().split('T')[0];
+      // Never pre-fill a past date
+      const today = todayLocalStr();
+      const initDate = defaultDate && defaultDate >= today ? defaultDate : today;
       setStartDate(initDate);
 
       // Default end date = 4 weeks from start date
@@ -99,7 +105,7 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
       if (!endDate || endDate < startDate) {
         const endD = new Date(startDate + 'T00:00:00');
         endD.setDate(endD.getDate() + 28);
-        setEndDate(endD.toISOString().split('T')[0]);
+        setEndDate(toLocalDateStr(endD));
       }
     }
   }, [startDate]);
@@ -130,7 +136,7 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
     while (current <= end && loopSafety < 366) {
       const dayOfWeek = current.getDay();
       if (selectedDays.includes(dayOfWeek)) {
-        dates.push(current.toISOString().split('T')[0]);
+        dates.push(toLocalDateStr(current));
       }
       current.setDate(current.getDate() + 1);
       loopSafety++;
@@ -203,6 +209,19 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
     if (!groupId || !hotelId || occurrences.length === 0) {
       toast.error(isKa ? 'გთხოვთ აირჩიოთ ჯგუფი და ლოკაცია' : 'Please select a group and venue');
       return;
+    }
+
+    // Validate that the show start date+time is not in the past
+    if (startDate && startTime) {
+      const showStart = new Date(`${startDate}T${startTime}:00`);
+      if (showStart <= new Date()) {
+        const msg = isKa
+          ? 'გასულ თარიღსა და დროზე შოუს დაჯავშნა შეუძლებელია'
+          : 'Cannot schedule a show in the past';
+        setSubmitError(msg);
+        toast.error(msg);
+        return;
+      }
     }
 
     if (hasBlockingConflict) {
@@ -347,6 +366,7 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
               required
               className="form-input"
               value={startDate}
+              min={todayStr}
               onChange={(e) => setStartDate(e.target.value)}
               style={{ width: '100%' }}
             />
@@ -571,9 +591,9 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
                         key={preset.weeks}
                         type="button"
                         onClick={() => {
-                          const base = new Date((startDate || new Date().toISOString().split('T')[0]) + 'T00:00:00');
+                          const base = new Date((startDate || todayLocalStr()) + 'T00:00:00');
                           base.setDate(base.getDate() + preset.weeks * 7);
-                          setEndDate(base.toISOString().split('T')[0]);
+                          setEndDate(toLocalDateStr(base));
                         }}
                         style={{
                           padding: '6px 10px',

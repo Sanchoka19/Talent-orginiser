@@ -8,6 +8,7 @@ import { DayView } from './DayView';
 import { YearView } from './YearView';
 import { ScheduleModal } from './ScheduleModal';
 import { EventDetailModal } from './EventDetailModal';
+import { toLocalDateStr } from '../../utils/dateUtils';
 import {
   ChevronLeft,
   ChevronRight,
@@ -362,7 +363,7 @@ export const TimelineCalendar: React.FC<TimelineCalendarProps> = () => {
             talents={talents}
             onSelectEvent={(ev) => setSelectedEvent(ev)}
             onOpenSchedule={() => {
-              setScheduleDefaultDate(currentDate.toISOString().split('T')[0]);
+              setScheduleDefaultDate(toLocalDateStr(currentDate));
               setIsScheduleModalOpen(true);
             }}
           />

@@ -196,26 +196,8 @@ export const WeekView: React.FC<WeekViewProps> = ({
                         if (isEventPast) e.currentTarget.style.opacity = '0.85';
                       }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-                        <div style={{ fontWeight: 700, fontSize: '0.825rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {ev.title}
-                        </div>
-                        {isEventPast && (
-                          <span
-                            style={{
-                              fontSize: '0.625rem',
-                              fontWeight: 650,
-                              color: 'var(--color-text-tertiary)',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '2px',
-                              flexShrink: 0
-                            }}
-                          >
-                            <Check size={9} strokeWidth={3} />
-                            <span>{language === 'ka' ? 'დასრულდა' : 'Done'}</span>
-                          </span>
-                        )}
+                      <div style={{ fontWeight: 700, fontSize: '0.825rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: '4px' }}>
+                        {ev.title}
                       </div>
 
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', fontSize: '0.725rem', marginBottom: '4px' }}>

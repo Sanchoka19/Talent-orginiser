@@ -73,6 +73,7 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
   const isKa = language === 'ka';
 
   const [activeTab, setActiveTab] = useState<DrawerTab>('info');
+  const [statsSubTab, setStatsSubTab] = useState<'rotation' | 'shows'>('rotation');
   const [newDocName, setNewDocName] = useState('');
   const [newDocType, setNewDocType] = useState<TalentDocument['type']>('Passport');
   const [newDocExpiryDate, setNewDocExpiryDate] = useState('');
@@ -125,6 +126,12 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
   }
 
   const totalDutiesServed = servedShifts.length;
+
+  // Shows where this talent's group participated
+  const talentGroupIds = new Set(groups.filter((g) => g.memberTalentIds.includes(talent.id)).map((g) => g.id));
+  const talentShows = schedule
+    .filter((ev) => talentGroupIds.has(ev.groupId))
+    .sort((a, b) => new Date(b.startDateTime).getTime() - new Date(a.startDateTime).getTime());
 
   // Groups this talent is part of
   const memberGroups = groups.filter((g) => g.memberTalentIds.includes(talent.id));
@@ -1416,7 +1423,7 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
                 borderRadius: 'var(--radius-sm)',
                 padding: '16px',
                 border: '1px solid var(--border-subtle)',
-                marginBottom: '18px'
+                marginBottom: '16px'
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
@@ -1449,72 +1456,225 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
               </div>
             </div>
 
-            {/* Shift History Section */}
-            <div>
-              <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Clock size={14} />
-                <span>{t('duty_history')}</span>
-              </div>
-
-              {servedShifts.length === 0 ? (
-                <div
+            {/* Inner Sub-Tabs */}
+            <div
+              style={{
+                display: 'flex',
+                gap: '6px',
+                padding: '4px',
+                background: 'var(--bg-surface-secondary)',
+                borderRadius: '12px',
+                border: '1px solid var(--border-subtle)',
+                marginBottom: '14px'
+              }}
+            >
+              {([
+                {
+                  key: 'rotation' as const,
+                  label: isKa ? 'როტაცია' : 'Rotation',
+                  icon: <Sparkles size={13} strokeWidth={2} />,
+                  count: servedShifts.length
+                },
+                {
+                  key: 'shows' as const,
+                  label: isKa ? 'შოუები' : 'Shows',
+                  icon: <Calendar size={13} strokeWidth={2} />,
+                  count: talentShows.length
+                }
+              ]).map((tab) => (
+                <button
+                  key={tab.key}
+                  onClick={() => setStatsSubTab(tab.key)}
                   style={{
-                    padding: '24px',
-                    textAlign: 'center',
-                    background: 'var(--bg-surface-secondary)',
-                    borderRadius: 'var(--radius-sm)',
-                    border: '1px dashed var(--border-medium)',
-                    color: 'var(--color-text-secondary)',
-                    fontSize: '0.8rem'
+                    flex: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    padding: '7px 10px',
+                    borderRadius: '9px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: '0.8rem',
+                    fontWeight: statsSubTab === tab.key ? 700 : 500,
+                    background: statsSubTab === tab.key ? 'var(--bg-surface)' : 'transparent',
+                    color: statsSubTab === tab.key ? 'var(--color-charcoal)' : 'var(--color-text-secondary)',
+                    boxShadow: statsSubTab === tab.key ? '0 1px 4px rgba(0,0,0,0.10)' : 'none',
+                    transition: 'all 0.15s ease'
                   }}
                 >
-                  <Info size={18} style={{ marginBottom: '6px', opacity: 0.5 }} />
-                  <div>{t('no_shifts_yet')}</div>
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {servedShifts.map((shift, idx) => (
-                    <div
-                      key={idx}
-                      style={{
-                        padding: '10px 12px',
-                        borderRadius: 'var(--radius-sm)',
-                        background: 'var(--bg-surface-secondary)',
-                        border: '1px solid var(--border-subtle)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        fontSize: '0.8rem'
-                      }}
-                    >
-                      <div>
-                        <div style={{ fontWeight: 600, color: 'var(--color-charcoal)' }}>
-                          {shift.eventTitle}
-                        </div>
-                        <div style={{ fontSize: '0.725rem', color: 'var(--color-text-secondary)', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <Calendar size={12} strokeWidth={2} style={{ flexShrink: 0 }} />
-                          <span>{new Date(shift.eventDate).toLocaleDateString()}</span>
-                        </div>
-                      </div>
+                  {tab.icon}
+                  {tab.label}
+                  <span
+                    style={{
+                      fontSize: '0.7rem',
+                      fontWeight: 700,
+                      minWidth: '18px',
+                      height: '18px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderRadius: '50%',
+                      background: statsSubTab === tab.key ? 'var(--brand-primary)' : 'var(--border-medium)',
+                      color: statsSubTab === tab.key ? '#fff' : 'var(--color-text-secondary)',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    {tab.count}
+                  </span>
+                </button>
+              ))}
+            </div>
 
-                      <span
+            {/* Rotation Sub-Tab */}
+            {statsSubTab === 'rotation' && (
+              <div>
+                <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Clock size={14} />
+                  <span>{t('duty_history')}</span>
+                </div>
+
+                {servedShifts.length === 0 ? (
+                  <div
+                    style={{
+                      padding: '24px',
+                      textAlign: 'center',
+                      background: 'var(--bg-surface-secondary)',
+                      borderRadius: 'var(--radius-sm)',
+                      border: '1px dashed var(--border-medium)',
+                      color: 'var(--color-text-secondary)',
+                      fontSize: '0.8rem'
+                    }}
+                  >
+                    <Info size={18} style={{ marginBottom: '6px', opacity: 0.5 }} />
+                    <div>{t('no_shifts_yet')}</div>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {servedShifts.map((shift, idx) => (
+                      <div
+                        key={idx}
                         style={{
-                          background: 'var(--brand-primary)',
-                          color: '#FFFFFF',
-                          fontSize: '0.725rem',
-                          fontWeight: 600,
-                          padding: '3px 8px',
-                          borderRadius: 'var(--radius-pill)',
-                          border: '1px solid var(--brand-primary-hover)'
+                          padding: '10px 12px',
+                          borderRadius: 'var(--radius-sm)',
+                          background: 'var(--bg-surface-secondary)',
+                          border: '1px solid var(--border-subtle)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          fontSize: '0.8rem'
                         }}
                       >
-                        {shift.itemName}
-                      </span>
-                    </div>
-                  ))}
+                        <div>
+                          <div style={{ fontWeight: 600, color: 'var(--color-charcoal)' }}>
+                            {shift.eventTitle}
+                          </div>
+                          <div style={{ fontSize: '0.725rem', color: 'var(--color-text-secondary)', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <Calendar size={12} strokeWidth={2} style={{ flexShrink: 0 }} />
+                            <span>{new Date(shift.eventDate).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+
+                        <span
+                          style={{
+                            background: 'var(--brand-primary)',
+                            color: '#FFFFFF',
+                            fontSize: '0.725rem',
+                            fontWeight: 600,
+                            padding: '3px 8px',
+                            borderRadius: 'var(--radius-pill)',
+                            border: '1px solid var(--brand-primary-hover)'
+                          }}
+                        >
+                          {shift.itemName}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Shows Sub-Tab */}
+            {statsSubTab === 'shows' && (
+              <div>
+                <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Sparkles size={14} />
+                  <span>{isKa ? 'შოუების ისტორია' : 'Show History'}</span>
                 </div>
-              )}
-            </div>
+
+                {talentShows.length === 0 ? (
+                  <div
+                    style={{
+                      padding: '24px',
+                      textAlign: 'center',
+                      background: 'var(--bg-surface-secondary)',
+                      borderRadius: 'var(--radius-sm)',
+                      border: '1px dashed var(--border-medium)',
+                      color: 'var(--color-text-secondary)',
+                      fontSize: '0.8rem'
+                    }}
+                  >
+                    <Info size={18} style={{ marginBottom: '6px', opacity: 0.5 }} />
+                    <div>{isKa ? 'შოუები Ⴉარ არის' : 'No shows yet'}</div>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {talentShows.map((ev) => {
+                      const isPast = new Date(ev.endDateTime) < new Date();
+                      const startDt = new Date(ev.startDateTime);
+                      const endDt = new Date(ev.endDateTime);
+                      const venue = groups.find((g) => g.id === ev.groupId);
+                      return (
+                        <div
+                          key={ev.id}
+                          style={{
+                            padding: '10px 12px',
+                            borderRadius: 'var(--radius-sm)',
+                            background: isPast ? 'rgba(0,0,0,0.02)' : 'rgba(30,106,255,0.04)',
+                            border: `1px solid ${isPast ? 'var(--border-subtle)' : 'rgba(30,106,255,0.15)'}`,
+                            fontSize: '0.8rem',
+                            opacity: isPast ? 0.82 : 1
+                          }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '5px' }}>
+                            <div style={{ fontWeight: 600, color: 'var(--color-charcoal)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, marginRight: '8px' }}>
+                              {ev.title}
+                            </div>
+                            <span
+                              style={{
+                                fontSize: '0.68rem',
+                                fontWeight: 700,
+                                padding: '2px 7px',
+                                borderRadius: 'var(--radius-pill)',
+                                background: isPast ? 'var(--bg-surface-secondary)' : 'rgba(30,106,255,0.1)',
+                                color: isPast ? 'var(--color-text-secondary)' : 'var(--brand-primary)',
+                                border: `1px solid ${isPast ? 'var(--border-subtle)' : 'rgba(30,106,255,0.2)'}`,
+                                flexShrink: 0,
+                                display: 'flex', alignItems: 'center', gap: '3px'
+                              }}
+                            >
+                              {isPast && <Check size={10} strokeWidth={2.5} />}
+                              {isPast ? (isKa ? 'დასრულდა' : 'Done') : (isKa ? 'დაგეგმილი' : 'Upcoming')}
+                            </span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.725rem', color: 'var(--color-text-secondary)' }}>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+                              <Calendar size={11} strokeWidth={2} />
+                              {startDt.toLocaleDateString(isKa ? 'ka-GE' : 'en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            </span>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+                              <Clock size={11} strokeWidth={2} />
+                              {startDt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} – {endDt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>

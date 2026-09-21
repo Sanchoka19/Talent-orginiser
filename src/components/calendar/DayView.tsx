@@ -5,6 +5,7 @@ import { HotelVenue } from '../../types/venue';
 import { Talent } from '../../types/talent';
 import { useLanguage } from '../../context/LanguageContext';
 import { Clock, MapPin, Users, Sparkles, Calendar, ArrowRight, Bus } from 'lucide-react';
+import { toLocalDateStr } from '../../utils/dateUtils';
 
 interface DayViewProps {
   currentDate: Date;
@@ -26,7 +27,8 @@ export const DayView: React.FC<DayViewProps> = ({
   onOpenSchedule
 }) => {
   const { language, t } = useLanguage();
-  const dateStr = currentDate.toISOString().split('T')[0];
+  // Use local date string to avoid UTC timezone shift (e.g. UTC+4 at 02:00 = previous UTC day)
+  const dateStr = toLocalDateStr(currentDate);
   const dayEvents = events.filter((ev) => ev.startDateTime.startsWith(dateStr));
 
   const groupMap = new Map(groups.map((g) => [g.id, g]));

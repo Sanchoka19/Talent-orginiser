@@ -17,7 +17,12 @@ import { VenueFormModal } from './components/venues/VenueFormModal';
 import { ScheduleModal } from './components/calendar/ScheduleModal';
 
 const AppContent: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<NavTab>('dashboard');
+  const [activeTab, setActiveTab] = useState<NavTab>(() => {
+    // Restore last active tab from localStorage on mount
+    const saved = localStorage.getItem('activeTab') as NavTab | null;
+    const validTabs: NavTab[] = ['dashboard', 'talents', 'groups', 'venues', 'calendar', '/settings/profile', '/settings/roles'];
+    return saved && validTabs.includes(saved) ? saved : 'dashboard';
+  });
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Quick action modals
@@ -25,6 +30,11 @@ const AppContent: React.FC = () => {
   const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
   const [isVenueModalOpen, setIsVenueModalOpen] = useState(false);
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+
+  // Persist active tab to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('activeTab', activeTab);
+  }, [activeTab]);
 
   // Close sidebar on tab change (mobile)
   const handleTabChange = (tab: NavTab) => {

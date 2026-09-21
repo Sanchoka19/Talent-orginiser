@@ -355,9 +355,8 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
         primarySkill,
         notes,
         documents: validDocs,
-        avatarUrl: `https://images.unsplash.com/photo-${
-          gender === 'Female' ? '1534528741775-53994a69daeb' : '1507003211169-0a1dd7228f2d'
-        }?w=400&auto=format&fit=crop&q=80`
+        avatarUrl: `https://images.unsplash.com/photo-${gender === 'Female' ? '1534528741775-53994a69daeb' : '1507003211169-0a1dd7228f2d'
+          }?w=400&auto=format&fit=crop&q=80`
       });
       toast.success(
         isKa
@@ -485,7 +484,7 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
         {/* Primary Role / Specialization Dropdown (Clean, Searchable & Creatable) */}
         <div className="form-group" ref={specDropdownRef} style={{ position: 'relative' }}>
           <label className="form-label">{t('primary_role_spec')} *</label>
-          
+
           {/* Main Dropdown Input with Chevron */}
           <div
             style={{ position: 'relative', display: 'flex', alignItems: 'center', cursor: 'pointer' }}

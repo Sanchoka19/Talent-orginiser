@@ -178,27 +178,6 @@ export const VenueCard: React.FC<VenueCardProps> = ({
 
         {/* Col 4: Status & Scheduled Shows */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'nowrap', minWidth: 0 }}>
-          {venue.travelTimeMinutes && (
-            <span
-              style={{
-                fontSize: '0.75rem',
-                padding: '3px 8px',
-                borderRadius: 'var(--radius-pill)',
-                background: 'var(--bg-surface-secondary)',
-                border: '1px solid var(--border-subtle)',
-                color: 'var(--color-charcoal)',
-                fontWeight: 600,
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '4px',
-                flexShrink: 0
-              }}
-              title={t('travel_prep_time_min')}
-            >
-              <Bus size={13} strokeWidth={2} style={{ flexShrink: 0 }} />
-              <span>{venue.travelTimeMinutes} {t('minutes_short')}</span>
-            </span>
-          )}
           <div
             style={{
               display: 'flex',
@@ -364,28 +343,7 @@ export const VenueCard: React.FC<VenueCardProps> = ({
               </div>
             </div>
 
-            {venue.travelTimeMinutes && (
-              <span
-                style={{
-                  fontSize: '0.725rem',
-                  padding: '3px 8px',
-                  borderRadius: 'var(--radius-pill)',
-                  background: 'var(--bg-surface)',
-                  border: '1px solid var(--border-subtle)',
-                  color: 'var(--color-charcoal)',
-                  fontWeight: 600,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  flexShrink: 0,
-                  whiteSpace: 'nowrap'
-                }}
-                title={t('travel_prep_time_min')}
-              >
-                <Bus size={12} strokeWidth={2} />
-                <span>{venue.travelTimeMinutes} {t('minutes_short')}</span>
-              </span>
-            )}
+
           </div>
 
           {(venue.contactPhone || venue.contactEmail) && (

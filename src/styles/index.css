@@ -1,0 +1,460 @@
+@import '@fontsource/firago/400.css';
+@import '@fontsource/firago/500.css';
+@import '@fontsource/firago/600.css';
+@import '@fontsource/firago/700.css';
+@import '@fontsource/firago/800.css';
+@import './tokens.css';
+
+/* Global Reset */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+input, select, textarea, button {
+  font-family: inherit;
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--bg-canvas);
+  background-image: 
+    radial-gradient(circle at 92% 8%, rgba(30, 106, 255, 0.08) 0%, rgba(30, 106, 255, 0.02) 35%, transparent 70%),
+    radial-gradient(circle at 8% 95%, rgba(35, 35, 35, 0.04) 0%, transparent 50%);
+  background-attachment: fixed;
+  color: var(--color-text-primary);
+  min-height: 100vh;
+  padding: 0;
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  display: flex;
+}
+
+/* Master App Layout (Sidebar + Main Content) */
+.app-layout {
+  display: flex;
+  width: 100%;
+  min-height: 100vh;
+  position: relative;
+}
+
+.app-main-content {
+  flex: 1;
+  width: 100%;
+  max-width: none;
+  padding: 24px 32px;
+  overflow-y: auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* For backward-compatibility if used */
+.app-card-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* Diagonal Striped Pattern */
+.pattern-striped {
+  background: repeating-linear-gradient(
+    45deg,
+    #E8EFF3,
+    #E8EFF3 6px,
+    #F9F9F9 6px,
+    #F9F9F9 12px
+  ) !important;
+}
+
+/* Typography Helpers */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  color: var(--color-text-primary);
+}
+
+.page-title {
+  font-size: 2.25rem;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  color: var(--color-text-primary);
+  margin-bottom: 20px;
+}
+
+/* Reusable Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: var(--radius-pill);
+  padding: 9px 18px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  border: 1px solid transparent;
+  outline: none;
+  white-space: nowrap;
+}
+
+.btn-primary {
+  background: var(--brand-primary);
+  color: #FFFFFF;
+  box-shadow: 0 4px 14px var(--brand-primary-glow);
+}
+
+.btn-primary:hover {
+  background: var(--brand-primary-hover);
+  transform: translateY(-1px);
+}
+
+.btn-dark {
+  background: var(--brand-navy);
+  color: var(--color-text-inverse);
+}
+
+.btn-dark:hover {
+  background: var(--brand-navy-light);
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background: var(--bg-surface-secondary);
+  color: var(--color-text-primary);
+  border-color: var(--border-subtle);
+}
+
+.btn-secondary:hover {
+  background: var(--bg-surface-tertiary);
+  border-color: var(--border-medium);
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--color-text-primary);
+  border-color: var(--border-medium);
+}
+
+.btn-outline:hover {
+  background: var(--bg-surface-secondary);
+}
+
+.btn-danger {
+  background: #FEE2E2;
+  color: #DC2626;
+  border-color: #FECACA;
+}
+
+.btn-danger:hover {
+  background: #FCA5A5;
+}
+
+.btn-icon {
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Pill Badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  font-size: 0.775rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.badge-active {
+  background: var(--status-active-bg);
+  color: var(--status-active-text);
+}
+.badge-active .badge-dot {
+  background: var(--status-active-dot);
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2);
+}
+
+.badge-rest {
+  background: var(--status-rest-bg);
+  color: var(--status-rest-text);
+}
+.badge-rest .badge-dot {
+  background: var(--status-rest-dot);
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
+}
+
+.badge-sick {
+  background: var(--status-sick-bg);
+  color: var(--status-sick-text);
+}
+.badge-sick .badge-dot {
+  background: var(--status-sick-dot);
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
+}
+
+.badge-gender-male {
+  background: var(--tag-male-bg);
+  color: var(--tag-male-text);
+}
+
+.badge-gender-female {
+  background: var(--tag-female-bg);
+  color: var(--tag-female-text);
+}
+
+.badge-gender-any {
+  background: var(--tag-any-bg);
+  color: var(--tag-any-text);
+}
+
+/* Modal Backdrops (Slide-over Drawer from Right) */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(35, 35, 35, 0.55);
+  backdrop-filter: blur(6px);
+  display: flex;
+  justify-content: flex-end;
+  z-index: 1000;
+  padding: 0;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modal-content {
+  background: var(--bg-surface);
+  box-shadow: var(--shadow-modal);
+  border-left: 1px solid var(--border-subtle);
+  border-radius: 0;
+  width: 100%;
+  max-width: 620px;
+  height: 100vh;
+  max-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+/* Inputs & Form Controls */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.form-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.form-input, .form-select, .form-textarea {
+  font-family: inherit;
+  font-size: 0.875rem;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface-secondary);
+  color: var(--color-text-primary);
+  outline: none;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  border-color: var(--brand-primary);
+  background: var(--bg-surface);
+  box-shadow: 0 0 0 3px var(--brand-primary-light);
+}
+
+/* Search input pill */
+.search-pill-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg-surface-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  padding: 8px 16px;
+  transition: all var(--transition-fast);
+}
+
+.search-pill-container:focus-within {
+  background: var(--bg-surface);
+  border-color: var(--brand-primary);
+  box-shadow: 0 0 0 3px var(--brand-primary-light);
+}
+
+.search-pill-input {
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 0.875rem;
+  font-family: inherit;
+  color: var(--color-text-primary);
+  width: 100%;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-medium);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-tertiary);
+}
+
+.thin-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.thin-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.thin-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--border-medium);
+  border-radius: 9999px;
+}
+
+.thin-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-secondary);
+}
+
+/* Card Base Component */
+.card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-fast);
+}
+
+.card:hover {
+  border-color: var(--border-medium);
+}
+
+/* Layout Utilities */
+.w-full { width: 100%; }
+.flex { display: flex; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.mb-6 { margin-bottom: 24px; }
+.gap-3 { gap: 12px; }
+
+/* Responsive adjustments */
+@media (max-width: 1100px) {
+  .app-main-content {
+    padding: 20px 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .app-main-content {
+    padding: 16px 12px;
+  }
+}
+
+/* ============================================================
+   Burger Menu / Mobile Sidebar
+   Breakpoint: screens narrower than 900px
+   ============================================================ */
+
+/* Desktop: sidebar always visible, backdrop and burger hidden */
+.sidebar {
+  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-backdrop {
+  display: none !important;
+}
+
+/* Mobile: sidebar becomes a fixed overlay, burger visible */
+@media (max-width: 900px) {
+  /* Hide sidebar from the normal document flow */
+  .sidebar {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    height: 100vh !important;
+    transform: translateX(-100%);
+    z-index: 50;
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.18) !important;
+  }
+
+  /* Sidebar open state – slides in */
+  .sidebar.sidebar-open {
+    transform: translateX(0);
+  }
+
+  /* Show backdrop on mobile */
+  .sidebar-backdrop {
+    display: block !important;
+  }
+
+  /* Show close ✕ button inside sidebar */
+  .sidebar-close-btn {
+    display: inline-flex !important;
+  }
+
+  /* Show burger hamburger button in topbar */
+  .topbar-burger-btn {
+    display: inline-flex !important;
+  }
+
+  /* Reduce topbar padding on mobile */
+  header {
+    padding: 0 16px !important;
+  }
+}
+

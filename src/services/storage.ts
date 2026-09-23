@@ -49,6 +49,39 @@ export const INITIAL_TALENTS: Talent[] = [
       }
     ],
     notes: 'Lead soloist for aerial silks and lyra ring acts.',
+    rehireStatus: 'Eligible for Rehire',
+    reviews: [
+      {
+        id: 'rev-a1',
+        projectName: 'Summer Palace Gala 2025',
+        location: 'Monte Carlo Grand Hall',
+        period: 'ივნისი 2025 – სექტემბერი 2025',
+        reviewType: 'End of Season',
+        completionStatus: 'Completed Successfully',
+        scores: { punctuality: 5, performance: 5, teamwork: 5, gearCare: 5 },
+        overallRating: 5.0,
+        rehireStatus: 'Eligible for Rehire',
+        privateNote: 'საჰაერო აბრეშუმის ულამაზესი შესრულება. პუნქტუალური და დისციპლინირებული არტისტი.',
+        reviewerName: 'Sandro Chokoraia',
+        createdAt: '2025-09-30T10:00:00Z',
+        initiator: 'Mutual'
+      },
+      {
+        id: 'rev-a2',
+        projectName: 'Spring Cirque Spectacular 2026',
+        location: 'Batumi Opera & Arena',
+        period: 'მარტი 2026 – ივნისი 2026',
+        reviewType: 'End of Season',
+        completionStatus: 'Completed Successfully',
+        scores: { punctuality: 5, performance: 5, teamwork: 5, gearCare: 4 },
+        overallRating: 4.9,
+        rehireStatus: 'Eligible for Rehire',
+        privateNote: 'სოლო ნომრები უმაღლეს დონეზე. მაყურებლის ოვაციები და გუნდის სრული მხარდაჭერა.',
+        reviewerName: 'Sandro Chokoraia',
+        createdAt: '2026-06-28T12:00:00Z',
+        initiator: 'Mutual'
+      }
+    ],
     createdAt: '2026-01-10T10:00:00Z'
   },
   {
@@ -83,6 +116,56 @@ export const INITIAL_TALENTS: Talent[] = [
       }
     ],
     notes: 'Certified acrobatic porter capable of heavy lifts.',
+    rehireStatus: 'Eligible for Rehire',
+    reviews: [
+      {
+        id: 'rev-m1',
+        projectName: 'Summer Season 2025 – Rixos Premium Belek',
+        location: 'Belek Arena, Turkey',
+        period: 'მაისი 2025 – ოქტ 2025',
+        reviewType: 'End of Season',
+        completionStatus: 'Completed Successfully',
+        scores: { punctuality: 5, performance: 5, teamwork: 5, gearCare: 4 },
+        overallRating: 4.8,
+        rehireStatus: 'Eligible for Rehire',
+        privateNote: 'გამორჩეული ფიზიკური მომზადება და საიმედოობა. აკრობატულ ნომრებში უსაფრთხოების ტექნიკას იცავს უმაღლეს დონეზე. გუნდში სარგებლობს დიდი ავტორიტეტით.',
+        reviewerName: 'Sandro Chokoraia',
+        createdAt: '2025-10-25T14:30:00Z',
+        initiator: 'Mutual'
+      },
+      {
+        id: 'rev-m2',
+        projectName: 'Winter Arena Tour 2024 – Istanbul Show',
+        location: 'Istanbul Expo Arena',
+        period: 'ნოემბერი 2024 – იანვარი 2025',
+        reviewType: 'End of Season',
+        completionStatus: 'Completed Successfully',
+        scores: { punctuality: 5, performance: 4, teamwork: 5, gearCare: 5 },
+        overallRating: 4.75,
+        rehireStatus: 'Eligible for Rehire',
+        privateNote: 'რთული საგასტროლო გრაფიკის მიუხედავად ყველა გამოსვლა ჩატარდა შეფერხების გარეშე. ინვენტარის მოვლასა და ტრანსპორტირებაში იჩენდა მაქსიმალურ ყურადღებას.',
+        reviewerName: 'Sandro Chokoraia',
+        createdAt: '2025-01-20T11:00:00Z',
+        initiator: 'Mutual'
+      },
+      {
+        id: 'rev-m3',
+        projectName: 'Spring Showcase 2024 – Antalya Colosseum',
+        location: 'Antalya Amphitheatre',
+        period: 'მარტი 2024 – აპრილი 2024',
+        reviewType: 'Early Termination',
+        terminationReason: 'Injury',
+        completionStatus: 'Terminated Early',
+        scores: { punctuality: 5, performance: 5, teamwork: 4, gearCare: 4 },
+        overallRating: 4.5,
+        rehireStatus: 'Eligible for Rehire',
+        privateNote: 'რეპეტიციაზე მიღებული მხრის მსუბუქი ტრავმის გამო კონტრაქტი 2 კვირით ადრე შეწყდა ექიმის რეკომენდაციით. სრულად რეაბილიტირებულია, არანაირი დისციპლინური გადაცდომა.',
+        reviewerName: 'Sandro Chokoraia',
+        createdAt: '2024-04-15T16:00:00Z',
+        initiator: 'Artist',
+        terminationDate: '2024-04-14'
+      }
+    ],
     createdAt: '2026-01-11T11:00:00Z'
   },
   {
@@ -109,6 +192,39 @@ export const INITIAL_TALENTS: Talent[] = [
       }
     ],
     notes: 'Dance captain for ensemble numbers.',
+    rehireStatus: 'Eligible for Rehire',
+    reviews: [
+      {
+        id: 'rev-s1',
+        projectName: 'Solaris Cirque Troupe 2026',
+        location: 'Solaris Grand Theatre, Dubai',
+        period: 'მაისი 2026 – სექტემბერი 2026',
+        reviewType: 'End of Season',
+        completionStatus: 'Completed Successfully',
+        scores: { punctuality: 5, performance: 5, teamwork: 5, gearCare: 5 },
+        overallRating: 4.95,
+        rehireStatus: 'Eligible for Rehire',
+        privateNote: 'საუკეთესო ქორეოგრაფიული კაპიტანი. მთელი დასის კოორდინაციას უძღვებოდა უნაკლოდ.',
+        reviewerName: 'Sandro Chokoraia',
+        createdAt: '2026-09-18T10:00:00Z',
+        initiator: 'Mutual'
+      },
+      {
+        id: 'rev-s2',
+        projectName: 'Autumn Dance Gala 2025',
+        location: 'Bellagio Grand Showroom, Las Vegas',
+        period: 'ოქტომბერი 2025 – დეკემბერი 2025',
+        reviewType: 'End of Season',
+        completionStatus: 'Completed Successfully',
+        scores: { punctuality: 5, performance: 5, teamwork: 5, gearCare: 4 },
+        overallRating: 4.85,
+        rehireStatus: 'Eligible for Rehire',
+        privateNote: 'ძალიან საიმედო არტისტი, დროული და ენერგიული. მაღალი დონის სინქრონიზაცია.',
+        reviewerName: 'Sandro Chokoraia',
+        createdAt: '2025-12-28T16:00:00Z',
+        initiator: 'Mutual'
+      }
+    ],
     createdAt: '2026-01-08T09:30:00Z'
   },
   {
@@ -135,6 +251,26 @@ export const INITIAL_TALENTS: Talent[] = [
       }
     ],
     notes: 'High-energy b-boy stunts and floor work.',
+    rehireStatus: 'Do Not Rehire',
+    reviews: [
+      {
+        id: 'rev-v1',
+        projectName: 'Urban Acrobatics Tour 2025',
+        location: 'Berlin Arena Stage',
+        period: 'ივნისი 2025 – აგვისტო 2025',
+        reviewType: 'Early Termination',
+        terminationReason: 'Discipline',
+        completionStatus: 'Terminated Early',
+        scores: { punctuality: 2, performance: 4, teamwork: 2, gearCare: 1 },
+        overallRating: 2.25,
+        rehireStatus: 'Do Not Rehire',
+        privateNote: 'არ გამოცხადდა გენერალურ რეპეტიციაზე გაფრთხილების გარეშე, დააზიანა სასცენო აპარატურა და გამოიჩინა უპატივცემულობა პერსონალის მიმართ. კონტრაქტი გაუქმდა მენეჯმენტის გადაწყვეტილებით.',
+        reviewerName: 'Sandro Chokoraia',
+        createdAt: '2025-08-12T14:00:00Z',
+        initiator: 'Management',
+        terminationDate: '2025-08-12'
+      }
+    ],
     createdAt: '2026-01-05T14:00:00Z'
   },
   {
@@ -146,7 +282,7 @@ export const INITIAL_TALENTS: Talent[] = [
     gender: 'Female',
     heightCm: 172,
     weightKg: 56,
-    status: 'Rest', // On scheduled rest! Should be excluded from duty assignment!
+    status: 'Rest',
     primarySkill: 'Rhythmic Gymnast & Hoop Artist',
     secondarySkills: ['Ballet', 'Ribbon Specialist'],
     avatarUrl: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400&auto=format&fit=crop&q=80',
@@ -161,6 +297,24 @@ export const INITIAL_TALENTS: Talent[] = [
       }
     ],
     notes: 'Scheduled recovery week after high-intensity festival tour.',
+    rehireStatus: 'Eligible for Rehire',
+    reviews: [
+      {
+        id: 'rev-e1',
+        projectName: 'Royal Rhythmic Spectacular 2025',
+        location: 'Prague Congress Centre',
+        period: 'აპრილი 2025 – სექტემბერი 2025',
+        reviewType: 'End of Season',
+        completionStatus: 'Completed Successfully',
+        scores: { punctuality: 5, performance: 5, teamwork: 5, gearCare: 4 },
+        overallRating: 4.8,
+        rehireStatus: 'Eligible for Rehire',
+        privateNote: 'უნაკლო რიტმული გიმნასტიკა, მაღალი დონის არტისტიზმი. ინვენტარს უფრთხილდება სათუთად.',
+        reviewerName: 'Sandro Chokoraia',
+        createdAt: '2025-09-25T11:00:00Z',
+        initiator: 'Mutual'
+      }
+    ],
     createdAt: '2026-01-12T15:00:00Z'
   },
   {
@@ -172,7 +326,7 @@ export const INITIAL_TALENTS: Talent[] = [
     gender: 'Male',
     heightCm: 182,
     weightKg: 78,
-    status: 'Sick/Injured', // Injured! Strictly excluded from duty assignment!
+    status: 'Sick/Injured',
     primarySkill: 'Lead Soul Vocalist',
     secondarySkills: ['Acoustic Guitar', 'Show MC'],
     avatarUrl: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=400&auto=format&fit=crop&q=80',
@@ -187,6 +341,26 @@ export const INITIAL_TALENTS: Talent[] = [
       }
     ],
     notes: 'Grade 1 ankle strain during rehearsal. Expected clearance Oct 5.',
+    rehireStatus: 'Do Not Rehire',
+    reviews: [
+      {
+        id: 'rev-d1',
+        projectName: 'Mediterranean Summer Nights 2025',
+        location: 'Cyprus Royal Resort',
+        period: 'ივნისი 2025 – ივლისი 2025',
+        reviewType: 'Early Termination',
+        terminationReason: 'Conflict',
+        completionStatus: 'Terminated Early',
+        scores: { punctuality: 2, performance: 3, teamwork: 1, gearCare: 3 },
+        overallRating: 2.25,
+        rehireStatus: 'Do Not Rehire',
+        privateNote: 'სისტემატური კონფლიქტი ხმის რეჟისორთან და კოლეგებთან. უარი განაცხადა შოუს დასკვნით ნომერში გასვლაზე. კონტრაქტი გაუქმდა დისციპლინური საბჭოს გადაწყვეტილებით.',
+        reviewerName: 'Sandro Chokoraia',
+        createdAt: '2025-07-20T17:00:00Z',
+        initiator: 'Management',
+        terminationDate: '2025-07-20'
+      }
+    ],
     createdAt: '2026-01-04T12:00:00Z'
   },
   {
@@ -213,6 +387,39 @@ export const INITIAL_TALENTS: Talent[] = [
       }
     ],
     notes: 'Lead synchronization dancer.',
+    rehireStatus: 'Eligible for Rehire',
+    reviews: [
+      {
+        id: 'rev-k1',
+        projectName: 'Moulin Cabaret Spectacular 2025',
+        location: 'Warsaw Palace Stage',
+        period: 'მაისი 2025 – ნოემბერი 2025',
+        reviewType: 'End of Season',
+        completionStatus: 'Completed Successfully',
+        scores: { punctuality: 5, performance: 5, teamwork: 5, gearCare: 4 },
+        overallRating: 4.85,
+        rehireStatus: 'Eligible for Rehire',
+        privateNote: 'საუკეთესო სინქრონიზაცია და სცენური ენერგია. ყველა მორიგეობა შესრულებულია პირნათლად.',
+        reviewerName: 'Sandro Chokoraia',
+        createdAt: '2025-11-20T15:00:00Z',
+        initiator: 'Mutual'
+      },
+      {
+        id: 'rev-k2',
+        projectName: 'Summer Festival 2024',
+        location: 'Krakow Arena Stage',
+        period: 'ივნისი 2024 – აგვისტო 2024',
+        reviewType: 'End of Season',
+        completionStatus: 'Completed Successfully',
+        scores: { punctuality: 5, performance: 4, teamwork: 5, gearCare: 5 },
+        overallRating: 4.7,
+        rehireStatus: 'Eligible for Rehire',
+        privateNote: 'ძალიან შრომისმოყვარე არტისტი. რეკომენდებულია მომავალ სეზონებზეც.',
+        reviewerName: 'Sandro Chokoraia',
+        createdAt: '2024-08-30T10:00:00Z',
+        initiator: 'Mutual'
+      }
+    ],
     createdAt: '2026-01-14T10:30:00Z'
   },
   {
@@ -239,6 +446,39 @@ export const INITIAL_TALENTS: Talent[] = [
       }
     ],
     notes: 'Certified for indoor pyrotechnics and safe flame equipment handling.',
+    rehireStatus: 'Eligible for Rehire',
+    reviews: [
+      {
+        id: 'rev-j1',
+        projectName: 'Inferno Fire & Illusion 2025',
+        location: 'Milan Summer Arena',
+        period: 'ივლისი 2025 – სექტემბერი 2025',
+        reviewType: 'End of Season',
+        completionStatus: 'Completed Successfully',
+        scores: { punctuality: 5, performance: 5, teamwork: 5, gearCare: 5 },
+        overallRating: 4.95,
+        rehireStatus: 'Eligible for Rehire',
+        privateNote: 'ცეცხლის ნომრების ოსტატური შესრულება, უსაფრთხოების სტანდარტების სრული დაცვა.',
+        reviewerName: 'Sandro Chokoraia',
+        createdAt: '2025-09-22T19:00:00Z',
+        initiator: 'Mutual'
+      },
+      {
+        id: 'rev-j2',
+        projectName: 'Pyro Carnival Gala 2024',
+        location: 'Rome Olympic Village',
+        period: 'ოქტომბერი 2024 – დეკემბერი 2024',
+        reviewType: 'End of Season',
+        completionStatus: 'Completed Successfully',
+        scores: { punctuality: 5, performance: 5, teamwork: 4, gearCare: 5 },
+        overallRating: 4.8,
+        rehireStatus: 'Eligible for Rehire',
+        privateNote: 'ინვენტარის მოვლა უმაღლეს დონეზე. მაღალი პასუხისმგებლობის გრძნობა.',
+        reviewerName: 'Sandro Chokoraia',
+        createdAt: '2024-12-24T18:00:00Z',
+        initiator: 'Mutual'
+      }
+    ],
     createdAt: '2026-01-09T16:00:00Z'
   },
   {
@@ -265,6 +505,39 @@ export const INITIAL_TALENTS: Talent[] = [
       }
     ],
     notes: 'Feature soloist for center stage contortion pedestal.',
+    rehireStatus: 'Eligible for Rehire',
+    reviews: [
+      {
+        id: 'rev-y1',
+        projectName: 'Cirque Mystique 2026',
+        location: 'Kyiv National Stage',
+        period: 'იანვარი 2026 – მაისი 2026',
+        reviewType: 'End of Season',
+        completionStatus: 'Completed Successfully',
+        scores: { punctuality: 5, performance: 5, teamwork: 5, gearCare: 5 },
+        overallRating: 5.0,
+        rehireStatus: 'Eligible for Rehire',
+        privateNote: 'ფენომენალური მოქნილობა და კონტორცია. პუნქტუალურობის ეტალონი.',
+        reviewerName: 'Sandro Chokoraia',
+        createdAt: '2026-05-15T12:00:00Z',
+        initiator: 'Mutual'
+      },
+      {
+        id: 'rev-y2',
+        projectName: 'Silk Road Tour 2025',
+        location: 'Tashkent Palace of Arts',
+        period: 'მარტი 2025 – ივლისი 2025',
+        reviewType: 'End of Season',
+        completionStatus: 'Completed Successfully',
+        scores: { punctuality: 5, performance: 5, teamwork: 5, gearCare: 5 },
+        overallRating: 4.95,
+        rehireStatus: 'Eligible for Rehire',
+        privateNote: 'უმაღლესი დონის დისციპლინა და ეთიკა. გუნდის საიმედო საყრდენი.',
+        reviewerName: 'Sandro Chokoraia',
+        createdAt: '2025-07-28T14:00:00Z',
+        initiator: 'Mutual'
+      }
+    ],
     createdAt: '2026-01-18T11:00:00Z'
   },
   {
@@ -291,6 +564,41 @@ export const INITIAL_TALENTS: Talent[] = [
       }
     ],
     notes: 'Dynamic Cyr wheel artist and strap flyer.',
+    rehireStatus: 'Eligible for Rehire',
+    reviews: [
+      {
+        id: 'rev-ar1',
+        projectName: 'Solaris Cirque Troupe 2026',
+        location: 'Rixos Grand Stage, Belek',
+        period: 'მაისი 2026 – სექტემბერი 2026',
+        reviewType: 'End of Season',
+        completionStatus: 'Completed Successfully',
+        scores: { punctuality: 5, performance: 5, teamwork: 5, gearCare: 4 },
+        overallRating: 4.85,
+        rehireStatus: 'Eligible for Rehire',
+        privateNote: 'Cyr wheel-ის დინამიკური და უსაფრთხო შესრულება. ინვენტარის ტექნიკურ მდგომარეობას უვლის პროფესიონალურად.',
+        reviewerName: 'Sandro Chokoraia',
+        createdAt: '2026-09-12T16:00:00Z',
+        initiator: 'Mutual'
+      },
+      {
+        id: 'rev-ar2',
+        projectName: 'Autumn Ring Series 2024',
+        location: 'Batumi Colosseum',
+        period: 'სექტემბერი 2024 – ოქტომბერი 2024',
+        reviewType: 'Early Termination',
+        terminationReason: 'Injury',
+        completionStatus: 'Terminated Early',
+        scores: { punctuality: 5, performance: 5, teamwork: 5, gearCare: 4 },
+        overallRating: 4.75,
+        rehireStatus: 'Eligible for Rehire',
+        privateNote: 'მაჯის დაჭიმულობის გამო ექიმის მითითებით 10 დღით ადრე დაასრულა გამოსვლები. უმაღლესი დონის შემსრულებელი, სრული რეკომენდაცია.',
+        reviewerName: 'Sandro Chokoraia',
+        createdAt: '2024-10-18T12:00:00Z',
+        initiator: 'Mutual',
+        terminationDate: '2024-10-18'
+      }
+    ],
     createdAt: '2026-01-02T13:00:00Z'
   }
 ];
@@ -514,7 +822,25 @@ export function getStoredTalents(): Talent[] {
     return INITIAL_TALENTS;
   }
   try {
-    return JSON.parse(data);
+    const parsed = JSON.parse(data) as Talent[];
+    const totalReviews = parsed.reduce((acc, t) => acc + (t.reviews?.length || 0), 0);
+    if (totalReviews < 6) {
+      const initialMap = new Map(INITIAL_TALENTS.map((t) => [t.id, t]));
+      const merged = parsed.map((t) => {
+        const init = initialMap.get(t.id);
+        if (init && init.reviews && (!t.reviews || t.reviews.length < init.reviews.length)) {
+          return {
+            ...t,
+            reviews: init.reviews,
+            rehireStatus: init.rehireStatus || t.rehireStatus
+          };
+        }
+        return t;
+      });
+      localStorage.setItem(TALENTS_KEY, JSON.stringify(merged));
+      return merged;
+    }
+    return parsed;
   } catch {
     return INITIAL_TALENTS;
   }

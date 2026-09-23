@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Talent, TalentStatus, TalentDocument } from '../../types/talent';
+import React, { useState, useMemo } from 'react';
+import { Talent, TalentStatus, TalentDocument, TalentReview, RehireStatus } from '../../types/talent';
 import { Drawer } from '../common/Drawer';
 import { StatusBadge, GenderBadge } from '../common/Badge';
 import { SplitProgressBar } from '../common/ProgressBar';
@@ -32,10 +32,16 @@ import {
   UploadCloud,
   X,
   Loader2,
-  ChevronDown
+  ChevronDown,
+  Star,
+  UserCheck,
+  UserX,
+  Lock,
+  ShieldCheck
 } from 'lucide-react';
 import { extractContractExpiryDate } from '../../utils/contractParser';
 import { getCountryFromPhone } from '../common/PhoneInput';
+import { TalentReviewModal } from './TalentReviewModal';
 
 interface TalentDetailDrawerProps {
   talent: Talent | null;
@@ -44,7 +50,7 @@ interface TalentDetailDrawerProps {
   onEdit: (talent: Talent) => void;
 }
 
-type DrawerTab = 'info' | 'docs' | 'stats';
+type DrawerTab = 'info' | 'docs' | 'stats' | 'reviews';
 
 export const DOCUMENT_TYPES: {
   value: TalentDocument['type'];
@@ -77,6 +83,7 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
 
   const [activeTab, setActiveTab] = useState<DrawerTab>('info');
   const [statsSubTab, setStatsSubTab] = useState<'rotation' | 'shows'>('rotation');
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [newDocName, setNewDocName] = useState('');
   const [newDocType, setNewDocType] = useState<TalentDocument['type']>('Passport');
   const [newDocExpiryDate, setNewDocExpiryDate] = useState('');
@@ -461,57 +468,86 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
             </div>
           )}
 
-          {/* Tab Navigation Buttons - Segmented Pill Control */}
-          <div className="flex items-center bg-surface-secondary rounded-pill p-1 border border-border-subtle gap-1.5 h-[46px] box-border">
+          {/* Tab Navigation Buttons - Segmented Pill Control (Optimized for 4 items without text wrapping) */}
+          <div className="flex items-center bg-surface-secondary rounded-pill p-1 border border-border-subtle gap-1 h-[42px] box-border">
+            {/* Tab 1: Info */}
             <button
               type="button"
               onClick={() => handleTabSelect('info')}
-              title={language === 'ka' ? 'პირადი ინფორმაცია' : 'Personal Information'}
-              className={`flex-1 h-[38px] flex items-center justify-center gap-1.5 px-4 rounded-pill border-none text-[0.825rem] cursor-pointer whitespace-nowrap min-w-0 transition-all duration-150 ${
+              title={isKa ? 'ინფორმაცია' : 'Personal Information'}
+              className={`flex-1 h-[34px] flex items-center justify-center gap-1 px-2 rounded-pill border-none text-xs cursor-pointer whitespace-nowrap min-w-0 transition-all duration-150 ${
                 activeTab === 'info'
                   ? 'font-bold bg-brand-primary text-white shadow-glow'
                   : 'font-medium bg-transparent text-text-secondary hover:text-text-primary'
               }`}
             >
-              <User size={15} className="shrink-0" />
-              <span className="whitespace-nowrap">{t('tab_personal_info')}</span>
+              <User size={13} className="shrink-0" />
+              <span className="whitespace-nowrap truncate">{isKa ? 'ინფო' : 'Info'}</span>
             </button>
 
+            {/* Tab 2: Documents */}
             <button
               type="button"
               onClick={() => handleTabSelect('docs')}
-              title={language === 'ka' ? 'დოკუმენტები' : 'Documents'}
-              className={`flex-1 relative h-[38px] flex items-center justify-center gap-1.5 px-4 rounded-pill border-none text-[0.825rem] cursor-pointer whitespace-nowrap min-w-0 transition-all duration-150 ${
+              title={isKa ? 'დოკუმენტები' : 'Documents'}
+              className={`flex-1 relative h-[34px] flex items-center justify-center gap-1 px-1.5 rounded-pill border-none text-xs cursor-pointer whitespace-nowrap min-w-0 transition-all duration-150 ${
                 activeTab === 'docs'
                   ? 'font-bold bg-brand-primary text-white shadow-glow'
                   : 'font-medium bg-transparent text-text-secondary hover:text-text-primary'
               }`}
             >
-              <FileText size={15} className="shrink-0" />
-              <span className="whitespace-nowrap">{t('tab_documentation')}</span>
+              <FileText size={13} className="shrink-0" />
+              <span className="whitespace-nowrap truncate">{isKa ? 'დოკუმენტები' : 'Docs'}</span>
               <span
-                className={`absolute -top-[3px] right-2 text-[0.675rem] font-bold rounded-pill px-1.5 min-w-[18px] h-[18px] flex items-center justify-center leading-none z-[2] pointer-events-none border-[1.5px] ${
+                className={`text-[0.65rem] font-bold rounded-pill px-1.5 min-w-[17px] h-[17px] flex items-center justify-center leading-none shrink-0 transition-colors ${
                   activeTab === 'docs'
-                    ? 'bg-white text-brand-primary shadow-sm border-white/90'
-                    : 'bg-brand-primary text-white shadow-glow border-white'
+                    ? 'bg-white text-brand-primary shadow-xs'
+                    : 'bg-surface border border-border-subtle text-text-secondary'
                 }`}
               >
                 {talent.documents.length}
               </span>
             </button>
 
+            {/* Tab 3: Statistics */}
             <button
               type="button"
               onClick={() => handleTabSelect('stats')}
-              title={language === 'ka' ? 'მორიგეობის სტატისტიკა' : 'Duty Statistics'}
-              className={`flex-1 h-[38px] flex items-center justify-center gap-1.5 px-4 rounded-pill border-none text-[0.825rem] cursor-pointer whitespace-nowrap min-w-0 transition-all duration-150 ${
+              title={isKa ? 'მორიგეობის სტატისტიკა' : 'Duty Statistics'}
+              className={`flex-1 h-[34px] flex items-center justify-center gap-1 px-2 rounded-pill border-none text-xs cursor-pointer whitespace-nowrap min-w-0 transition-all duration-150 ${
                 activeTab === 'stats'
                   ? 'font-bold bg-brand-primary text-white shadow-glow'
                   : 'font-medium bg-transparent text-text-secondary hover:text-text-primary'
               }`}
             >
-              <BarChart3 size={15} className="shrink-0" />
-              <span className="whitespace-nowrap">{t('tab_duty_stats')}</span>
+              <BarChart3 size={13} className="shrink-0" />
+              <span className="whitespace-nowrap truncate">{isKa ? 'სტატისტიკა' : 'Stats'}</span>
+            </button>
+
+            {/* Tab 4: Reviews & Contract Archive */}
+            <button
+              type="button"
+              onClick={() => handleTabSelect('reviews')}
+              title={isKa ? 'შეფასება & არქივი' : 'Reviews & Contract Archive'}
+              className={`flex-1 relative h-[34px] flex items-center justify-center gap-1 px-1.5 rounded-pill border-none text-xs cursor-pointer whitespace-nowrap min-w-0 transition-all duration-150 ${
+                activeTab === 'reviews'
+                  ? 'font-bold bg-brand-primary text-white shadow-glow'
+                  : 'font-medium bg-transparent text-text-secondary hover:text-text-primary'
+              }`}
+            >
+              <Star size={13} className="shrink-0" />
+              <span className="whitespace-nowrap truncate">{isKa ? 'შეფასება' : 'Reviews'}</span>
+              {talent.reviews && talent.reviews.length > 0 && (
+                <span
+                  className={`text-[0.65rem] font-bold rounded-pill px-1.5 min-w-[17px] h-[17px] flex items-center justify-center leading-none shrink-0 transition-colors ${
+                    activeTab === 'reviews'
+                      ? 'bg-white text-brand-primary shadow-xs'
+                      : 'bg-surface border border-border-subtle text-text-secondary'
+                  }`}
+                >
+                  {talent.reviews.length}
+                </span>
+              )}
             </button>
           </div>
         </div>
@@ -1116,7 +1152,264 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
             )}
           </div>
         )}
+
+        {/* TAB 4: REVIEWS & CONTRACT HISTORY ARCHIVE */}
+        {activeTab === 'reviews' && (() => {
+          const reviewsList = talent.reviews || [];
+          const averageRating = reviewsList.length > 0
+            ? Number((reviewsList.reduce((acc, r) => acc + (r.overallRating || 0), 0) / reviewsList.length).toFixed(1))
+            : null;
+
+          const effectiveRehireStatus = talent.rehireStatus || (reviewsList.length > 0 ? reviewsList[0].rehireStatus : 'Eligible for Rehire');
+
+          return (
+            <div className="flex flex-col gap-3.5 animate-in fade-in duration-150">
+              {/* Unified Status Bar */}
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-surface-secondary/40 border border-slate-100 dark:border-border-subtle flex items-center justify-between gap-3 text-xs">
+                {/* Left: Status */}
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-text-secondary font-medium shrink-0">
+                    {isKa ? 'სტატუსი:' : 'Status:'}
+                  </span>
+                  {reviewsList.length === 0 ? (
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-brand-primary/10 text-brand-primary border border-brand-primary/20 shrink-0">
+                      {isKa ? 'ახალი ტალანტი' : 'New Talent'}
+                    </span>
+                  ) : (
+                    <span
+                      className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border shrink-0 ${
+                        effectiveRehireStatus === 'Eligible for Rehire'
+                          ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/25'
+                          : effectiveRehireStatus === 'Do Not Rehire'
+                          ? 'bg-danger/10 text-danger border-danger/25'
+                          : 'bg-amber-500/10 text-amber-600 border-amber-500/25'
+                      }`}
+                    >
+                      {effectiveRehireStatus === 'Eligible for Rehire'
+                        ? 'Eligible'
+                        : effectiveRehireStatus === 'Do Not Rehire'
+                        ? 'Do Not Rehire'
+                        : 'Under Review'}
+                    </span>
+                  )}
+                </div>
+
+                {/* Right: Rating */}
+                <div className="flex items-center gap-1.5 shrink-0 text-text-primary font-semibold text-xs">
+                  <Star
+                    size={14}
+                    className={averageRating !== null ? 'fill-amber-400 text-amber-400' : 'text-slate-300 dark:text-text-secondary'}
+                  />
+                  <span>
+                    {averageRating !== null
+                      ? `${averageRating} / 5.0 (${reviewsList.length} ${isKa ? 'შეფასება' : 'reviews'})`
+                      : isKa
+                      ? '— / 5.0 (შეუფასებელი)'
+                      : '— / 5.0 (Unrated)'}
+                  </span>
+                </div>
+              </div>
+
+              {/* History Section */}
+              <div className="flex flex-col gap-2.5">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold text-text-primary uppercase tracking-wider m-0">
+                    {isKa ? 'ისტორია' : 'History'} ({reviewsList.length})
+                  </h4>
+
+                  {reviewsList.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setIsReviewModalOpen(true)}
+                      className="inline-flex items-center justify-center gap-1 px-2.5 py-1 rounded-pill text-[11px] font-semibold bg-brand-primary/10 text-brand-primary hover:bg-brand-primary hover:text-white transition-all cursor-pointer"
+                    >
+                      <Plus size={12} />
+                      <span>{isKa ? 'შეფასების დამატება' : 'Add Evaluation'}</span>
+                    </button>
+                  )}
+                </div>
+
+                {/* Compact Empty State */}
+                {reviewsList.length === 0 ? (
+                  <div className="py-7 px-4 rounded-xl bg-slate-50/70 dark:bg-surface-secondary/30 border border-dashed border-border-subtle text-center flex flex-col items-center justify-center gap-2.5">
+                    <div className="w-8 h-8 rounded-full bg-surface text-text-secondary flex items-center justify-center border border-border-subtle shadow-xs">
+                      <Star size={15} className="text-slate-400" />
+                    </div>
+                    <div className="text-xs font-semibold text-text-secondary">
+                      {isKa ? 'შეფასებების ისტორია ცარიელია' : 'Evaluation history is empty'}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsReviewModalOpen(true)}
+                      className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-pill text-xs font-semibold bg-surface border border-border-subtle hover:bg-surface-secondary text-brand-primary shadow-xs hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer"
+                    >
+                      <Plus size={13} />
+                      <span>{isKa ? '+ პირველი შეფასების დამატება' : '+ Add First Evaluation'}</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-3">
+                    {reviewsList.map((review) => {
+                      const isTerminatedEarly = review.completionStatus === 'Terminated Early';
+
+                      return (
+                        <div
+                          key={review.id}
+                          className="p-4 rounded-xl bg-surface border border-border-subtle shadow-xs hover:border-brand-primary/40 transition-all flex flex-col gap-3"
+                        >
+                          {/* Header: Project name, period, and main completion badge */}
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <h5 className="text-sm font-bold text-text-primary m-0 tracking-tight truncate">
+                                {review.projectName}
+                              </h5>
+                              <div className="flex items-center gap-2 text-xs text-text-secondary mt-1">
+                                <span className="flex items-center gap-1">
+                                  <Calendar size={12} className="text-text-secondary" />
+                                  <span>{review.period}</span>
+                                </span>
+                                <span>•</span>
+                                <span className="text-[11px] font-medium text-text-secondary">
+                                  {review.reviewType === 'End of Season'
+                                    ? (isKa ? 'სეზონის ბოლოს შეფასება' : 'End of Season')
+                                    : review.reviewType === 'Mid-Season Review'
+                                    ? (isKa ? 'შუალედური შეფასება' : 'Mid-Season Review')
+                                    : (isKa ? 'ვადაზე ადრე გაწყვეტა' : 'Early Termination')}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <span
+                                className={`text-[11px] font-bold px-2.5 py-1 rounded-pill flex items-center gap-1 border ${
+                                  isTerminatedEarly
+                                    ? 'bg-danger/10 text-danger border-danger/30'
+                                    : 'bg-emerald-500/10 text-emerald-700 border-emerald-500/30'
+                                }`}
+                              >
+                                {isTerminatedEarly ? (
+                                  <>
+                                    <AlertTriangle size={12} />
+                                    <span>
+                                      {isKa ? 'ვადაზე ადრე შეწყდა' : 'Terminated Early'}
+                                      {review.terminationReason && ` (${review.terminationReason})`}
+                                    </span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Check size={12} strokeWidth={2.5} />
+                                    <span>{isKa ? 'წარმატებით დასრულდა' : 'Completed Successfully'}</span>
+                                  </>
+                                )}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Scores Breakdown Pill Grid */}
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                            <div className="p-2 rounded-lg bg-surface-secondary/70 border border-border-subtle flex items-center justify-between text-xs">
+                              <span className="text-[11px] text-text-secondary truncate">
+                                {isKa ? 'პუნქტუალურობა:' : 'Punctuality:'}
+                              </span>
+                              <span className="font-bold text-text-primary ml-1 flex items-center gap-0.5">
+                                <Star size={11} className="fill-amber-400 text-amber-400" />
+                                {review.scores.punctuality}.0
+                              </span>
+                            </div>
+
+                            <div className="p-2 rounded-lg bg-surface-secondary/70 border border-border-subtle flex items-center justify-between text-xs">
+                              <span className="text-[11px] text-text-secondary truncate">
+                                {isKa ? 'შესრულება:' : 'Performance:'}
+                              </span>
+                              <span className="font-bold text-text-primary ml-1 flex items-center gap-0.5">
+                                <Star size={11} className="fill-amber-400 text-amber-400" />
+                                {review.scores.performance}.0
+                              </span>
+                            </div>
+
+                            <div className="p-2 rounded-lg bg-surface-secondary/70 border border-border-subtle flex items-center justify-between text-xs">
+                              <span className="text-[11px] text-text-secondary truncate">
+                                {isKa ? 'გუნდურობა:' : 'Teamwork:'}
+                              </span>
+                              <span className="font-bold text-text-primary ml-1 flex items-center gap-0.5">
+                                <Star size={11} className="fill-amber-400 text-amber-400" />
+                                {review.scores.teamwork}.0
+                              </span>
+                            </div>
+
+                            <div className="p-2 rounded-lg bg-surface-secondary/70 border border-border-subtle flex items-center justify-between text-xs">
+                              <span className="text-[11px] text-text-secondary truncate">
+                                {isKa ? 'ინვენტარი:' : 'Gear Care:'}
+                              </span>
+                              <span className="font-bold text-text-primary ml-1 flex items-center gap-0.5">
+                                <Star size={11} className="fill-amber-400 text-amber-400" />
+                                {review.scores.gearCare || 5}.0
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Private Confidential Note Box */}
+                          {review.privateNote && (
+                            <div className="p-3 rounded-lg bg-surface-secondary/90 border border-border-subtle text-xs text-text-primary flex flex-col gap-1">
+                              <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-amber-600">
+                                <Lock size={11} />
+                                <span>{isKa ? 'კონფიდენციალური შიდა კომენტარი' : 'Confidential Admin Note'}</span>
+                              </div>
+                              <p className="m-0 text-text-secondary leading-relaxed">
+                                {review.privateNote}
+                              </p>
+                            </div>
+                          )}
+
+                          {/* Footer: Reviewer and Date */}
+                          <div className="pt-2 border-t border-border-subtle flex items-center justify-between text-[11px] text-text-secondary">
+                            <div className="flex items-center gap-1.5">
+                              <ShieldCheck size={13} className="text-brand-primary" />
+                              <span>
+                                {isKa ? 'შემფასებელი:' : 'Evaluator:'}{' '}
+                                <strong className="text-text-primary font-semibold">{review.reviewerName}</strong>
+                              </span>
+                            </div>
+
+                            <div>
+                              {new Date(review.createdAt).toLocaleDateString(isKa ? 'ka-GE' : 'en-US', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric'
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })()}
       </div>
+
+      {/* Review Modal */}
+      {isReviewModalOpen && (
+        <TalentReviewModal
+          isOpen={isReviewModalOpen}
+          onClose={() => setIsReviewModalOpen(false)}
+          talent={talent}
+          onSubmit={(newReview) => {
+            const currentReviews = talent.reviews || [];
+            const updatedReviews = [newReview, ...currentReviews];
+            updateTalent(talent.id, {
+              reviews: updatedReviews,
+              rehireStatus: newReview.rehireStatus
+            });
+            toast.success(
+              isKa ? 'შეფასება წარმატებით დაემატა არქივში' : 'Evaluation successfully added to archive'
+            );
+          }}
+        />
+      )}
     </Drawer>
   );
 };
+

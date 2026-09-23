@@ -13,7 +13,8 @@ import {
   ChevronRight,
   User,
   ShieldCheck,
-  X
+  X,
+  Archive
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -24,6 +25,7 @@ export type NavTab =
   | 'groups'
   | 'venues'
   | 'calendar'
+  | 'archive'
   | '/settings/profile'
   | '/settings/roles';
 
@@ -57,6 +59,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     if (pathname === '/groups' || pathname.startsWith('/groups')) return 'groups';
     if (pathname === '/venues' || pathname.startsWith('/venues')) return 'venues';
     if (pathname === '/calendar' || pathname.startsWith('/calendar')) return 'calendar';
+    if (pathname === '/archive' || pathname.startsWith('/archive')) return 'archive';
     if (pathname === '/settings/roles' || pathname.startsWith('/settings/roles')) return '/settings/roles';
     if (pathname === '/settings/profile' || pathname.startsWith('/settings/profile')) return '/settings/profile';
     return 'dashboard';
@@ -72,6 +75,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         groups: '/groups',
         venues: '/venues',
         calendar: '/calendar',
+        archive: '/archive',
         '/settings/profile': '/settings/profile',
         '/settings/roles': '/settings/roles'
       };
@@ -123,6 +127,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
       id: 'calendar' as NavTab,
       label: t('nav_calendar'),
       icon: Calendar
+    },
+    {
+      id: 'archive' as NavTab,
+      label: t('nav_archive'),
+      icon: Archive
     }
   ];
 
@@ -131,15 +140,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Mobile backdrop */}
       <div
         onClick={onClose}
-        className={`fixed inset-0 bg-black/45 z-40 backdrop-blur-xs transition-opacity duration-200 md:hidden ${
-          isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-        }`}
+        className={`fixed inset-0 bg-black/45 z-40 backdrop-blur-xs transition-opacity duration-200 md:hidden ${isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+          }`}
       />
 
       <aside
-        className={`w-[270px] min-w-[270px] h-screen sticky top-0 bg-surface border-r border-border-subtle flex flex-col justify-between p-6 px-4.5 pb-8 z-50 shadow-sm transition-transform duration-200 max-md:fixed max-md:left-0 max-md:top-0 ${
-          isOpen ? 'max-md:translate-x-0' : 'max-md:-translate-x-full'
-        }`}
+        className={`w-[270px] min-w-[270px] h-screen sticky top-0 bg-surface border-r border-border-subtle flex flex-col justify-between p-6 px-4.5 pb-8 z-50 shadow-sm transition-transform duration-200 max-md:fixed max-md:left-0 max-md:top-0 ${isOpen ? 'max-md:translate-x-0' : 'max-md:-translate-x-full'
+          }`}
       >
         {/* Mobile close button – only visible on mobile overlay */}
         <button
@@ -176,18 +183,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <button
                   key={item.id}
                   onClick={() => handleTabChange(item.id)}
-                  className={`flex items-center gap-3 w-full p-1.5 px-3 rounded-md text-sm cursor-pointer transition-all duration-150 text-left ${
-                    isActive
+                  className={`flex items-center gap-3 w-full p-1.5 px-3 rounded-md text-sm cursor-pointer transition-all duration-150 text-left ${isActive
                       ? 'bg-brand-primary text-white font-semibold shadow-glow'
                       : 'text-text-secondary font-medium hover:bg-surface-secondary hover:text-text-primary'
-                  }`}
+                    }`}
                 >
                   <div
-                    className={`w-9 h-9 rounded-sm flex items-center justify-center shrink-0 transition-all ${
-                      isActive
+                    className={`w-9 h-9 rounded-sm flex items-center justify-center shrink-0 transition-all ${isActive
                         ? 'bg-white/20 backdrop-blur-md border border-white/35 shadow-sm text-white'
                         : 'text-inherit'
-                    }`}
+                      }`}
                   >
                     <Icon
                       size={19}
@@ -208,19 +213,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {/* Main Parent Button */}
             <button
               onClick={() => setIsSettingsOpen((prev) => !prev)}
-              className={`flex items-center justify-between w-full p-1.5 px-3 rounded-md text-sm font-semibold cursor-pointer transition-all ${
-                isSettingsSubActive
+              className={`flex items-center justify-between w-full p-1.5 px-3 rounded-md text-sm font-semibold cursor-pointer transition-all ${isSettingsSubActive
                   ? 'bg-brand-primary/10 text-brand-primary'
                   : 'text-text-primary hover:bg-surface-secondary'
-              }`}
+                }`}
             >
               <div className="flex items-center gap-3">
                 <div
-                  className={`w-9 h-9 rounded-sm flex items-center justify-center shrink-0 transition-all ${
-                    isSettingsSubActive
+                  className={`w-9 h-9 rounded-sm flex items-center justify-center shrink-0 transition-all ${isSettingsSubActive
                       ? 'bg-brand-primary/15 text-brand-primary'
                       : 'text-text-secondary'
-                  }`}
+                    }`}
                 >
                   <Settings
                     size={19}
@@ -234,33 +237,29 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </div>
               <ChevronRight
                 size={16}
-                className={`transition-transform duration-200 mr-0.5 ${
-                  isSettingsOpen ? 'rotate-90' : 'rotate-0'
-                } ${isSettingsSubActive ? 'text-brand-primary' : 'text-text-secondary'}`}
+                className={`transition-transform duration-200 mr-0.5 ${isSettingsOpen ? 'rotate-90' : 'rotate-0'
+                  } ${isSettingsSubActive ? 'text-brand-primary' : 'text-text-secondary'}`}
               />
             </button>
 
             {/* Submenu Items */}
             <div
-              className={`overflow-hidden transition-all duration-200 flex flex-col gap-1 pl-3 ${
-                isSettingsOpen ? 'max-h-36 opacity-100 pt-1' : 'max-h-0 opacity-0 pt-0'
-              }`}
+              className={`overflow-hidden transition-all duration-200 flex flex-col gap-1 pl-3 ${isSettingsOpen ? 'max-h-36 opacity-100 pt-1' : 'max-h-0 opacity-0 pt-0'
+                }`}
             >
               {/* Submenu Item 1: Profile */}
               <button
                 onClick={() => handleTabChange('/settings/profile')}
-                className={`flex items-center gap-2.5 w-full p-1.5 px-3 pl-2 rounded-sm text-xs cursor-pointer transition-all text-left ${
-                  activeTab === '/settings/profile'
+                className={`flex items-center gap-2.5 w-full p-1.5 px-3 pl-2 rounded-sm text-xs cursor-pointer transition-all text-left ${activeTab === '/settings/profile'
                     ? 'bg-brand-primary text-white font-semibold shadow-glow'
                     : 'text-text-secondary font-medium hover:bg-surface-secondary hover:text-text-primary'
-                }`}
+                  }`}
               >
                 <div
-                  className={`w-7 h-7 rounded flex items-center justify-center shrink-0 ${
-                    activeTab === '/settings/profile'
+                  className={`w-7 h-7 rounded flex items-center justify-center shrink-0 ${activeTab === '/settings/profile'
                       ? 'bg-white/20 backdrop-blur-md border border-white/35 text-white'
                       : 'text-inherit'
-                  }`}
+                    }`}
                 >
                   <User
                     size={15}
@@ -276,18 +275,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
               {/* Submenu Item 2: Roles & Permissions */}
               <button
                 onClick={() => handleTabChange('/settings/roles')}
-                className={`flex items-center gap-2.5 w-full p-1.5 px-3 pl-2 rounded-sm text-xs cursor-pointer transition-all text-left ${
-                  activeTab === '/settings/roles'
+                className={`flex items-center gap-2.5 w-full p-1.5 px-3 pl-2 rounded-sm text-xs cursor-pointer transition-all text-left ${activeTab === '/settings/roles'
                     ? 'bg-brand-primary text-white font-semibold shadow-glow'
                     : 'text-text-secondary font-medium hover:bg-surface-secondary hover:text-text-primary'
-                }`}
+                  }`}
               >
                 <div
-                  className={`w-7 h-7 rounded flex items-center justify-center shrink-0 ${
-                    activeTab === '/settings/roles'
+                  className={`w-7 h-7 rounded flex items-center justify-center shrink-0 ${activeTab === '/settings/roles'
                       ? 'bg-white/20 backdrop-blur-md border border-white/35 text-white'
                       : 'text-inherit'
-                  }`}
+                    }`}
                 >
                   <ShieldCheck
                     size={15}
@@ -307,20 +304,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div>
           <div
             onClick={() => handleTabChange('calendar')}
-            className={`flex flex-col gap-1 p-3 px-3.5 rounded-md cursor-pointer transition-all duration-150 hover:-translate-y-0.5 hover:shadow-sm ${
-              todayShowsCount > 0
+            className={`flex flex-col gap-1 p-3 px-3.5 rounded-md cursor-pointer transition-all duration-150 hover:-translate-y-0.5 hover:shadow-sm ${todayShowsCount > 0
                 ? 'bg-brand-primary/10 border border-brand-primary/25'
                 : 'bg-surface-secondary border border-border-subtle'
-            }`}
+              }`}
             title={t('click_to_view_calendar')}
           >
             <div className="flex items-center gap-2">
               <span
-                className={`w-2 h-2 rounded-full shrink-0 ${
-                  todayShowsCount > 0
+                className={`w-2 h-2 rounded-full shrink-0 ${todayShowsCount > 0
                     ? 'bg-emerald-600 shadow-[0_0_6px_rgba(22,163,74,0.7)]'
                     : 'bg-slate-400'
-                }`}
+                  }`}
               />
               <span className="text-xs font-bold text-text-primary truncate">
                 {todayShowsCount === 1

@@ -342,11 +342,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
 
             <span
-              className={`text-xs font-bold px-2.5 py-0.5 rounded-pill ${
-                todayShows.length > 0
+              className={`text-xs font-bold px-2.5 py-0.5 rounded-pill ${todayShows.length > 0
                   ? 'bg-brand-primary text-white'
                   : 'bg-surface-secondary text-text-primary'
-              }`}
+                }`}
             >
               {todayShows.length} {todayShows.length === 1 ? t('show') : t('shows')}
             </span>
@@ -578,11 +577,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               {documentAlerts.map((alert, idx) => (
                 <div
                   key={`doc-${alert.talentId}-${idx}`}
-                  className={`flex items-start gap-3 p-3 px-3.5 rounded-md border ${
-                    alert.isExpired
+                  className={`flex items-start gap-3 p-3 px-3.5 rounded-md border ${alert.isExpired
                       ? 'bg-danger/10 border-danger/30'
                       : 'bg-brand-primary/10 border-brand-primary/30'
-                  }`}
+                    }`}
                 >
                   <FileWarning
                     size={18}
@@ -595,9 +593,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                         {alert.talentName}
                       </span>
                       <span
-                        className={`text-[11px] font-bold px-1.5 py-0.5 rounded-pill text-white shrink-0 ${
-                          alert.isExpired ? 'bg-danger' : 'bg-amber-500'
-                        }`}
+                        className={`text-[11px] font-bold px-1.5 py-0.5 rounded-pill text-white shrink-0 ${alert.isExpired ? 'bg-danger' : 'bg-amber-500'
+                          }`}
                       >
                         {alert.isExpired
                           ? t('expired_days_ago', { days: Math.abs(alert.daysRemaining) })

@@ -17,6 +17,7 @@ export default function HomePage() {
       groups: '/groups',
       venues: '/venues',
       calendar: '/calendar',
+      archive: '/archive',
       '/settings/profile': '/settings/profile',
       '/settings/roles': '/settings/roles'
     };

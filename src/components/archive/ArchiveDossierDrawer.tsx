@@ -121,8 +121,8 @@ export const ArchiveDossierDrawer: React.FC<ArchiveDossierDrawerProps> = ({
     <Drawer isOpen={isOpen} onClose={onClose} width="560px">
       <div className="flex flex-col h-full overflow-hidden bg-surface text-text-primary">
         {/* Top Sticky Header */}
-        <div className="p-6 pb-4 border-b border-border-subtle bg-surface sticky top-0 z-10 flex flex-col gap-3">
-          <div className="flex items-center justify-between pr-8">
+        <div className="p-6 pb-4 border-b border-border-subtle bg-surface sticky top-0 z-10 flex flex-col gap-3 pr-14">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="px-2.5 py-1 rounded-md text-xs font-bold tracking-wide uppercase bg-brand-primary/10 text-brand-primary border border-brand-primary/20">
                 {isKa ? 'საარქივო დოსიე' : 'Archive Dossier'}
@@ -132,36 +132,38 @@ export const ArchiveDossierDrawer: React.FC<ArchiveDossierDrawerProps> = ({
                 ID: {record.id.slice(0, 10)}
               </span>
             </div>
-          </div>
-
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <h2 className="text-xl font-bold text-text-primary tracking-tight leading-snug">
-                {record.projectName}
-              </h2>
-              <p className="text-xs text-text-secondary mt-0.5 flex items-center gap-1.5">
-                <Building size={13} className="text-text-tertiary shrink-0" />
-                <span>{record.location}</span>
-                <span className="text-text-tertiary">•</span>
-                <Calendar size={13} className="text-text-tertiary shrink-0" />
-                <span>{record.period}</span>
-              </p>
-            </div>
 
             {/* Completion Status Badge */}
-            <div className="shrink-0">
+            <div>
               {isCompleted ? (
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                   <CheckCircle2 size={13} />
-                  {isKa ? '✓ დასრულდა' : 'Completed'}
+                  <span>{isKa ? '✓ დასრულდა' : 'Completed'}</span>
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
                   <AlertTriangle size={13} />
-                  {isKa ? '⚠ ვადაზე ადრე შეწყდა' : 'Terminated Early'}
+                  <span>{isKa ? '⚠ ვადაზე ადრე შეწყდა' : 'Terminated Early'}</span>
                 </span>
               )}
             </div>
+          </div>
+
+          <div>
+            <h2 className="text-xl font-bold text-text-primary tracking-tight leading-snug">
+              {record.projectName}
+            </h2>
+            <p className="text-xs text-text-secondary mt-1 flex flex-wrap items-center gap-2">
+              <span className="flex items-center gap-1">
+                <Building size={13} className="text-text-tertiary shrink-0" />
+                <span>{record.location}</span>
+              </span>
+              <span className="text-text-tertiary">•</span>
+              <span className="flex items-center gap-1">
+                <Calendar size={13} className="text-text-tertiary shrink-0" />
+                <span>{record.period}</span>
+              </span>
+            </p>
           </div>
         </div>
 
@@ -183,15 +185,15 @@ export const ArchiveDossierDrawer: React.FC<ArchiveDossierDrawerProps> = ({
               </Link>
             </div>
 
-            <div className="flex items-center gap-3.5">
+            <div className="flex items-center gap-4">
               {record.talentAvatar ? (
                 <img
                   src={record.talentAvatar}
                   alt={record.talentName}
-                  className="w-13 h-13 rounded-full object-cover border border-border-subtle shadow-xs shrink-0"
+                  className="w-14 h-14 min-w-[56px] min-h-[56px] max-w-[56px] max-h-[56px] rounded-full object-cover border-2 border-border-subtle shadow-xs shrink-0"
                 />
               ) : (
-                <div className="w-13 h-13 rounded-full bg-brand-primary/10 text-brand-primary font-bold flex items-center justify-center text-base border border-brand-primary/20 shrink-0">
+                <div className="w-14 h-14 min-w-[56px] min-h-[56px] max-w-[56px] max-h-[56px] rounded-full bg-brand-primary/10 text-brand-primary font-bold flex items-center justify-center text-lg border border-brand-primary/20 shrink-0">
                   {record.talentName.slice(0, 2).toUpperCase()}
                 </div>
               )}
@@ -211,7 +213,7 @@ export const ArchiveDossierDrawer: React.FC<ArchiveDossierDrawerProps> = ({
                   {record.talentRole}
                 </p>
 
-                <div className="flex items-center gap-3 mt-2 text-xs text-text-tertiary">
+                <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-text-tertiary">
                   <span className="flex items-center gap-1 truncate">
                     <Mail size={12} className="shrink-0" />
                     <span className="truncate">{record.talentEmail}</span>

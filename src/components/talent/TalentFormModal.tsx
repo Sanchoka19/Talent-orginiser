@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Talent, Gender, TalentStatus, TalentDocument } from '../../types/talent';
 import { Modal } from '../common/Modal';
@@ -73,7 +75,6 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
   const [newCustomSpecInput, setNewCustomSpecInput] = useState('');
   const specDropdownRef = useRef<HTMLDivElement>(null);
   const specInputRef = useRef<HTMLInputElement>(null);
-  // One hidden file input ref per doc – keyed by doc id
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const [notes, setNotes] = useState('');
@@ -97,6 +98,7 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
     return allSpecializations.filter((s) => s.toLowerCase().includes(query));
   }, [allSpecializations, primarySkill, isFiltering]);
 
+  // Close dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (specDropdownRef.current && !specDropdownRef.current.contains(e.target as Node)) {
@@ -117,17 +119,19 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
       setPhone(editingTalent.phone);
       setGender(editingTalent.gender);
       setHeightCm(editingTalent.heightCm);
-      setWeightKg(editingTalent.weightKg ?? 60);
+      setWeightKg(editingTalent.weightKg || '');
       setStatus(editingTalent.status);
       setPrimarySkill(editingTalent.primarySkill);
       setNotes(editingTalent.notes || '');
       setDocuments(
-        editingTalent.documents?.map((d) => ({
+        editingTalent.documents.map((d) => ({
           id: d.id,
           name: d.name,
           type: d.type,
-          expiryDate: d.expiryDate || ''
-        })) || []
+          file: null,
+          expiryDate: d.expiryDate || '',
+          parseDetected: null
+        }))
       );
     } else {
       setFirstName('');
@@ -137,11 +141,13 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
       setGender('Female');
       setHeightCm(170);
       setWeightKg(60);
-      setStatus('Active'); // Defaults strictly to Active for new performers
+      setStatus('Active');
       setPrimarySkill('');
       setNotes('');
-      setDocuments([]); // Initially empty - user adds fields dynamically with button
+      setDocuments([]);
     }
+    setIsSpecDropdownOpen(false);
+    setIsFiltering(false);
     setIsCreatingCustomSpec(false);
     setNewCustomSpecInput('');
   }, [editingTalent, isOpen]);
@@ -158,131 +164,32 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
   };
 
   const handleAddDocField = () => {
+    const newId = `doc-${Date.now()}`;
     const usedTypes = new Set(documents.map((d) => d.type));
-    const allDocTypes: TalentDocument['type'][] = ['Passport', 'Visa', 'ID Card', 'Medical', 'Contract', 'Other'];
-    const nextType = allDocTypes.find((t) => !usedTypes.has(t)) || 'Other';
+    const allTypes: FormDocItem['type'][] = ['Passport', 'Visa', 'ID Card', 'Medical', 'Contract', 'Other'];
+    const nextType = allTypes.find((t) => !usedTypes.has(t)) || 'Other';
+    const defaultName = nextType === 'Passport' ? 'Passport Copy' : nextType === 'Visa' ? 'P-1 / Work Visa' : `${nextType} Document`;
+
     setDocuments((prev) => [
       ...prev,
       {
-        id: `doc-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-        name: '',
+        id: newId,
+        name: defaultName,
         type: nextType,
         file: null,
         expiryDate: '',
-        isParsing: false,
         parseDetected: null
       }
     ]);
   };
 
-  const handleDocChange = async (id: string, field: 'name' | 'type' | 'expiryDate', value: string) => {
-    setDocuments((prev) =>
-      prev.map((d) => {
-        if (d.id !== id) return d;
-        if (field === 'type') {
-          const nextType = value as TalentDocument['type'];
-          return {
-            ...d,
-            type: nextType,
-            expiryDate: nextType === 'Contract' ? d.expiryDate : '',
-            parseDetected: nextType === 'Contract' ? d.parseDetected : null
-          };
-        }
-        return { ...d, [field]: value };
-      })
-    );
-
-    if (field === 'type' && value === 'Contract') {
-      const doc = documents.find((d) => d.id === id);
-      if (doc?.file && !doc.expiryDate) {
-        setDocuments((prev) => prev.map((d) => (d.id === id ? { ...d, isParsing: true, parseDetected: null } : d)));
-        try {
-          const result = await extractContractExpiryDate(doc.file);
-          setDocuments((prev) =>
-            prev.map((d) => {
-              if (d.id !== id) return d;
-              return {
-                ...d,
-                expiryDate: result.date || d.expiryDate || '',
-                isParsing: false,
-                parseDetected: !!result.date
-              };
-            })
-          );
-          if (result.date) {
-            toast.success(
-              language === 'ka'
-                ? `კონტრაქტის ვადა ავტომატურად ამოიცნო: ${result.date}`
-                : `Contract expiry date auto-detected: ${result.date}`
-            );
-          }
-        } catch {
-          setDocuments((prev) => prev.map((d) => (d.id === id ? { ...d, isParsing: false, parseDetected: false } : d)));
-        }
-      }
-    }
-  };
-
-  const handleDocFileChange = async (id: string, file: File) => {
-    const autoName = file.name.replace(/\.[^/.]+$/, '');
-    const doc = documents.find((d) => d.id === id);
-    const isContract = doc?.type === 'Contract';
-
-    setDocuments((prev) =>
-      prev.map((d) => {
-        if (d.id !== id) return d;
-        return {
-          ...d,
-          file,
-          name: autoName || file.name,
-          isParsing: isContract,
-          parseDetected: null
-        };
-      })
-    );
-
-    if (isContract) {
-      try {
-        const result = await extractContractExpiryDate(file);
-        setDocuments((prev) =>
-          prev.map((d) => {
-            if (d.id !== id) return d;
-            return {
-              ...d,
-              expiryDate: result.date || d.expiryDate || '',
-              isParsing: false,
-              parseDetected: !!result.date
-            };
-          })
-        );
-        if (result.date) {
-          toast.success(
-            language === 'ka'
-              ? `კონტრაქტის ვადა ავტომატურად ამოიცნო: ${result.date}`
-              : `Contract expiry date auto-detected: ${result.date}`
-          );
-        } else {
-          setDocuments((prev) =>
-            prev.map((d) => (d.id === id ? { ...d, parseDetected: false } : d))
-          );
-        }
-      } catch {
-        setDocuments((prev) =>
-          prev.map((d) => (d.id === id ? { ...d, isParsing: false, parseDetected: false } : d))
-        );
-      }
-    }
-  };
-
-  const handleRemoveDoc = (id: string, name?: string) => {
-    const doc = documents.find((d) => d.id === id);
-    const docName = name?.trim() || doc?.name?.trim() || (isKa ? 'დოკუმენტი' : 'Document');
+  const handleRemoveDoc = (id: string, name: string) => {
     confirm({
-      title: isKa ? 'დოკუმენტის წაშლა' : 'Delete Document',
+      title: isKa ? 'დოკუმენტის წაშლა' : 'Remove Document',
       message: isKa
-        ? `დარწმუნებული ხართ, რომ გსურთ დოკუმენტის „${docName}“ წაშლა?`
-        : `Are you sure you want to delete the document "${docName}"?`,
-      itemName: docName,
+        ? `დარწმუნებული ხართ, რომ გსურთ დოკუმენტის „${name || 'Untitled'}“ ამოშლა?`
+        : `Are you sure you want to remove the document "${name || 'Untitled'}"?`,
+      itemName: name,
       confirmLabel: isKa ? 'წაშლა' : 'Delete',
       cancelLabel: isKa ? 'გაუქმება' : 'Cancel',
       variant: 'danger',
@@ -293,74 +200,115 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
     });
   };
 
+  const handleDocChange = (id: string, field: keyof FormDocItem, value: any) => {
+    setDocuments((prev) =>
+      prev.map((d) => (d.id === id ? { ...d, [field]: value } : d))
+    );
+  };
+
+  const handleDocFileChange = async (id: string, file: File) => {
+    setDocuments((prev) =>
+      prev.map((d) =>
+        d.id === id
+          ? {
+              ...d,
+              file,
+              name: d.name === 'Passport Copy' || d.name.endsWith('Document') ? file.name.replace(/\.[^/.]+$/, '') : d.name,
+              isParsing: d.type === 'Contract'
+            }
+          : d
+      )
+    );
+
+    const doc = documents.find((d) => d.id === id);
+    if (doc?.type === 'Contract') {
+      try {
+        const result = await extractContractExpiryDate(file);
+        const detected = result.date;
+        setDocuments((prev) =>
+          prev.map((d) => {
+            if (d.id !== id) return d;
+            return {
+              ...d,
+              isParsing: false,
+              parseDetected: Boolean(detected),
+              expiryDate: detected || d.expiryDate || ''
+            };
+          })
+        );
+        if (detected) {
+          toast.success(
+            isKa
+              ? `კონტრაქტის ვადის გასვლის თარიღი ავტომატურად ამოცნობილია: ${detected}`
+              : `Contract expiry date auto-detected: ${detected}`
+          );
+        } else {
+          toast.warning(
+            isKa
+              ? 'თარიღი ავტომატურად ვერ მოიძებნა. გთხოვთ მიუთითოთ ხელით.'
+              : 'Expiry date could not be automatically detected. Please enter manually.'
+          );
+        }
+      } catch {
+        setDocuments((prev) =>
+          prev.map((d) => (d.id === id ? { ...d, isParsing: false, parseDetected: false } : d))
+        );
+      }
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!firstName.trim() || !lastName.trim() || !primarySkill.trim()) {
-      toast.error(isKa ? 'გთხოვთ შეავსოთ სავალდებულო ველები' : 'Please fill all required fields');
+      toast.error(isKa ? 'გთხოვთ შეავსოთ ყველა სავალდებულო ველი' : 'Please fill in all required fields');
       return;
     }
 
-    // Filter valid documents
-    const validDocs = documents
-      .filter((d) => d.name.trim() !== '')
-      .map((d) => ({
-        id: d.id,
-        name: d.name.trim(),
-        type: d.type,
-        fileSize: '1.8 MB',
-        expiryDate: d.type === 'Contract' && d.expiryDate?.trim() ? d.expiryDate.trim() : undefined,
-        uploadedAt: new Date().toISOString()
-      }));
-
-    // Validate uniqueness of document types per performer
-    const docTypesList = validDocs.map((d) => d.type);
-    if (new Set(docTypesList).size !== docTypesList.length) {
-      toast.error(
-        isKa
-          ? 'თითოეული ტიპის დოკუმენტი (პასპორტი, ვიზა და ა.შ.) შეიძლება დაემატოს მხოლოდ ერთხელ!'
-          : 'Each document type can only be added once per performer!'
-      );
-      return;
-    }
+    const payloadDocs: TalentDocument[] = documents.map((d) => ({
+      id: d.id,
+      name: d.name.trim() || `${d.type} Document`,
+      type: d.type,
+      url: d.file ? URL.createObjectURL(d.file) : undefined,
+      uploadedAt: new Date().toISOString(),
+      expiryDate: d.expiryDate || undefined
+    }));
 
     if (editingTalent) {
       updateTalent(editingTalent.id, {
-        firstName,
-        lastName,
-        email,
-        phone,
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        email: email.trim(),
+        phone: phone.trim(),
         gender,
-        heightCm: Number(heightCm),
-        weightKg: weightKg === '' ? undefined : Number(weightKg),
+        heightCm,
+        weightKg: weightKg === '' ? undefined : weightKg,
         status,
-        primarySkill,
-        notes,
-        documents: validDocs
+        primarySkill: primarySkill.trim(),
+        notes: notes.trim(),
+        documents: payloadDocs
       });
       toast.success(
         isKa
-          ? `თანამშრომლის „${firstName} ${lastName}“ მონაცემები განახლდა`
+          ? `არტისტის „${firstName} ${lastName}“ მონაცემები განახლდა`
           : `Performer "${firstName} ${lastName}" updated successfully`
       );
     } else {
       addTalent({
-        firstName,
-        lastName,
-        email,
-        phone,
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        email: email.trim(),
+        phone: phone.trim(),
         gender,
-        heightCm: Number(heightCm),
-        weightKg: weightKg === '' ? undefined : Number(weightKg),
-        status: 'Active', // Strictly default to Active on creation
-        primarySkill,
-        notes,
-        documents: validDocs,
-        avatarUrl: `https://images.unsplash.com/photo-${gender === 'Female' ? '1534528741775-53994a69daeb' : '1507003211169-0a1dd7228f2d'
-          }?w=400&auto=format&fit=crop&q=80`
+        heightCm,
+        weightKg: weightKg === '' ? undefined : weightKg,
+        status,
+        primarySkill: primarySkill.trim(),
+        notes: notes.trim(),
+        documents: payloadDocs
       });
       toast.success(
         isKa
-          ? `თანამშრომელი „${firstName} ${lastName}“ წარმატებით დაემატა`
+          ? `არტისტი „${firstName} ${lastName}“ წარმატებით დაემატა`
           : `Performer "${firstName} ${lastName}" added successfully`
       );
     }
@@ -376,36 +324,45 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
       subtitle={t('performer_form_subtitle')}
       maxWidth="640px"
       footer={
-        <>
-          <button type="button" onClick={onClose} className="btn btn-secondary">
+        <div className="flex items-center justify-end gap-2.5 w-full">
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex items-center justify-center px-4 py-2 rounded-pill text-sm font-medium border border-border-subtle bg-surface-secondary text-text-primary hover:bg-surface-tertiary hover:border-border-medium transition-all duration-150 cursor-pointer outline-none"
+          >
             {t('cancel')}
           </button>
-          <button type="submit" form="talent-form" className="btn btn-primary">
+          <button
+            type="submit"
+            form="talent-form"
+            className="inline-flex items-center justify-center gap-2 px-5 py-2 rounded-pill text-sm font-medium bg-brand-primary text-white shadow-glow hover:bg-brand-primary-hover hover:-translate-y-0.5 active:translate-y-0 transition-all duration-150 cursor-pointer outline-none"
+          >
             {editingTalent ? t('save_changes') : t('add_performer')}
           </button>
-        </>
+        </div>
       }
     >
-      <form id="talent-form" onSubmit={handleSubmit}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-          <div className="form-group">
-            <label className="form-label">{t('first_name')} *</label>
+      <form id="talent-form" onSubmit={handleSubmit} className="flex flex-col gap-4">
+        {/* Name Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold text-text-secondary">{t('first_name')} *</label>
             <input
               type="text"
               required
-              className="form-input"
+              className="w-full text-sm px-3.5 py-2.5 rounded-sm border border-border-subtle bg-surface-secondary text-text-primary outline-none transition-all duration-150 focus:bg-surface focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10 placeholder:text-text-tertiary"
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
               placeholder="e.g. Amélie"
             />
           </div>
 
-          <div className="form-group">
-            <label className="form-label">{t('last_name')} *</label>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold text-text-secondary">{t('last_name')} *</label>
             <input
               type="text"
               required
-              className="form-input"
+              className="w-full text-sm px-3.5 py-2.5 rounded-sm border border-border-subtle bg-surface-secondary text-text-primary outline-none transition-all duration-150 focus:bg-surface focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10 placeholder:text-text-tertiary"
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
               placeholder="e.g. Laurent"
@@ -413,39 +370,31 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-          <div className="form-group">
-            <label className="form-label">{t('email_address')}</label>
+        {/* Email & Phone Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold text-text-secondary">{t('email_address')}</label>
             <input
               type="email"
-              className="form-input"
+              className="w-full text-sm px-3.5 py-2.5 rounded-sm border border-border-subtle bg-surface-secondary text-text-primary outline-none transition-all duration-150 focus:bg-surface focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10 placeholder:text-text-tertiary"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="amelie@artistent.com"
             />
           </div>
 
-          <div className="form-group">
-            <label className="form-label">{t('phone_number')}</label>
-            <PhoneInput
-              value={phone}
-              onChange={setPhone}
-            />
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold text-text-secondary">{t('phone_number')}</label>
+            <PhoneInput value={phone} onChange={setPhone} />
           </div>
         </div>
 
         {/* Gender, Height, Weight */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
-            gap: '16px'
-          }}
-        >
-          <div className="form-group">
-            <label className="form-label">{t('gender')} *</label>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold text-text-secondary">{t('gender')} *</label>
             <select
-              className="form-select"
+              className="w-full text-sm px-3.5 py-2.5 rounded-sm border border-border-subtle bg-surface-secondary text-text-primary outline-none transition-all duration-150 focus:bg-surface focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10 cursor-pointer"
               value={gender}
               onChange={(e) => setGender(e.target.value as Gender)}
             >
@@ -454,26 +403,26 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
             </select>
           </div>
 
-          <div className="form-group">
-            <label className="form-label">{t('height_cm')} *</label>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold text-text-secondary">{t('height_cm')} *</label>
             <input
               type="number"
               required
               min={120}
               max={230}
-              className="form-input"
+              className="w-full text-sm px-3.5 py-2.5 rounded-sm border border-border-subtle bg-surface-secondary text-text-primary outline-none transition-all duration-150 focus:bg-surface focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10 placeholder:text-text-tertiary"
               value={heightCm}
               onChange={(e) => setHeightCm(Number(e.target.value))}
             />
           </div>
 
-          <div className="form-group">
-            <label className="form-label">{t('weight_kg')}</label>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold text-text-secondary">{t('weight_kg')}</label>
             <input
               type="number"
               min={30}
               max={200}
-              className="form-input"
+              className="w-full text-sm px-3.5 py-2.5 rounded-sm border border-border-subtle bg-surface-secondary text-text-primary outline-none transition-all duration-150 focus:bg-surface focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10 placeholder:text-text-tertiary"
               placeholder="e.g. 58"
               value={weightKg}
               onChange={(e) => setWeightKg(e.target.value === '' ? '' : Number(e.target.value))}
@@ -481,13 +430,13 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
           </div>
         </div>
 
-        {/* Primary Role / Specialization Dropdown (Clean, Searchable & Creatable) */}
-        <div className="form-group" ref={specDropdownRef} style={{ position: 'relative' }}>
-          <label className="form-label">{t('primary_role_spec')} *</label>
+        {/* Primary Role / Specialization Dropdown */}
+        <div className="flex flex-col gap-1.5 relative" ref={specDropdownRef}>
+          <label className="text-xs font-semibold text-text-secondary">{t('primary_role_spec')} *</label>
 
           {/* Main Dropdown Input with Chevron */}
           <div
-            style={{ position: 'relative', display: 'flex', alignItems: 'center', cursor: 'pointer' }}
+            className="relative flex items-center cursor-pointer"
             onClick={() => {
               setIsSpecDropdownOpen((prev) => !prev);
               setIsFiltering(false);
@@ -498,74 +447,29 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
               ref={specInputRef}
               type="text"
               required
-              className="form-input"
+              className="w-full text-sm px-3.5 py-2.5 pr-9 rounded-sm border border-border-subtle bg-surface-secondary text-text-primary outline-none transition-all duration-150 focus:bg-surface focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10 cursor-pointer placeholder:text-text-tertiary"
               value={primarySkill}
               readOnly={!isSpecDropdownOpen}
               onChange={(e) => {
                 setPrimarySkill(e.target.value);
                 setIsFiltering(true);
               }}
-              onFocus={() => {
-                setIsSpecDropdownOpen(true);
-              }}
+              onFocus={() => setIsSpecDropdownOpen(true)}
               placeholder={t('select_specialization')}
-              style={{
-                width: '100%',
-                paddingRight: '36px',
-                background: isSpecDropdownOpen ? 'var(--bg-surface)' : 'var(--bg-surface-secondary)',
-                borderColor: isSpecDropdownOpen ? 'var(--brand-primary)' : 'var(--border-subtle)',
-                boxShadow: isSpecDropdownOpen ? '0 0 0 3px var(--brand-primary-light)' : 'none',
-                cursor: 'pointer'
-              }}
             />
-            <div
-              style={{
-                position: 'absolute',
-                right: '12px',
-                pointerEvents: 'none',
-                color: 'var(--color-text-secondary)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
-            >
+            <div className="absolute right-3 pointer-events-none text-text-secondary flex items-center justify-center">
               <ChevronDown
                 size={16}
-                style={{
-                  transform: isSpecDropdownOpen ? 'rotate(180deg)' : 'none',
-                  transition: 'transform var(--transition-fast)'
-                }}
+                className={`transition-transform duration-150 ${isSpecDropdownOpen ? 'rotate-180' : ''}`}
               />
             </div>
           </div>
 
           {/* Dropdown Menu */}
           {isSpecDropdownOpen && (
-            <div
-              style={{
-                position: 'absolute',
-                top: 'calc(100% + 6px)',
-                left: 0,
-                right: 0,
-                background: 'var(--bg-surface)',
-                borderRadius: 'var(--radius-md)',
-                border: '1px solid var(--border-medium)',
-                boxShadow: '0 12px 32px rgba(0,0,0,0.18)',
-                zIndex: 1000,
-                overflow: 'hidden',
-                display: 'flex',
-                flexDirection: 'column'
-              }}
-            >
+            <div className="absolute top-[calc(100%+6px)] left-0 right-0 bg-surface rounded-md border border-border-medium shadow-modal z-50 overflow-hidden flex flex-col">
               {/* Options List */}
-              <div
-                style={{
-                  maxHeight: '230px',
-                  overflowY: 'auto',
-                  display: 'flex',
-                  flexDirection: 'column'
-                }}
-              >
+              <div className="max-h-[230px] overflow-y-auto thin-scrollbar flex flex-col">
                 {filteredSpecializations.length > 0 ? (
                   filteredSpecializations.map((spec) => {
                     const isSelected = spec.toLowerCase() === primarySkill.trim().toLowerCase();
@@ -573,53 +477,26 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
                       <div
                         key={spec}
                         onClick={() => handleSelectSpec(spec)}
-                        style={{
-                          padding: '10px 14px',
-                          fontSize: '0.85rem',
-                          cursor: 'pointer',
-                          background: isSelected ? 'var(--brand-primary)' : 'transparent',
-                          color: isSelected ? '#FFFFFF' : 'var(--color-text-primary)',
-                          fontWeight: isSelected ? 600 : 400,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          transition: 'background var(--transition-fast)'
-                        }}
-                        onMouseEnter={(e) => {
-                          if (!isSelected) e.currentTarget.style.background = 'var(--bg-surface-secondary)';
-                        }}
-                        onMouseLeave={(e) => {
-                          if (!isSelected) e.currentTarget.style.background = 'transparent';
-                        }}
+                        className={`px-3.5 py-2.5 text-xs flex items-center justify-between cursor-pointer transition-colors duration-150 ${
+                          isSelected
+                            ? 'bg-brand-primary text-white font-semibold'
+                            : 'text-text-primary hover:bg-surface-secondary'
+                        }`}
                       >
                         <span>{spec}</span>
-                        {isSelected && <Check size={14} color="#FFFFFF" strokeWidth={2.5} />}
+                        {isSelected && <Check size={14} className="text-white" strokeWidth={2.5} />}
                       </div>
                     );
                   })
                 ) : (
-                  <div
-                    style={{
-                      padding: '14px',
-                      fontSize: '0.825rem',
-                      color: 'var(--color-text-secondary)',
-                      textAlign: 'center',
-                      fontStyle: 'italic'
-                    }}
-                  >
+                  <div className="p-3.5 text-xs text-text-secondary text-center italic">
                     {t('no_performers_match')}
                   </div>
                 )}
               </div>
 
-              {/* Dedicated "Add New Specialization" Button / Form inside Dropdown */}
-              <div
-                style={{
-                  padding: '10px 12px',
-                  borderTop: '1px solid var(--border-subtle)',
-                  background: 'var(--bg-surface-secondary)'
-                }}
-              >
+              {/* Add New Specialization Footer */}
+              <div className="p-2.5 border-t border-border-subtle bg-surface-secondary">
                 {!isCreatingCustomSpec ? (
                   <button
                     type="button"
@@ -633,29 +510,7 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
                         setNewCustomSpecInput(trimmed);
                       }
                     }}
-                    style={{
-                      width: '100%',
-                      padding: '9px 14px',
-                      background: 'var(--bg-surface)',
-                      border: '1px solid var(--border-subtle)',
-                      borderRadius: 'var(--radius-sm)',
-                      fontSize: '0.825rem',
-                      fontWeight: 600,
-                      color: 'var(--color-charcoal)',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      transition: 'all var(--transition-fast)'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.borderColor = 'var(--brand-primary)';
-                      e.currentTarget.style.background = 'var(--brand-primary-light)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.borderColor = 'var(--border-subtle)';
-                      e.currentTarget.style.background = 'var(--bg-surface)';
-                    }}
+                    className="w-full py-2 px-3.5 bg-surface border border-border-subtle rounded-sm text-xs font-semibold text-text-primary hover:border-brand-primary hover:bg-brand-primary-light transition-all duration-150 flex items-center justify-center cursor-pointer"
                   >
                     <span>
                       {primarySkill.trim() && !allSpecializations.some((s) => s.toLowerCase() === primarySkill.trim().toLowerCase())
@@ -665,24 +520,14 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
                   </button>
                 ) : (
                   <div
-                    style={{
-                      display: 'flex',
-                      gap: '6px',
-                      alignItems: 'center'
-                    }}
+                    className="flex gap-1.5 items-center"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <input
                       type="text"
                       autoFocus
                       placeholder={t('enter_new_specialty')}
-                      className="form-input"
-                      style={{
-                        padding: '6px 10px',
-                        fontSize: '0.8rem',
-                        flex: 1,
-                        background: '#FFFFFF'
-                      }}
+                      className="flex-1 text-xs px-2.5 py-1.5 rounded-sm border border-border-subtle bg-surface text-text-primary outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20"
                       value={newCustomSpecInput}
                       onChange={(e) => setNewCustomSpecInput(e.target.value)}
                       onKeyDown={(e) => {
@@ -701,8 +546,7 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
                           handleSelectSpec(newCustomSpecInput.trim());
                         }
                       }}
-                      className="btn btn-primary"
-                      style={{ padding: '6px 12px', fontSize: '0.785rem' }}
+                      className="px-3 py-1.5 rounded-pill text-xs font-semibold bg-brand-primary text-white hover:bg-brand-primary-hover disabled:opacity-50 transition-colors"
                       disabled={!newCustomSpecInput.trim()}
                     >
                       {t('btn_add')}
@@ -710,8 +554,7 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
                     <button
                       type="button"
                       onClick={() => setIsCreatingCustomSpec(false)}
-                      className="btn btn-secondary btn-icon"
-                      style={{ width: '30px', height: '30px' }}
+                      className="w-7.5 h-7.5 p-0 rounded-full inline-flex items-center justify-center border border-border-subtle bg-surface text-text-secondary hover:text-text-primary hover:bg-surface-secondary transition-all"
                     >
                       <X size={13} />
                     </button>
@@ -722,27 +565,12 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
           )}
         </div>
 
-        {/* Dynamic Documents Section with "+ Add Document" Button */}
-        <div
-          style={{
-            padding: '16px',
-            borderRadius: 'var(--radius-sm)',
-            background: 'var(--bg-surface-secondary)',
-            border: '1px solid var(--border-subtle)',
-            marginBottom: '16px'
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: documents.length > 0 ? '12px' : '4px'
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <FileText size={15} color="var(--color-text-secondary)" />
-              <label className="form-label" style={{ marginBottom: 0, fontWeight: 600 }}>
+        {/* Dynamic Documents Section */}
+        <div className="p-4 rounded-sm bg-surface-secondary border border-border-subtle mb-1">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-1.5">
+              <FileText size={15} className="text-text-secondary" />
+              <label className="text-xs font-semibold text-text-primary">
                 {t('docs_and_credentials')} ({documents.length})
               </label>
             </div>
@@ -750,8 +578,7 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
             <button
               type="button"
               onClick={handleAddDocField}
-              className="btn btn-secondary"
-              style={{ fontSize: '0.785rem', padding: '5px 12px' }}
+              className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1 rounded-pill border border-border-subtle bg-surface text-text-primary hover:bg-surface-tertiary hover:border-border-medium transition-all duration-150 cursor-pointer"
             >
               <Plus size={13} strokeWidth={2.5} />
               <span>{t('add_document_field')}</span>
@@ -759,38 +586,25 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
           </div>
 
           {documents.length === 0 ? (
-            <div
-              style={{
-                fontSize: '0.785rem',
-                color: 'var(--color-text-secondary)',
-                fontStyle: 'italic',
-                padding: '8px 0 4px 0'
-              }}
-            >
+            <div className="text-xs text-text-secondary italic py-2">
               {t('no_documents_added')}
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div className="flex flex-col gap-3">
               {documents.map((doc, idx) => (
                 <div
                   key={doc.id || idx}
-                  style={{
-                    background: 'var(--bg-surface)',
-                    padding: '12px',
-                    borderRadius: 'var(--radius-sm)',
-                    border: '1px solid var(--border-subtle)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '10px'
-                  }}
+                  className="bg-surface p-3 rounded-sm border border-border-subtle flex flex-col gap-2.5"
                 >
                   {/* File Upload area */}
                   <input
                     type="file"
                     accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                    style={{ display: 'none' }}
+                    className="hidden"
                     id={`doc-file-${doc.id}`}
-                    ref={(el) => { fileInputRefs.current[doc.id] = el; }}
+                    ref={(el) => {
+                      fileInputRefs.current[doc.id] = el;
+                    }}
                     onChange={(e) => {
                       const file = e.target.files?.[0];
                       if (file) handleDocFileChange(doc.id, file);
@@ -800,57 +614,39 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
                   {!doc.file ? (
                     <div
                       onClick={() => fileInputRefs.current[doc.id]?.click()}
-                      style={{
-                        border: '2px dashed var(--border-medium)',
-                        borderRadius: 'var(--radius-xs)',
-                        padding: '14px 12px',
-                        textAlign: 'center',
-                        cursor: 'pointer',
-                        background: 'var(--bg-surface-secondary)',
-                        transition: 'all var(--transition-fast)'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.borderColor = 'var(--brand-primary, #FF6C41)';
-                        e.currentTarget.style.background = 'rgba(255,108,65,0.05)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.borderColor = 'var(--border-medium)';
-                        e.currentTarget.style.background = 'var(--bg-surface-secondary)';
-                      }}
+                      className="border-2 border-dashed border-border-medium rounded-xs py-3.5 px-3 text-center cursor-pointer bg-surface-secondary hover:border-brand-primary hover:bg-brand-primary-light/50 transition-all duration-150"
                     >
-                      <UploadCloud size={20} style={{ color: 'var(--brand-primary, #FF6C41)', margin: '0 auto 4px auto' }} />
-                      <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-charcoal)' }}>
+                      <UploadCloud size={20} className="text-brand-primary mx-auto mb-1" />
+                      <div className="text-xs font-semibold text-text-primary">
                         {language === 'ka' ? `დააკლიკეთ „${doc.type}“-ის ასარჩევად` : `Click to select "${doc.type}" file`}
                       </div>
-                      <div style={{ fontSize: '0.72rem', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
+                      <div className="text-[11px] text-text-secondary mt-0.5">
                         PDF, DOC, DOCX, JPG, PNG (მაქს. 10MB)
                       </div>
                     </div>
                   ) : (
-                    <div style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      padding: '8px 10px', background: 'var(--bg-surface-secondary)',
-                      border: '1px solid var(--border-medium)', borderRadius: 'var(--radius-xs)'
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
-                        <FileText size={16} style={{ color: 'var(--brand-primary, #FF6C41)', flexShrink: 0 }} />
-                        <div style={{ minWidth: 0 }}>
-                          <div style={{ fontSize: '0.8rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--color-charcoal)' }}>
+                    <div className="flex items-center justify-between p-2 px-2.5 bg-surface-secondary border border-border-medium rounded-xs">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <FileText size={16} className="text-brand-primary shrink-0" />
+                        <div className="min-w-0">
+                          <div className="text-xs font-semibold truncate text-text-primary">
                             {doc.file.name}
                           </div>
-                          <div style={{ fontSize: '0.7rem', color: 'var(--color-text-secondary)', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                            <span style={{ fontWeight: 600, color: 'var(--brand-primary)' }}>{doc.type}</span>
+                          <div className="text-[11px] text-text-secondary flex items-center gap-1.5">
+                            <span className="font-semibold text-brand-primary">{doc.type}</span>
                             <span>•</span>
                             <span>{(doc.file.size / (1024 * 1024)).toFixed(1)} MB</span>
                           </div>
                         </div>
                       </div>
-                      <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
+                      <div className="flex items-center gap-1.5 shrink-0">
                         <button
                           type="button"
                           onClick={() => fileInputRefs.current[doc.id]?.click()}
-                          style={{ background: 'transparent', border: '1px solid var(--border-subtle)', borderRadius: '4px', padding: '2px 8px', fontSize: '0.72rem', fontWeight: 600, color: 'var(--color-text-secondary)', cursor: 'pointer' }}
-                        >{language === 'ka' ? 'შეცვლა' : 'Change'}</button>
+                          className="bg-transparent border border-border-subtle rounded px-2 py-0.5 text-[11px] font-semibold text-text-secondary hover:text-text-primary hover:border-border-medium cursor-pointer"
+                        >
+                          {language === 'ka' ? 'შეცვლა' : 'Change'}
+                        </button>
                         <button
                           type="button"
                           onClick={() => {
@@ -865,32 +661,32 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
                               variant: 'danger',
                               icon: 'trash',
                               onConfirm: () => {
-                                setDocuments(prev => prev.map(d => d.id === doc.id ? { ...d, file: null } : d));
+                                setDocuments((prev) => prev.map((d) => (d.id === doc.id ? { ...d, file: null } : d)));
                                 if (fileInputRefs.current[doc.id]) fileInputRefs.current[doc.id]!.value = '';
                               }
                             });
                           }}
-                          style={{ background: 'transparent', border: 'none', color: '#EF4444', cursor: 'pointer', padding: '2px', display: 'flex' }}
+                          className="bg-transparent border-none text-danger hover:text-red-700 cursor-pointer p-0.5 flex"
                           title={isKa ? 'ფაილის წაშლა' : 'Remove File'}
-                        ><X size={13} /></button>
+                        >
+                          <X size={13} />
+                        </button>
                       </div>
                     </div>
                   )}
 
                   {/* Title + Type + Remove */}
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <div className="flex gap-2 items-center">
                     <input
                       type="text"
                       placeholder={t('doc_title_placeholder')}
-                      className="form-input"
-                      style={{ flex: 2, padding: '6px 10px', fontSize: '0.825rem' }}
+                      className="flex-[2] text-xs px-2.5 py-1.5 rounded-sm border border-border-subtle bg-surface text-text-primary outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20"
                       value={doc.name}
                       onChange={(e) => handleDocChange(doc.id, 'name', e.target.value)}
                       required
                     />
                     <select
-                      className="form-select"
-                      style={{ flex: 1, padding: '6px 10px', fontSize: '0.825rem' }}
+                      className="flex-1 text-xs px-2.5 py-1.5 rounded-sm border border-border-subtle bg-surface text-text-primary outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20 cursor-pointer"
                       value={doc.type}
                       onChange={(e) => handleDocChange(doc.id, 'type', e.target.value as any)}
                     >
@@ -906,8 +702,7 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
                     <button
                       type="button"
                       onClick={() => handleRemoveDoc(doc.id, doc.name)}
-                      className="btn btn-secondary btn-icon"
-                      style={{ width: '30px', height: '30px', color: '#EF4444', flexShrink: 0 }}
+                      className="w-7.5 h-7.5 p-0 rounded-full inline-flex items-center justify-center border border-border-subtle bg-surface text-danger hover:bg-danger-light hover:border-danger-border transition-all duration-150 cursor-pointer shrink-0"
                       title="Remove"
                     >
                       <Trash2 size={13} />
@@ -916,31 +711,20 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
 
                   {/* Contract Expiration Date (ONLY when doc.type === 'Contract') */}
                   {doc.type === 'Contract' && (
-                    <div
-                      style={{
-                        marginTop: '8px',
-                        padding: '10px 12px',
-                        borderRadius: '8px',
-                        background: 'rgba(30, 106, 255, 0.04)',
-                        border: '1px solid rgba(30, 106, 255, 0.2)',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '5px'
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <label style={{ fontSize: '0.75rem', fontWeight: 650, color: 'var(--color-charcoal)', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                          <Calendar size={13} style={{ color: 'var(--brand-primary)' }} />
+                    <div className="mt-2 p-2.5 rounded-sm bg-brand-primary-light/40 border border-brand-primary/20 flex flex-col gap-1.5">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-semibold text-text-primary flex items-center gap-1.5">
+                          <Calendar size={13} className="text-brand-primary" />
                           <span>{t('contract_expiry_date')} *</span>
                         </label>
                         {doc.isParsing && (
-                          <span style={{ fontSize: '0.685rem', color: 'var(--brand-primary)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <span className="text-[11px] text-brand-primary font-semibold flex items-center gap-1">
                             <Loader2 size={11} className="animate-spin" />
                             <span>{t('analyzing_file')}</span>
                           </span>
                         )}
                         {!doc.isParsing && doc.parseDetected === true && (
-                          <span style={{ fontSize: '0.685rem', color: '#16A34A', fontWeight: 650, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <span className="text-[11px] text-status-active-text font-semibold flex items-center gap-1">
                             <Sparkles size={11} />
                             <span>{t('auto_detected_date')} ✓</span>
                           </span>
@@ -949,16 +733,15 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
 
                       <input
                         type="date"
-                        className="form-input"
-                        style={{ padding: '6px 10px', fontSize: '0.8rem' }}
+                        className="text-xs px-2.5 py-1.5 rounded-sm border border-border-subtle bg-surface text-text-primary outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20"
                         value={doc.expiryDate || ''}
                         onChange={(e) => handleDocChange(doc.id, 'expiryDate', e.target.value)}
                         required
                       />
 
-                      <div style={{ fontSize: '0.675rem', color: 'var(--color-text-secondary)' }}>
+                      <div className="text-[11px] text-text-secondary">
                         {doc.parseDetected === false ? (
-                          <span style={{ color: '#D97706', fontWeight: 500 }}>⚠️ {t('manual_date_hint')}</span>
+                          <span className="text-amber-600 font-medium">⚠️ {t('manual_date_hint')}</span>
                         ) : (
                           <span>{t('contract_expiry_hint')}</span>
                         )}
@@ -971,11 +754,12 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
           )}
         </div>
 
-        <div className="form-group">
-          <label className="form-label">{t('internal_notes')}</label>
+        {/* Notes */}
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-semibold text-text-secondary">{t('internal_notes')}</label>
           <textarea
             rows={2}
-            className="form-textarea"
+            className="w-full text-sm px-3.5 py-2.5 rounded-sm border border-border-subtle bg-surface-secondary text-text-primary outline-none transition-all duration-150 focus:bg-surface focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10 placeholder:text-text-tertiary resize-y"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="Performance style, restrictions, costume sizing notes..."

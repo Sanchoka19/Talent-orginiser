@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useEffect } from 'react';
 import { HotelVenue } from '../../types/venue';
 import { Modal } from '../common/Modal';
@@ -104,24 +106,32 @@ export const VenueFormModal: React.FC<VenueFormModalProps> = ({
       subtitle={t('venue_form_subtitle')}
       maxWidth="580px"
       footer={
-        <>
-          <button type="button" onClick={onClose} className="btn btn-secondary">
+        <div className="flex items-center justify-end gap-2.5 w-full">
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex items-center justify-center px-4 py-2 rounded-pill text-sm font-medium border border-border-subtle bg-surface-secondary text-text-primary hover:bg-surface-tertiary hover:border-border-medium transition-all duration-150 cursor-pointer outline-none"
+          >
             {t('cancel')}
           </button>
-          <button type="submit" form="venue-form" className="btn btn-primary">
+          <button
+            type="submit"
+            form="venue-form"
+            className="inline-flex items-center justify-center gap-2 px-5 py-2 rounded-pill text-sm font-medium bg-brand-primary text-white shadow-glow hover:bg-brand-primary-hover hover:-translate-y-0.5 active:translate-y-0 transition-all duration-150 cursor-pointer outline-none"
+          >
             {editingVenue ? t('save_venue') : t('add_hotel_venue')}
           </button>
-        </>
+        </div>
       }
     >
-      <form id="venue-form" onSubmit={handleSubmit} style={{ overflowX: 'hidden' }}>
+      <form id="venue-form" onSubmit={handleSubmit} className="overflow-x-hidden flex flex-col gap-4">
         {/* Hotel Venue Name */}
-        <div className="form-group">
-          <label className="form-label">{t('hotel_name')} *</label>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-semibold text-text-secondary">{t('hotel_name')} *</label>
           <input
             type="text"
             required
-            className="form-input"
+            className="w-full text-sm px-3.5 py-2.5 rounded-sm border border-border-subtle bg-surface-secondary text-text-primary outline-none transition-all duration-150 focus:bg-surface focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10 placeholder:text-text-tertiary"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. The Venetian Resort & Casino"
@@ -129,12 +139,12 @@ export const VenueFormModal: React.FC<VenueFormModalProps> = ({
         </div>
 
         {/* Address */}
-        <div className="form-group">
-          <label className="form-label">{t('address_location')} *</label>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-semibold text-text-secondary">{t('address_location')} *</label>
           <input
             type="text"
             required
-            className="form-input"
+            className="w-full text-sm px-3.5 py-2.5 rounded-sm border border-border-subtle bg-surface-secondary text-text-primary outline-none transition-all duration-150 focus:bg-surface focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10 placeholder:text-text-tertiary"
             value={address}
             onChange={(e) => setAddress(e.target.value)}
             placeholder="e.g. 3355 S Las Vegas Blvd"
@@ -142,12 +152,12 @@ export const VenueFormModal: React.FC<VenueFormModalProps> = ({
         </div>
 
         {/* City */}
-        <div className="form-group">
-          <label className="form-label">{t('city')} *</label>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-semibold text-text-secondary">{t('city')} *</label>
           <input
             type="text"
             required
-            className="form-input"
+            className="w-full text-sm px-3.5 py-2.5 rounded-sm border border-border-subtle bg-surface-secondary text-text-primary outline-none transition-all duration-150 focus:bg-surface focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10 placeholder:text-text-tertiary"
             value={city}
             onChange={(e) => setCity(e.target.value)}
             placeholder="Las Vegas"
@@ -155,37 +165,37 @@ export const VenueFormModal: React.FC<VenueFormModalProps> = ({
         </div>
 
         {/* Primary Contact Section */}
-        <div style={{ marginTop: '8px', marginBottom: '8px' }}>
-          <h4 style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-charcoal)', marginBottom: '8px' }}>
+        <div className="pt-2">
+          <h4 className="text-xs font-bold text-text-primary uppercase tracking-wider">
             {t('primary_contact')}
           </h4>
         </div>
 
-        <div className="form-group">
-          <label className="form-label">{t('contact_name')}</label>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-semibold text-text-secondary">{t('contact_name')}</label>
           <input
             type="text"
-            className="form-input"
+            className="w-full text-sm px-3.5 py-2.5 rounded-sm border border-border-subtle bg-surface-secondary text-text-primary outline-none transition-all duration-150 focus:bg-surface focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10 placeholder:text-text-tertiary"
             value={contactName}
             onChange={(e) => setContactName(e.target.value)}
             placeholder="Victoria Sterling"
           />
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-          <div className="form-group" style={{ minWidth: 0 }}>
-            <label className="form-label">{t('phone')}</label>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="flex flex-col gap-1.5 min-w-0">
+            <label className="text-xs font-semibold text-text-secondary">{t('phone')}</label>
             <PhoneInput
               value={contactPhone}
               onChange={setContactPhone}
             />
           </div>
 
-          <div className="form-group" style={{ minWidth: 0 }}>
-            <label className="form-label">{t('email')}</label>
+          <div className="flex flex-col gap-1.5 min-w-0">
+            <label className="text-xs font-semibold text-text-secondary">{t('email')}</label>
             <input
               type="email"
-              className="form-input"
+              className="w-full text-sm px-3.5 py-2.5 rounded-sm border border-border-subtle bg-surface-secondary text-text-primary outline-none transition-all duration-150 focus:bg-surface focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10 placeholder:text-text-tertiary"
               value={contactEmail}
               onChange={(e) => setContactEmail(e.target.value)}
               placeholder="vsterling@hotel.com"

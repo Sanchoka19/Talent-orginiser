@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState } from 'react';
 import { Talent, TalentStatus, TalentDocument } from '../../types/talent';
 import { Drawer } from '../common/Drawer';
@@ -49,15 +51,16 @@ export const DOCUMENT_TYPES: {
   labelKa: string;
   labelEn: string;
   short: string;
+  badgeClass: string;
   bg: string;
   color: string;
 }[] = [
-  { value: 'Passport', labelKa: 'პასპორტი', labelEn: 'Passport', short: 'PAS', bg: '#E0F2FE', color: '#0284C7' },
-  { value: 'Visa', labelKa: 'ვიზა', labelEn: 'Visa', short: 'VISA', bg: '#FEF3C7', color: '#B45309' },
-  { value: 'ID Card', labelKa: 'პირადობის მოწმობა', labelEn: 'ID Card', short: 'ID', bg: '#E0E7FF', color: '#4338CA' },
-  { value: 'Medical', labelKa: 'სამედიცინო ცნობა', labelEn: 'Medical Clearance', short: 'MED', bg: '#FEE2E2', color: '#DC2626' },
-  { value: 'Contract', labelKa: 'კონტრაქტი', labelEn: 'Contract', short: 'CON', bg: '#DCFCE7', color: '#15803D' },
-  { value: 'Other', labelKa: 'სხვა დოკუმენტი', labelEn: 'Other Document', short: 'DOC', bg: '#F3F4F6', color: '#4B5563' },
+  { value: 'Passport', labelKa: 'პასპორტი', labelEn: 'Passport', short: 'PAS', badgeClass: 'bg-sky-100 text-sky-700', bg: '#E0F2FE', color: '#0284C7' },
+  { value: 'Visa', labelKa: 'ვიზა', labelEn: 'Visa', short: 'VISA', badgeClass: 'bg-amber-100 text-amber-800', bg: '#FEF3C7', color: '#B45309' },
+  { value: 'ID Card', labelKa: 'პირადობის მოწმობა', labelEn: 'ID Card', short: 'ID', badgeClass: 'bg-indigo-100 text-indigo-700', bg: '#E0E7FF', color: '#4338CA' },
+  { value: 'Medical', labelKa: 'სამედიცინო ცნობა', labelEn: 'Medical Clearance', short: 'MED', badgeClass: 'bg-red-100 text-red-700', bg: '#FEE2E2', color: '#DC2626' },
+  { value: 'Contract', labelKa: 'კონტრაქტი', labelEn: 'Contract', short: 'CON', badgeClass: 'bg-emerald-100 text-emerald-800', bg: '#DCFCE7', color: '#15803D' },
+  { value: 'Other', labelKa: 'სხვა დოკუმენტი', labelEn: 'Other Document', short: 'DOC', badgeClass: 'bg-zinc-100 text-zinc-700', bg: '#F3F4F6', color: '#4B5563' },
 ];
 
 export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
@@ -323,70 +326,44 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
   return (
     <Drawer isOpen={isOpen} onClose={onClose} width="520px">
       {/* Fixed Top Header (Non-scrolling: avatar, profile info, status, tabs) */}
-      <div style={{ flexShrink: 0, background: 'var(--bg-surface)', borderBottom: '1px solid var(--border-subtle)', position: 'relative', zIndex: 5 }}>
+      <div className="shrink-0 bg-surface border-b border-border-subtle relative z-[5]">
         {/* Hero Banner with Modern Brand Aura */}
-        <div
-          style={{
-            height: '84px',
-            background: 'radial-gradient(circle at 75% 20%, #FF6C41 0%, #004F72 55%, #082734 95%)',
-            position: 'relative',
-            padding: '20px'
-          }}
-        >
-          <div
-            style={{
-              position: 'absolute',
-              bottom: '-42px',
-              left: '24px',
-              display: 'flex',
-              alignItems: 'flex-end',
-              gap: '16px'
-            }}
-          >
+        <div className="h-[84px] bg-[radial-gradient(circle_at_75%_20%,#FF6C41_0%,#004F72_55%,#082734_95%)] relative p-5">
+          <div className="absolute -bottom-[42px] left-6 flex items-end gap-4">
             <img
               src={
                 talent.avatarUrl ||
                 `https://api.dicebear.com/7.x/avataaars/svg?seed=${talent.firstName}${talent.lastName}`
               }
               alt={talent.firstName}
-              style={{
-                width: '88px',
-                height: '88px',
-                borderRadius: '50%',
-                objectFit: 'cover',
-                border: '4px solid #FFFFFF',
-                boxShadow: '0 8px 22px -3px rgba(0, 0, 0, 0.22)',
-                backgroundColor: '#FFFFFF'
-              }}
+              className="w-[88px] h-[88px] rounded-full object-cover border-4 border-white shadow-lg bg-white"
             />
           </div>
         </div>
 
         {/* Profile Header Info */}
-        <div style={{ padding: '48px 24px 14px 24px' }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '14px' }}>
+        <div className="pt-12 px-6 pb-3.5">
+          <div className="flex items-start justify-between mb-3.5">
             <div>
-              <h2 style={{ fontSize: '1.35rem', fontWeight: 700, color: 'var(--color-charcoal)', letterSpacing: '-0.02em', margin: 0 }}>
+              <h2 className="text-[1.35rem] font-bold text-text-primary tracking-tight m-0">
                 {talent.firstName} {talent.lastName}
               </h2>
-              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', marginTop: '3px', margin: 0 }}>
+              <p className="text-[0.85rem] text-text-secondary mt-0.5 m-0">
                 {talent.primarySkill}
               </p>
             </div>
 
-            <div style={{ display: 'flex', gap: '6px' }}>
+            <div className="flex gap-1.5">
               <button
                 onClick={() => onEdit(talent)}
-                className="btn btn-secondary btn-icon"
-                style={{ width: '34px', height: '34px' }}
+                className="w-8.5 h-8.5 rounded-full inline-flex items-center justify-center border border-border-subtle bg-surface-secondary text-text-primary hover:bg-surface-tertiary hover:border-border-medium transition-all duration-150 cursor-pointer outline-none"
                 title={t('edit_performer')}
               >
                 <Edit2 size={15} />
               </button>
               <button
                 onClick={handleDelete}
-                className="btn btn-secondary btn-icon"
-                style={{ width: '34px', height: '34px', color: '#EF4444' }}
+                className="w-8.5 h-8.5 rounded-full inline-flex items-center justify-center border border-border-subtle bg-surface-secondary text-danger hover:bg-danger-light hover:border-danger-border transition-all duration-150 cursor-pointer outline-none"
                 title={t('delete')}
               >
                 <Trash2 size={15} />
@@ -397,64 +374,33 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
           {/* Status Selector Custom Dropdown */}
           <div
             ref={statusDropdownRef}
-            style={{
-              position: 'relative',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: '12px',
-              padding: '8px 12px',
-              borderRadius: 'var(--radius-sm)',
-              background: 'var(--bg-surface-secondary)',
-              border: '1px solid var(--border-subtle)',
-              marginBottom: talent.status !== 'Active' ? '10px' : '14px'
-            }}
+            className={`relative flex items-center justify-between gap-3 px-3 py-2 rounded-sm bg-surface-secondary border border-border-subtle ${
+              talent.status !== 'Active' ? 'mb-2.5' : 'mb-3.5'
+            }`}
           >
-            <span style={{ fontSize: '0.825rem', fontWeight: 600, color: 'var(--color-text-secondary)' }}>
+            <span className="text-[0.825rem] font-semibold text-text-secondary">
               {t('availability_status')}:
             </span>
 
             <button
               type="button"
               onClick={() => setIsStatusDropdownOpen((prev) => !prev)}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '4px 12px',
-                borderRadius: 'var(--radius-pill)',
-                border: talent.status === 'Active'
-                  ? '1px solid rgba(22, 163, 74, 0.3)'
+              className={`inline-flex items-center gap-2 px-3 py-1 rounded-pill border text-[0.825rem] font-semibold cursor-pointer transition-all ${
+                talent.status === 'Active'
+                  ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700'
                   : talent.status === 'Rest'
-                  ? '1px solid rgba(217, 119, 6, 0.3)'
-                  : '1px solid rgba(220, 38, 38, 0.3)',
-                background: talent.status === 'Active'
-                  ? 'rgba(22, 163, 74, 0.08)'
-                  : talent.status === 'Rest'
-                  ? 'rgba(217, 119, 6, 0.08)'
-                  : 'rgba(220, 38, 38, 0.08)',
-                color: talent.status === 'Active'
-                  ? '#15803D'
-                  : talent.status === 'Rest'
-                  ? '#B45309'
-                  : '#DC2626',
-                fontSize: '0.825rem',
-                fontWeight: 650,
-                cursor: 'pointer',
-                transition: 'all var(--transition-fast)'
-              }}
+                  ? 'border-amber-500/30 bg-amber-500/10 text-amber-700'
+                  : 'border-danger/30 bg-danger/10 text-danger'
+              }`}
             >
               <span
-                style={{
-                  width: '7px',
-                  height: '7px',
-                  borderRadius: '50%',
-                  background: talent.status === 'Active'
-                    ? '#16A34A'
+                className={`w-[7px] h-[7px] rounded-full ${
+                  talent.status === 'Active'
+                    ? 'bg-emerald-600'
                     : talent.status === 'Rest'
-                    ? '#D97706'
-                    : '#DC2626'
-                }}
+                    ? 'bg-amber-600'
+                    : 'bg-danger'
+                }`}
               />
               <span>
                 {talent.status === 'Active'
@@ -465,33 +411,17 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
               </span>
               <ChevronDown
                 size={14}
-                style={{
-                  transform: isStatusDropdownOpen ? 'rotate(180deg)' : 'none',
-                  transition: 'transform var(--transition-fast)'
-                }}
+                className={`transition-transform duration-150 ${isStatusDropdownOpen ? 'rotate-180' : ''}`}
               />
             </button>
 
             {/* Status Dropdown Menu */}
             {isStatusDropdownOpen && (
-              <div
-                style={{
-                  position: 'absolute',
-                  top: 'calc(100% + 6px)',
-                  right: '12px',
-                  minWidth: '160px',
-                  background: 'var(--bg-surface)',
-                  borderRadius: 'var(--radius-md)',
-                  border: '1px solid var(--border-medium)',
-                  boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.2)',
-                  zIndex: 200,
-                  overflow: 'hidden',
-                  padding: '4px 0'
-                }}
-              >
+              <div className="absolute top-[calc(100%+6px)] right-3 min-w-[160px] bg-surface rounded-md border border-border-medium shadow-modal z-[200] overflow-hidden py-1">
                 {(['Active', 'Rest', 'Sick/Injured'] as TalentStatus[]).map((st) => {
                   const isSelected = talent.status === st;
-                  const dotColor = st === 'Active' ? '#16A34A' : st === 'Rest' ? '#D97706' : '#DC2626';
+                  const dotColor = st === 'Active' ? 'bg-emerald-600' : st === 'Rest' ? 'bg-amber-600' : 'bg-danger';
+                  const textColor = st === 'Active' ? 'text-emerald-700' : st === 'Rest' ? 'text-amber-700' : 'text-danger';
                   const label = st === 'Active' ? t('status_active') : st === 'Rest' ? t('status_rest') : t('status_sick');
 
                   return (
@@ -501,37 +431,17 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
                         handleStatusChange(st);
                         setIsStatusDropdownOpen(false);
                       }}
-                      style={{
-                        padding: '8px 12px',
-                        fontSize: '0.825rem',
-                        fontWeight: isSelected ? 650 : 500,
-                        color: 'var(--color-text-primary)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        cursor: 'pointer',
-                        background: isSelected ? 'var(--bg-surface-secondary)' : 'transparent',
-                        transition: 'background var(--transition-fast)'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = 'var(--bg-surface-secondary)';
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!isSelected) e.currentTarget.style.background = 'transparent';
-                      }}
+                      className={`px-3 py-2 text-[0.825rem] flex items-center justify-between cursor-pointer transition-colors ${
+                        isSelected
+                          ? 'font-bold bg-surface-secondary text-text-primary'
+                          : 'font-medium text-text-primary hover:bg-surface-secondary'
+                      }`}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span
-                          style={{
-                            width: '7px',
-                            height: '7px',
-                            borderRadius: '50%',
-                            background: dotColor
-                          }}
-                        />
+                      <div className="flex items-center gap-2">
+                        <span className={`w-[7px] h-[7px] rounded-full ${dotColor}`} />
                         <span>{label}</span>
                       </div>
-                      {isSelected && <Check size={14} color={dotColor} strokeWidth={2.5} />}
+                      {isSelected && <Check size={14} className={textColor} strokeWidth={2.5} />}
                     </div>
                   );
                 })}
@@ -541,23 +451,8 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
 
           {/* Compact, Refined Warning Notice */}
           {talent.status !== 'Active' && (
-            <div
-              style={{
-                marginBottom: '12px',
-                padding: '8px 12px',
-                borderRadius: '10px',
-                background: 'rgba(255, 108, 65, 0.12)',
-                border: '1px solid rgba(255, 108, 65, 0.35)',
-                color: '#C2410C',
-                fontSize: '0.785rem',
-                fontWeight: 500,
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                lineHeight: 1.4
-              }}
-            >
-              <AlertTriangle size={14} strokeWidth={2} style={{ flexShrink: 0, color: '#C2410C' }} />
+            <div className="mb-3 px-3 py-2 rounded-sm bg-accent-orange/10 border border-accent-orange/30 text-accent-orange text-[0.785rem] font-medium flex items-center gap-2 leading-relaxed">
+              <AlertTriangle size={14} strokeWidth={2} className="shrink-0 text-accent-orange" />
               <span>
                 {language === 'ka'
                   ? 'ავტომატურად ამოღებულია როტაციიდან და შოუებიდან'
@@ -567,100 +462,39 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
           )}
 
           {/* Tab Navigation Buttons - Segmented Pill Control */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              background: 'var(--bg-surface-secondary)',
-              borderRadius: 'var(--radius-pill)',
-              padding: '4px',
-              border: '1px solid var(--border-subtle)',
-              gap: '6px',
-              height: '46px',
-              boxSizing: 'border-box'
-            }}
-          >
+          <div className="flex items-center bg-surface-secondary rounded-pill p-1 border border-border-subtle gap-1.5 h-[46px] box-border">
             <button
               type="button"
               onClick={() => handleTabSelect('info')}
               title={language === 'ka' ? 'პირადი ინფორმაცია' : 'Personal Information'}
-              style={{
-                flex: 1,
-                height: '38px',
-                boxSizing: 'border-box',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '7px',
-                padding: '0 16px',
-                borderRadius: 'var(--radius-pill)',
-                border: 'none',
-                fontSize: '0.825rem',
-                fontWeight: activeTab === 'info' ? 650 : 500,
-                cursor: 'pointer',
-                whiteSpace: 'nowrap',
-                minWidth: 0,
-                background: activeTab === 'info' ? 'var(--brand-primary)' : 'transparent',
-                color: activeTab === 'info' ? '#FFFFFF' : 'var(--color-text-secondary)',
-                boxShadow: activeTab === 'info' ? '0 2px 10px var(--brand-primary-glow)' : 'none',
-                transition: 'background var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast)'
-              }}
+              className={`flex-1 h-[38px] flex items-center justify-center gap-1.5 px-4 rounded-pill border-none text-[0.825rem] cursor-pointer whitespace-nowrap min-w-0 transition-all duration-150 ${
+                activeTab === 'info'
+                  ? 'font-bold bg-brand-primary text-white shadow-glow'
+                  : 'font-medium bg-transparent text-text-secondary hover:text-text-primary'
+              }`}
             >
-              <User size={15} style={{ flexShrink: 0 }} />
-              <span style={{ whiteSpace: 'nowrap' }}>{t('tab_personal_info')}</span>
+              <User size={15} className="shrink-0" />
+              <span className="whitespace-nowrap">{t('tab_personal_info')}</span>
             </button>
 
             <button
               type="button"
               onClick={() => handleTabSelect('docs')}
               title={language === 'ka' ? 'დოკუმენტები' : 'Documents'}
-              style={{
-                flex: 1,
-                position: 'relative',
-                height: '38px',
-                boxSizing: 'border-box',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '7px',
-                padding: '0 16px',
-                borderRadius: 'var(--radius-pill)',
-                border: 'none',
-                fontSize: '0.825rem',
-                fontWeight: activeTab === 'docs' ? 650 : 500,
-                cursor: 'pointer',
-                whiteSpace: 'nowrap',
-                minWidth: 0,
-                background: activeTab === 'docs' ? 'var(--brand-primary)' : 'transparent',
-                color: activeTab === 'docs' ? '#FFFFFF' : 'var(--color-text-secondary)',
-                boxShadow: activeTab === 'docs' ? '0 2px 10px var(--brand-primary-glow)' : 'none',
-                transition: 'background var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast)'
-              }}
+              className={`flex-1 relative h-[38px] flex items-center justify-center gap-1.5 px-4 rounded-pill border-none text-[0.825rem] cursor-pointer whitespace-nowrap min-w-0 transition-all duration-150 ${
+                activeTab === 'docs'
+                  ? 'font-bold bg-brand-primary text-white shadow-glow'
+                  : 'font-medium bg-transparent text-text-secondary hover:text-text-primary'
+              }`}
             >
-              <FileText size={15} style={{ flexShrink: 0 }} />
-              <span style={{ whiteSpace: 'nowrap' }}>{t('tab_documentation')}</span>
+              <FileText size={15} className="shrink-0" />
+              <span className="whitespace-nowrap">{t('tab_documentation')}</span>
               <span
-                style={{
-                  position: 'absolute',
-                  top: '-3px',
-                  right: '8px',
-                  fontSize: '0.675rem',
-                  fontWeight: 750,
-                  background: activeTab === 'docs' ? '#FFFFFF' : 'var(--brand-primary)',
-                  color: activeTab === 'docs' ? 'var(--brand-primary)' : '#FFFFFF',
-                  borderRadius: '9999px',
-                  padding: '0 5px',
-                  minWidth: '18px',
-                  height: '18px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: activeTab === 'docs' ? '0 2px 6px rgba(0, 0, 0, 0.16)' : '0 2px 6px rgba(30, 106, 255, 0.28)',
-                  border: activeTab === 'docs' ? '1.5px solid rgba(255,255,255,0.9)' : '1.5px solid #FFFFFF',
-                  lineHeight: 1,
-                  zIndex: 2,
-                  pointerEvents: 'none'
-                }}
+                className={`absolute -top-[3px] right-2 text-[0.675rem] font-bold rounded-pill px-1.5 min-w-[18px] h-[18px] flex items-center justify-center leading-none z-[2] pointer-events-none border-[1.5px] ${
+                  activeTab === 'docs'
+                    ? 'bg-white text-brand-primary shadow-sm border-white/90'
+                    : 'bg-brand-primary text-white shadow-glow border-white'
+                }`}
               >
                 {talent.documents.length}
               </span>
@@ -670,30 +504,14 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
               type="button"
               onClick={() => handleTabSelect('stats')}
               title={language === 'ka' ? 'მორიგეობის სტატისტიკა' : 'Duty Statistics'}
-              style={{
-                flex: 1,
-                height: '38px',
-                boxSizing: 'border-box',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '7px',
-                padding: '0 16px',
-                borderRadius: 'var(--radius-pill)',
-                border: 'none',
-                fontSize: '0.825rem',
-                fontWeight: activeTab === 'stats' ? 650 : 500,
-                cursor: 'pointer',
-                whiteSpace: 'nowrap',
-                minWidth: 0,
-                background: activeTab === 'stats' ? 'var(--brand-primary)' : 'transparent',
-                color: activeTab === 'stats' ? '#FFFFFF' : 'var(--color-text-secondary)',
-                boxShadow: activeTab === 'stats' ? '0 2px 10px var(--brand-primary-glow)' : 'none',
-                transition: 'background var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast)'
-              }}
+              className={`flex-1 h-[38px] flex items-center justify-center gap-1.5 px-4 rounded-pill border-none text-[0.825rem] cursor-pointer whitespace-nowrap min-w-0 transition-all duration-150 ${
+                activeTab === 'stats'
+                  ? 'font-bold bg-brand-primary text-white shadow-glow'
+                  : 'font-medium bg-transparent text-text-secondary hover:text-text-primary'
+              }`}
             >
-              <BarChart3 size={15} style={{ flexShrink: 0 }} />
-              <span style={{ whiteSpace: 'nowrap' }}>{t('tab_duty_stats')}</span>
+              <BarChart3 size={15} className="shrink-0" />
+              <span className="whitespace-nowrap">{t('tab_duty_stats')}</span>
             </button>
           </div>
         </div>
@@ -702,110 +520,54 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
       {/* Dedicated Scrollable Tab Content Container */}
       <div
         ref={contentScrollRef}
-        className="thin-scrollbar"
-        style={{
-          flex: 1,
-          overflowY: 'auto',
-          minHeight: 0,
-          padding: '20px 24px 28px 24px'
-        }}
+        className="thin-scrollbar flex-1 overflow-y-auto min-h-0 px-6 pt-5 pb-7"
       >
         {/* TAB 1: PERSONAL INFORMATION */}
         {activeTab === 'info' && (
           <div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+            <div className="flex flex-col gap-0.5">
               {/* Email */}
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '12px 0',
-                  borderBottom: '1px solid var(--border-subtle)',
-                  gap: '12px'
-                }}
-              >
-                <span style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 500 }}>
-                  <Mail size={16} style={{ color: 'var(--color-charcoal)', opacity: 0.7 }} />
+              <div className="flex items-center justify-between py-3 border-b border-border-subtle gap-3">
+                <span className="text-sm text-text-secondary flex items-center gap-2 font-medium">
+                  <Mail size={16} className="text-text-primary opacity-70" />
                   {t('email_address')}
                 </span>
-                <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-charcoal)', wordBreak: 'break-all', textAlign: 'right' }}>
+                <span className="text-[0.9rem] font-semibold text-text-primary break-all text-right">
                   {talent.email}
                 </span>
               </div>
 
               {/* Phone */}
               {talent.phone && (
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '12px 0',
-                    borderBottom: '1px solid var(--border-subtle)',
-                    gap: '12px',
-                    flexWrap: 'wrap'
-                  }}
-                >
-                  <span style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 500 }}>
-                    <Phone size={16} style={{ color: 'var(--color-charcoal)', opacity: 0.7 }} />
+                <div className="flex items-center justify-between py-3 border-b border-border-subtle gap-3 flex-wrap">
+                  <span className="text-sm text-text-secondary flex items-center gap-2 font-medium">
+                    <Phone size={16} className="text-text-primary opacity-70" />
                     {t('phone_number')}
                   </span>
-                  
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+
+                  <div className="flex items-center gap-2">
                     {(() => {
                       const country = getCountryFromPhone(talent.phone);
                       const cleanDigits = talent.phone.replace(/[^0-9]/g, '');
                       return (
                         <>
                           <div
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '6px',
-                              fontSize: '0.875rem',
-                              fontWeight: 600,
-                              color: 'var(--color-charcoal)',
-                              background: 'var(--bg-canvas)',
-                              padding: '4px 10px',
-                              borderRadius: '8px',
-                              border: '1px solid var(--border-subtle)'
-                            }}
+                            className="inline-flex items-center gap-1.5 text-sm font-semibold text-text-primary bg-canvas px-2.5 py-1 rounded-sm border border-border-subtle"
                             title={country ? (language === 'ka' ? country.nameKa : country.name) : undefined}
                           >
-                            {country && <span style={{ fontSize: '1.05rem', lineHeight: 1 }}>{country.flag}</span>}
+                            {country && <span className="text-[1.05rem] leading-none">{country.flag}</span>}
                             <span>{talent.phone}</span>
                           </div>
 
                           {/* Quick Actions: WhatsApp, Call, Copy */}
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <div className="flex items-center gap-1">
                             {cleanDigits && (
                               <a
                                 href={`https://wa.me/${cleanDigits}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 title="WhatsApp"
-                                style={{
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  width: '30px',
-                                  height: '30px',
-                                  borderRadius: '8px',
-                                  background: '#25D36615',
-                                  color: '#25D366',
-                                  border: '1px solid #25D36630',
-                                  transition: 'all 0.15s ease',
-                                  textDecoration: 'none'
-                                }}
-                                onMouseEnter={(e) => {
-                                  e.currentTarget.style.background = '#25D366';
-                                  e.currentTarget.style.color = '#ffffff';
-                                }}
-                                onMouseLeave={(e) => {
-                                  e.currentTarget.style.background = '#25D36615';
-                                  e.currentTarget.style.color = '#25D366';
-                                }}
+                                className="inline-flex items-center justify-center w-[30px] h-[30px] rounded-sm bg-[#25D366]/10 text-[#25D366] border border-[#25D366]/20 hover:bg-[#25D366] hover:text-white transition-all duration-150 no-underline"
                               >
                                 <MessageSquare size={14} />
                               </a>
@@ -814,27 +576,7 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
                             <a
                               href={`tel:${talent.phone}`}
                               title={language === 'ka' ? 'დარეკვა' : 'Call'}
-                              style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                width: '30px',
-                                height: '30px',
-                                borderRadius: '8px',
-                                background: 'var(--brand-primary-light, #FF6C4115)',
-                                color: 'var(--brand-primary, #FF6C41)',
-                                border: '1px solid var(--brand-primary-light, #FF6C4130)',
-                                transition: 'all 0.15s ease',
-                                textDecoration: 'none'
-                              }}
-                              onMouseEnter={(e) => {
-                                e.currentTarget.style.background = 'var(--brand-primary, #FF6C41)';
-                                e.currentTarget.style.color = '#ffffff';
-                              }}
-                              onMouseLeave={(e) => {
-                                e.currentTarget.style.background = 'var(--brand-primary-light, #FF6C4115)';
-                                e.currentTarget.style.color = 'var(--brand-primary, #FF6C41)';
-                              }}
+                              className="inline-flex items-center justify-center w-[30px] h-[30px] rounded-sm bg-brand-primary-light text-brand-primary border border-brand-primary/20 hover:bg-brand-primary hover:text-white transition-all duration-150 no-underline"
                             >
                               <PhoneCall size={14} />
                             </a>
@@ -847,19 +589,11 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
                                 setTimeout(() => setCopiedPhone(false), 2000);
                               }}
                               title={copiedPhone ? (language === 'ka' ? 'დაკოპირებულია!' : 'Copied!') : (language === 'ka' ? 'ნომრის კოპირება' : 'Copy number')}
-                              style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                width: '30px',
-                                height: '30px',
-                                borderRadius: '8px',
-                                background: copiedPhone ? '#10B98115' : 'var(--bg-canvas)',
-                                color: copiedPhone ? '#10B981' : 'var(--color-text-secondary)',
-                                border: `1px solid ${copiedPhone ? '#10B98140' : 'var(--border-subtle)'}`,
-                                cursor: 'pointer',
-                                transition: 'all 0.15s ease'
-                              }}
+                              className={`inline-flex items-center justify-center w-[30px] h-[30px] rounded-sm border cursor-pointer transition-all duration-150 ${
+                                copiedPhone
+                                  ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30'
+                                  : 'bg-canvas text-text-secondary border-border-subtle hover:text-text-primary hover:bg-surface-tertiary'
+                              }`}
                             >
                               {copiedPhone ? <Check size={14} /> : <Copy size={14} />}
                             </button>
@@ -872,22 +606,13 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
               )}
 
               {/* Gender, Height & Weight */}
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '12px 0',
-                  borderBottom: '1px solid var(--border-subtle)',
-                  gap: '12px'
-                }}
-              >
-                <span style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', fontWeight: 500 }}>
+              <div className="flex items-center justify-between py-3 border-b border-border-subtle gap-3">
+                <span className="text-sm text-text-secondary font-medium">
                   {t('gender_height_weight')}
                 </span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div className="flex items-center gap-2.5">
                   <GenderBadge gender={talent.gender} />
-                  <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-charcoal)' }}>
+                  <span className="text-[0.9rem] font-semibold text-text-primary">
                     {talent.heightCm} {language === 'ka' ? 'სმ' : 'cm'}
                     {talent.weightKg ? ` • ${talent.weightKg} ${language === 'ka' ? 'კგ' : 'kg'}` : ''}
                   </span>
@@ -895,66 +620,24 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
               </div>
 
               {/* Groups */}
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '12px 0',
-                  borderBottom: '1px solid var(--border-subtle)',
-                  gap: '12px'
-                }}
-              >
-                <span style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 500 }}>
-                  <Layers size={16} style={{ color: 'var(--color-charcoal)', opacity: 0.7 }} />
+              <div className="flex items-center justify-between py-3 border-b border-border-subtle gap-3">
+                <span className="text-sm text-text-secondary flex items-center gap-2 font-medium">
+                  <Layers size={16} className="text-text-primary opacity-70" />
                   {t('nav_groups')}
                 </span>
-                <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-charcoal)', textAlign: 'right' }}>
+                <span className="text-[0.9rem] font-semibold text-text-primary text-right">
                   {memberGroups.length > 0 ? memberGroups.map((g) => g.name).join(', ') : t('none')}
                 </span>
               </div>
 
               {/* Internal Notes Card */}
               {talent.notes && (
-                <div
-                  style={{
-                    marginTop: '16px',
-                    padding: '16px 18px',
-                    borderRadius: '16px',
-                    background: 'var(--bg-surface-secondary)',
-                    border: '1px solid var(--border-subtle)',
-                    boxShadow: 'var(--shadow-sm)'
-                  }}
-                >
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      marginBottom: '8px'
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontSize: '0.75rem',
-                        fontWeight: 700,
-                        color: 'var(--color-charcoal)',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.05em',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px'
-                      }}
-                    >
-                      <FileText size={14} strokeWidth={2} style={{ flexShrink: 0 }} /> {t('internal_notes')}
+                <div className="mt-4 p-4 rounded-md bg-surface-secondary border border-border-subtle shadow-sm">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-bold text-text-primary uppercase tracking-wider flex items-center gap-1.5">
+                      <FileText size={14} strokeWidth={2} className="shrink-0" /> {t('internal_notes')}
                     </span>
-                    <span
-                      style={{
-                        fontSize: '0.725rem',
-                        color: 'var(--color-text-secondary)',
-                        fontWeight: 500
-                      }}
-                    >
+                    <span className="text-[0.725rem] text-text-secondary font-medium">
                       {new Date().toLocaleDateString(language === 'ka' ? 'ka-GE' : 'en-US', {
                         month: 'short',
                         day: 'numeric',
@@ -962,14 +645,7 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
                       })}
                     </span>
                   </div>
-                  <p
-                    style={{
-                      fontSize: '0.875rem',
-                      color: 'var(--color-charcoal)',
-                      lineHeight: 1.55,
-                      margin: 0
-                    }}
-                  >
+                  <p className="text-sm text-text-primary leading-relaxed m-0">
                     "{talent.notes}"
                   </p>
                 </div>
@@ -981,29 +657,19 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
         {/* TAB 2: DOCUMENTATION */}
         {activeTab === 'docs' && (
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
-              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)' }}>
+            <div className="flex items-center justify-between mb-3.5">
+              <span className="text-[0.8rem] font-semibold text-text-secondary">
                 {t('docs_and_credentials')} ({talent.documents.length})
               </span>
               {allDocTypesUploaded ? (
-                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', fontStyle: 'italic' }}>
+                <span className="text-xs text-text-secondary italic">
                   {isKa ? 'ყველა ტიპის დოკუმენტი ატვირთულია' : 'All document types uploaded'}
                 </span>
               ) : (
                 <button
                   type="button"
                   onClick={handleToggleAddDoc}
-                  style={{
-                    background: 'transparent',
-                    border: 'none',
-                    color: 'var(--brand-primary)',
-                    fontSize: '0.775rem',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px'
-                  }}
+                  className="bg-transparent border-none text-brand-primary text-[0.775rem] font-semibold cursor-pointer flex items-center gap-1 hover:text-brand-primary-hover"
                 >
                   <Plus size={14} /> {t('add_document')}
                 </button>
@@ -1013,32 +679,22 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
             {showAddDoc && (
               <form
                 onSubmit={handleAddDocument}
-                style={{
-                  background: 'var(--bg-surface-secondary)',
-                  padding: '16px',
-                  borderRadius: 'var(--radius-sm)',
-                  marginBottom: '18px',
-                  border: '1px solid var(--border-subtle)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '14px'
-                }}
+                className="bg-surface-secondary p-4 rounded-sm mb-4.5 border border-border-subtle flex flex-col gap-3.5"
               >
                 {/* 1. Document Type Selector */}
                 <div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '5px' }}>
-                    <label style={{ fontSize: '0.785rem', fontWeight: 600, color: 'var(--color-charcoal)' }}>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-[0.785rem] font-semibold text-text-primary">
                       {isKa ? 'დოკუმენტის ტიპი *' : 'Document Type *'}
                     </label>
-                    <span style={{ fontSize: '0.7rem', color: 'var(--color-text-secondary)' }}>
+                    <span className="text-[0.7rem] text-text-secondary">
                       {isKa ? 'უნიკალური ტიპი (1 თითო თანამშრომელზე)' : 'Unique type (1 per talent)'}
                     </span>
                   </div>
                   <select
                     value={newDocType}
                     onChange={(e) => handleDocTypeSelect(e.target.value as TalentDocument['type'])}
-                    className="form-select"
-                    style={{ width: '100%', padding: '8px 12px', fontSize: '0.85rem' }}
+                    className="w-full text-sm px-3.5 py-2.5 rounded-sm border border-border-subtle bg-surface text-text-primary outline-none transition-all duration-150 focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10 cursor-pointer"
                   >
                     {DOCUMENT_TYPES.map((dt) => {
                       const isUploaded = existingDocTypes.has(dt.value);
@@ -1053,133 +709,71 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
 
                 {/* 2. File Upload Dropzone */}
                 <div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '5px' }}>
-                    <label style={{ fontSize: '0.785rem', fontWeight: 600, color: 'var(--color-charcoal)' }}>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-[0.785rem] font-semibold text-text-primary">
                       {isKa ? 'დოკუმენტის ფაილი *' : 'Document File *'}
                     </label>
-                    <span style={{ fontSize: '0.72rem', color: 'var(--color-text-secondary)', fontWeight: 500 }}>
-                      {isKa ? 'არჩეული ტიპი:' : 'Type:'} <strong style={{ color: 'var(--brand-primary)' }}>{currentTypeLabel}</strong>
+                    <span className="text-[0.72rem] text-text-secondary font-medium">
+                      {isKa ? 'არჩეული ტიპი:' : 'Type:'} <strong className="text-brand-primary">{currentTypeLabel}</strong>
                     </span>
                   </div>
-                  
+
                   <input
                     ref={fileInputRef}
                     type="file"
                     required
                     accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
                     onChange={handleFileChange}
-                    style={{ display: 'none' }}
+                    className="hidden"
                     id="talent-drawer-file-upload"
                   />
 
                   {!selectedFile ? (
                     <div
                       onClick={() => fileInputRef.current?.click()}
-                      style={{
-                        border: '2px dashed var(--border-medium)',
-                        borderRadius: 'var(--radius-sm)',
-                        padding: '18px 14px',
-                        textAlign: 'center',
-                        cursor: 'pointer',
-                        background: 'var(--bg-surface)',
-                        transition: 'all var(--transition-fast)'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.borderColor = 'var(--brand-primary)';
-                        e.currentTarget.style.background = 'rgba(30, 106, 255, 0.04)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.borderColor = 'var(--border-medium)';
-                        e.currentTarget.style.background = 'var(--bg-surface)';
-                      }}
+                      className="border-2 border-dashed border-border-medium rounded-sm p-4.5 text-center cursor-pointer bg-surface hover:border-brand-primary hover:bg-brand-primary-light/50 transition-all duration-150"
                     >
-                      <UploadCloud size={24} style={{ color: 'var(--brand-primary)', margin: '0 auto 6px auto' }} />
-                      <div style={{ fontSize: '0.84rem', fontWeight: 600, color: 'var(--color-charcoal)' }}>
+                      <UploadCloud size={24} className="text-brand-primary mx-auto mb-1.5" />
+                      <div className="text-[0.84rem] font-semibold text-text-primary">
                         {isKa ? `დააკლიკეთ „${currentTypeLabel}“-ის ასარჩევად` : `Click to select "${currentTypeLabel}" file`}
                       </div>
-                      <div style={{ fontSize: '0.725rem', color: 'var(--color-text-secondary)', marginTop: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                        <span style={{ 
-                          display: 'inline-flex', 
-                          alignItems: 'center', 
-                          padding: '2px 8px', 
-                          background: 'var(--bg-surface-secondary)', 
-                          borderRadius: 'var(--radius-pill)', 
-                          border: '1px solid var(--border-subtle)',
-                          fontSize: '0.7rem',
-                          fontWeight: 600,
-                          color: 'var(--brand-primary)' 
-                        }}>
+                      <div className="text-[0.725rem] text-text-secondary mt-1 flex items-center justify-center gap-1.5">
+                        <span className="inline-flex items-center px-2 py-0.5 bg-surface-secondary rounded-pill border border-border-subtle text-[0.7rem] font-semibold text-brand-primary">
                           {currentTypeLabel}
                         </span>
                         <span>PDF, DOC, DOCX, JPG, PNG (მაქს. 10MB)</span>
                       </div>
                     </div>
                   ) : (
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        padding: '10px 14px',
-                        background: 'var(--bg-surface)',
-                        border: '1px solid var(--border-medium)',
-                        borderRadius: 'var(--radius-sm)'
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                    <div className="flex items-center justify-between p-2.5 sm:px-3.5 bg-surface border border-border-medium rounded-sm">
+                      <div className="flex items-center gap-2.5 min-w-0">
                         <div
-                          style={{
-                            width: '34px',
-                            height: '34px',
-                            borderRadius: 'var(--radius-xs)',
-                            background: currentTypeObj.bg,
-                            color: currentTypeObj.color,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontWeight: 700,
-                            fontSize: '0.75rem',
-                            flexShrink: 0
-                          }}
+                          className={`w-8.5 h-8.5 rounded-xs flex items-center justify-center font-bold text-xs shrink-0 ${currentTypeObj.badgeClass}`}
                         >
                           {currentTypeObj.short}
                         </div>
-                        <div style={{ minWidth: 0 }}>
-                          <div style={{ fontSize: '0.825rem', fontWeight: 600, color: 'var(--color-charcoal)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <div className="min-w-0">
+                          <div className="text-[0.825rem] font-semibold text-text-primary truncate">
                             {selectedFile.name}
                           </div>
-                          <div style={{ fontSize: '0.72rem', color: 'var(--color-text-secondary)', display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
-                            <span style={{ 
-                              fontWeight: 600, 
-                              color: currentTypeObj.color,
-                              background: currentTypeObj.bg,
-                              padding: '1px 6px',
-                              borderRadius: '4px',
-                              fontSize: '0.675rem'
-                            }}>
+                          <div className="text-[0.72rem] text-text-secondary flex items-center gap-1.5 mt-0.5">
+                            <span
+                              className={`font-semibold px-1.5 py-0.5 rounded text-[0.675rem] ${currentTypeObj.badgeClass}`}
+                            >
                               {currentTypeLabel}
                             </span>
                             <span>•</span>
-                            <span style={{ fontWeight: 600 }}>{selectedFile.name.split('.').pop()?.toUpperCase() || 'FILE'}</span>
+                            <span className="font-semibold">{selectedFile.name.split('.').pop()?.toUpperCase() || 'FILE'}</span>
                             <span>•</span>
                             <span>{(selectedFile.size / (1024 * 1024)).toFixed(1)} MB</span>
                           </div>
                         </div>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                      <div className="flex items-center gap-1.5 shrink-0">
                         <button
                           type="button"
                           onClick={() => fileInputRef.current?.click()}
-                          style={{
-                            background: 'transparent',
-                            border: '1px solid var(--border-subtle)',
-                            borderRadius: '4px',
-                            padding: '4px 8px',
-                            fontSize: '0.725rem',
-                            fontWeight: 600,
-                            color: 'var(--color-text-secondary)',
-                            cursor: 'pointer'
-                          }}
+                          className="bg-transparent border border-border-subtle rounded px-2 py-1 text-[0.725rem] font-semibold text-text-secondary hover:text-text-primary hover:bg-surface-secondary cursor-pointer transition-colors"
                         >
                           {isKa ? 'შეცვლა' : 'Change'}
                         </button>
@@ -1189,14 +783,7 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
                             setSelectedFile(null);
                             if (fileInputRef.current) fileInputRef.current.value = '';
                           }}
-                          style={{
-                            background: 'transparent',
-                            border: 'none',
-                            color: '#EF4444',
-                            cursor: 'pointer',
-                            padding: '4px',
-                            display: 'flex'
-                          }}
+                          className="bg-transparent border-none text-danger hover:bg-danger-light rounded p-1 cursor-pointer flex transition-colors"
                           title="Remove file"
                         >
                           <X size={14} />
@@ -1208,11 +795,11 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
 
                 {/* 3. Document Title Input */}
                 <div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '5px' }}>
-                    <label style={{ fontSize: '0.785rem', fontWeight: 600, color: 'var(--color-charcoal)' }}>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-[0.785rem] font-semibold text-text-primary">
                       {isKa ? 'დოკუმენტის დასახელება *' : 'Document Title *'}
                     </label>
-                    <span style={{ fontSize: '0.7rem', color: 'var(--color-text-secondary)' }}>
+                    <span className="text-[0.7rem] text-text-secondary">
                       {isKa ? '(ივსება ავტომატურად, შესაძლებელია რედაქტირება)' : '(Auto-filled, editable)'}
                     </span>
                   </div>
@@ -1221,38 +808,27 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
                     placeholder={isKa ? 'შეიყვანეთ დოკუმენტის სახელი' : 'Enter document title'}
                     value={newDocName}
                     onChange={(e) => setNewDocName(e.target.value)}
-                    className="form-input"
-                    style={{ width: '100%', padding: '8px 12px', fontSize: '0.825rem' }}
+                    className="w-full text-xs px-3 py-2 rounded-sm border border-border-subtle bg-surface text-text-primary outline-none transition-all duration-150 focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20 placeholder:text-text-tertiary"
                     required
                   />
                 </div>
 
                 {/* 4. Contract Expiration Date (ONLY shown when newDocType === 'Contract') */}
                 {newDocType === 'Contract' && (
-                  <div
-                    style={{
-                      background: 'rgba(30, 106, 255, 0.04)',
-                      border: '1px solid rgba(30, 106, 255, 0.22)',
-                      borderRadius: '10px',
-                      padding: '12px 14px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '6px'
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <label style={{ fontSize: '0.785rem', fontWeight: 650, color: 'var(--color-charcoal)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <Calendar size={14} style={{ color: 'var(--brand-primary)' }} />
+                  <div className="bg-brand-primary/5 border border-brand-primary/20 rounded-sm p-3 flex flex-col gap-1.5">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[0.785rem] font-semibold text-text-primary flex items-center gap-1.5">
+                        <Calendar size={14} className="text-brand-primary" />
                         <span>{t('contract_expiry_date')} *</span>
                       </label>
                       {isParsingDoc && (
-                        <span style={{ fontSize: '0.72rem', color: 'var(--brand-primary)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '5px' }}>
+                        <span className="text-[0.72rem] text-brand-primary font-semibold flex items-center gap-1.5">
                           <Loader2 size={13} className="animate-spin" />
                           <span>{t('analyzing_file')}</span>
                         </span>
                       )}
                       {!isParsingDoc && parseDetected === true && (
-                        <span style={{ fontSize: '0.72rem', color: '#16A34A', fontWeight: 650, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <span className="text-[0.72rem] text-emerald-600 font-semibold flex items-center gap-1">
                           <Sparkles size={12} />
                           <span>{t('auto_detected_date')} ✓</span>
                         </span>
@@ -1266,14 +842,13 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
                         setNewDocExpiryDate(e.target.value);
                         setParseDetected(null);
                       }}
-                      className="form-input"
-                      style={{ width: '100%', padding: '8px 12px', fontSize: '0.825rem' }}
+                      className="w-full text-xs px-3 py-2 rounded-sm border border-border-subtle bg-surface text-text-primary outline-none transition-all duration-150 focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20"
                       required
                     />
 
-                    <div style={{ fontSize: '0.7rem', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
+                    <div className="text-[0.7rem] text-text-secondary mt-0.5">
                       {parseDetected === false ? (
-                        <span style={{ color: '#D97706', fontWeight: 500 }}>
+                        <span className="text-amber-600 font-medium">
                           ⚠️ {t('manual_date_hint')}
                         </span>
                       ) : (
@@ -1284,7 +859,7 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
                 )}
 
                 {/* Actions */}
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '4px' }}>
+                <div className="flex justify-end gap-2 mt-1">
                   <button
                     type="button"
                     onClick={() => {
@@ -1292,16 +867,14 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
                       setSelectedFile(null);
                       setNewDocName('');
                     }}
-                    className="btn btn-secondary"
-                    style={{ padding: '7px 14px', fontSize: '0.8rem' }}
+                    className="inline-flex items-center justify-center px-3.5 py-1.5 rounded-pill text-xs font-semibold border border-border-subtle bg-surface text-text-primary hover:bg-surface-secondary hover:border-border-medium transition-all duration-150 cursor-pointer outline-none"
                   >
                     {t('cancel')}
                   </button>
                   <button
                     type="submit"
-                    className="btn btn-primary"
+                    className="inline-flex items-center justify-center px-4.5 py-1.5 rounded-pill text-xs font-semibold bg-brand-primary text-white shadow-glow hover:bg-brand-primary-hover hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:pointer-events-none transition-all duration-150 cursor-pointer outline-none"
                     disabled={!selectedFile || !newDocName.trim()}
-                    style={{ padding: '7px 18px', fontSize: '0.8rem' }}
                   >
                     {t('save')}
                   </button>
@@ -1309,53 +882,32 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
               </form>
             )}
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div className="flex flex-col gap-2">
               {talent.documents.map((doc) => {
                 const docTypeObj = DOCUMENT_TYPES.find((dt) => dt.value === doc.type) || DOCUMENT_TYPES[0];
                 const docTypeLabel = isKa ? docTypeObj.labelKa : docTypeObj.labelEn;
+                const isExpired = doc.expiryDate && new Date(doc.expiryDate).getTime() < Date.now();
+                const isExpiringSoon = doc.expiryDate && !isExpired && Math.ceil((new Date(doc.expiryDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) <= 30;
+
                 return (
                   <div
                     key={doc.id}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '12px 14px',
-                      borderRadius: 'var(--radius-sm)',
-                      background: 'var(--bg-surface-secondary)',
-                      border: '1px solid var(--border-subtle)'
-                    }}
+                    className="flex items-center justify-between p-3 sm:px-3.5 rounded-sm bg-surface-secondary border border-border-subtle hover:border-border-medium transition-all"
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div className="flex items-center gap-2.5 min-w-0">
                       <div
-                        style={{
-                          width: '34px',
-                          height: '34px',
-                          borderRadius: 'var(--radius-xs)',
-                          background: docTypeObj.bg,
-                          color: docTypeObj.color,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: '0.75rem',
-                          fontWeight: 700
-                        }}
+                        className={`w-8.5 h-8.5 rounded-xs flex items-center justify-center text-xs font-bold shrink-0 ${docTypeObj.badgeClass}`}
                       >
                         {docTypeObj.short}
                       </div>
-                      <div>
-                        <div style={{ fontSize: '0.825rem', fontWeight: 600, color: 'var(--color-charcoal)' }}>
+                      <div className="min-w-0">
+                        <div className="text-[0.825rem] font-semibold text-text-primary truncate">
                           {doc.name}
                         </div>
-                        <div style={{ fontSize: '0.725rem', color: 'var(--color-text-secondary)', display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px', flexWrap: 'wrap' }}>
-                          <span style={{ 
-                            fontWeight: 600, 
-                            color: docTypeObj.color,
-                            background: docTypeObj.bg,
-                            padding: '1px 6px',
-                            borderRadius: '4px',
-                            fontSize: '0.675rem'
-                          }}>
+                        <div className="text-[0.725rem] text-text-secondary flex items-center gap-1.5 mt-0.5 flex-wrap">
+                          <span
+                            className={`font-semibold px-1.5 py-0.5 rounded text-[0.675rem] ${docTypeObj.badgeClass}`}
+                          >
                             {docTypeLabel}
                           </span>
                           <span>•</span>
@@ -1363,17 +915,9 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
                           {doc.expiryDate && (
                             <>
                               <span>•</span>
-                              <span style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '4px',
-                                fontWeight: 650,
-                                color: new Date(doc.expiryDate).getTime() < Date.now()
-                                  ? '#DC2626'
-                                  : Math.ceil((new Date(doc.expiryDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) <= 30
-                                  ? '#D97706'
-                                  : '#15803D'
-                              }}>
+                              <span className={`inline-flex items-center gap-1 font-semibold ${
+                                isExpired ? 'text-danger' : isExpiringSoon ? 'text-amber-600' : 'text-emerald-700'
+                              }`}>
                                 <Calendar size={11} />
                                 <span>{t('valid_until')} {doc.expiryDate}</span>
                               </span>
@@ -1383,24 +927,14 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
                       </div>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <span style={{ color: 'var(--color-text-tertiary)', cursor: 'pointer', padding: '5px' }} title="View">
+                    <div className="flex items-center gap-1 shrink-0">
+                      <span className="text-text-tertiary hover:text-text-primary cursor-pointer p-1.5 transition-colors" title="View">
                         <ExternalLink size={14} />
                       </span>
                       <button
                         type="button"
                         onClick={() => handleDeleteDocument(doc.id, doc.name)}
-                        style={{
-                          background: 'transparent',
-                          border: 'none',
-                          color: '#EF4444',
-                          cursor: 'pointer',
-                          padding: '5px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          borderRadius: '4px'
-                        }}
+                        className="bg-transparent border-none text-danger hover:bg-danger-light cursor-pointer p-1.5 flex items-center justify-center rounded transition-colors"
                         title={isKa ? 'დოკუმენტის წაშლა' : 'Delete document'}
                       >
                         <Trash2 size={14} />
@@ -1417,20 +951,12 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
         {activeTab === 'stats' && (
           <div>
             {/* Overview Card */}
-            <div
-              style={{
-                background: 'var(--bg-surface-secondary)',
-                borderRadius: 'var(--radius-sm)',
-                padding: '16px',
-                border: '1px solid var(--border-subtle)',
-                marginBottom: '16px'
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <span style={{ fontSize: '0.825rem', color: 'var(--color-text-secondary)' }}>
+            <div className="bg-surface-secondary rounded-sm p-4 border border-border-subtle mb-4">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-[0.825rem] text-text-secondary">
                   {t('total_shifts_handled')}:
                 </span>
-                <span style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--color-charcoal)' }}>
+                <span className="text-[1.05rem] font-bold text-text-primary">
                   {totalDutiesServed}
                 </span>
               </div>
@@ -1442,32 +968,14 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
                 height={10}
               />
 
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  fontSize: '0.725rem',
-                  color: 'var(--color-text-secondary)',
-                  marginTop: '10px'
-                }}
-              >
+              <div className="flex justify-between text-[0.725rem] text-text-secondary mt-2.5">
                 <span>{t('round_robin_pool')}</span>
                 <span>{t('fairness_score')}</span>
               </div>
             </div>
 
             {/* Inner Sub-Tabs */}
-            <div
-              style={{
-                display: 'flex',
-                gap: '6px',
-                padding: '4px',
-                background: 'var(--bg-surface-secondary)',
-                borderRadius: '12px',
-                border: '1px solid var(--border-subtle)',
-                marginBottom: '14px'
-              }}
-            >
+            <div className="flex gap-1.5 p-1 bg-surface-secondary rounded-md border border-border-subtle mb-3.5">
               {([
                 {
                   key: 'rotation' as const,
@@ -1485,40 +993,20 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
                 <button
                   key={tab.key}
                   onClick={() => setStatsSubTab(tab.key)}
-                  style={{
-                    flex: 1,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '6px',
-                    padding: '7px 10px',
-                    borderRadius: '9px',
-                    border: 'none',
-                    cursor: 'pointer',
-                    fontSize: '0.8rem',
-                    fontWeight: statsSubTab === tab.key ? 700 : 500,
-                    background: statsSubTab === tab.key ? 'var(--bg-surface)' : 'transparent',
-                    color: statsSubTab === tab.key ? 'var(--color-charcoal)' : 'var(--color-text-secondary)',
-                    boxShadow: statsSubTab === tab.key ? '0 1px 4px rgba(0,0,0,0.10)' : 'none',
-                    transition: 'all 0.15s ease'
-                  }}
+                  className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded-sm border-none cursor-pointer text-[0.8rem] transition-all duration-150 ${
+                    statsSubTab === tab.key
+                      ? 'font-bold bg-surface text-text-primary shadow-sm'
+                      : 'font-medium bg-transparent text-text-secondary hover:text-text-primary'
+                  }`}
                 >
                   {tab.icon}
                   {tab.label}
                   <span
-                    style={{
-                      fontSize: '0.7rem',
-                      fontWeight: 700,
-                      minWidth: '18px',
-                      height: '18px',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      borderRadius: '50%',
-                      background: statsSubTab === tab.key ? 'var(--brand-primary)' : 'var(--border-medium)',
-                      color: statsSubTab === tab.key ? '#fff' : 'var(--color-text-secondary)',
-                      transition: 'all 0.15s ease'
-                    }}
+                    className={`text-[0.7rem] font-bold min-w-[18px] h-[18px] inline-flex items-center justify-center rounded-full transition-colors ${
+                      statsSubTab === tab.key
+                        ? 'bg-brand-primary text-white'
+                        : 'bg-border-medium text-text-secondary'
+                    }`}
                   >
                     {tab.count}
                   </span>
@@ -1529,63 +1017,34 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
             {/* Rotation Sub-Tab */}
             {statsSubTab === 'rotation' && (
               <div>
-                <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <div className="text-[0.8rem] font-semibold text-text-secondary mb-2.5 flex items-center gap-1.5">
                   <Clock size={14} />
                   <span>{t('duty_history')}</span>
                 </div>
 
                 {servedShifts.length === 0 ? (
-                  <div
-                    style={{
-                      padding: '24px',
-                      textAlign: 'center',
-                      background: 'var(--bg-surface-secondary)',
-                      borderRadius: 'var(--radius-sm)',
-                      border: '1px dashed var(--border-medium)',
-                      color: 'var(--color-text-secondary)',
-                      fontSize: '0.8rem'
-                    }}
-                  >
-                    <Info size={18} style={{ marginBottom: '6px', opacity: 0.5 }} />
+                  <div className="p-6 text-center bg-surface-secondary rounded-sm border border-dashed border-border-medium text-text-secondary text-[0.8rem]">
+                    <Info size={18} className="mb-1.5 mx-auto opacity-50" />
                     <div>{t('no_shifts_yet')}</div>
                   </div>
                 ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div className="flex flex-col gap-2">
                     {servedShifts.map((shift, idx) => (
                       <div
                         key={idx}
-                        style={{
-                          padding: '10px 12px',
-                          borderRadius: 'var(--radius-sm)',
-                          background: 'var(--bg-surface-secondary)',
-                          border: '1px solid var(--border-subtle)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          fontSize: '0.8rem'
-                        }}
+                        className="px-3 py-2.5 rounded-sm bg-surface-secondary border border-border-subtle flex items-center justify-between text-[0.8rem]"
                       >
                         <div>
-                          <div style={{ fontWeight: 600, color: 'var(--color-charcoal)' }}>
+                          <div className="font-semibold text-text-primary">
                             {shift.eventTitle}
                           </div>
-                          <div style={{ fontSize: '0.725rem', color: 'var(--color-text-secondary)', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <Calendar size={12} strokeWidth={2} style={{ flexShrink: 0 }} />
+                          <div className="text-[0.725rem] text-text-secondary mt-0.5 flex items-center gap-1">
+                            <Calendar size={12} strokeWidth={2} className="shrink-0" />
                             <span>{new Date(shift.eventDate).toLocaleDateString()}</span>
                           </div>
                         </div>
 
-                        <span
-                          style={{
-                            background: 'var(--brand-primary)',
-                            color: '#FFFFFF',
-                            fontSize: '0.725rem',
-                            fontWeight: 600,
-                            padding: '3px 8px',
-                            borderRadius: 'var(--radius-pill)',
-                            border: '1px solid var(--brand-primary-hover)'
-                          }}
-                        >
+                        <span className="bg-brand-primary text-white text-[0.725rem] font-semibold px-2 py-0.5 rounded-pill border border-brand-primary-hover">
                           {shift.itemName}
                         </span>
                       </div>
@@ -1598,72 +1057,52 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
             {/* Shows Sub-Tab */}
             {statsSubTab === 'shows' && (
               <div>
-                <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <div className="text-[0.8rem] font-semibold text-text-secondary mb-2.5 flex items-center gap-1.5">
                   <Sparkles size={14} />
                   <span>{isKa ? 'შოუების ისტორია' : 'Show History'}</span>
                 </div>
 
                 {talentShows.length === 0 ? (
-                  <div
-                    style={{
-                      padding: '24px',
-                      textAlign: 'center',
-                      background: 'var(--bg-surface-secondary)',
-                      borderRadius: 'var(--radius-sm)',
-                      border: '1px dashed var(--border-medium)',
-                      color: 'var(--color-text-secondary)',
-                      fontSize: '0.8rem'
-                    }}
-                  >
-                    <Info size={18} style={{ marginBottom: '6px', opacity: 0.5 }} />
-                    <div>{isKa ? 'შოუები Ⴉარ არის' : 'No shows yet'}</div>
+                  <div className="p-6 text-center bg-surface-secondary rounded-sm border border-dashed border-border-medium text-text-secondary text-[0.8rem]">
+                    <Info size={18} className="mb-1.5 mx-auto opacity-50" />
+                    <div>{isKa ? 'შოუები ჯერ არ არის' : 'No shows yet'}</div>
                   </div>
                 ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div className="flex flex-col gap-2">
                     {talentShows.map((ev) => {
                       const isPast = new Date(ev.endDateTime) < new Date();
                       const startDt = new Date(ev.startDateTime);
                       const endDt = new Date(ev.endDateTime);
-                      const venue = groups.find((g) => g.id === ev.groupId);
                       return (
                         <div
                           key={ev.id}
-                          style={{
-                            padding: '10px 12px',
-                            borderRadius: 'var(--radius-sm)',
-                            background: isPast ? 'rgba(0,0,0,0.02)' : 'rgba(30,106,255,0.04)',
-                            border: `1px solid ${isPast ? 'var(--border-subtle)' : 'rgba(30,106,255,0.15)'}`,
-                            fontSize: '0.8rem',
-                            opacity: isPast ? 0.82 : 1
-                          }}
+                          className={`px-3 py-2.5 rounded-sm border text-[0.8rem] ${
+                            isPast
+                              ? 'bg-black/[0.02] border-border-subtle opacity-85'
+                              : 'bg-brand-primary/5 border-brand-primary/20'
+                          }`}
                         >
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '5px' }}>
-                            <div style={{ fontWeight: 600, color: 'var(--color-charcoal)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, marginRight: '8px' }}>
+                          <div className="flex justify-between items-start mb-1">
+                            <div className="font-semibold text-text-primary truncate flex-1 mr-2">
                               {ev.title}
                             </div>
                             <span
-                              style={{
-                                fontSize: '0.68rem',
-                                fontWeight: 700,
-                                padding: '2px 7px',
-                                borderRadius: 'var(--radius-pill)',
-                                background: isPast ? 'var(--bg-surface-secondary)' : 'rgba(30,106,255,0.1)',
-                                color: isPast ? 'var(--color-text-secondary)' : 'var(--brand-primary)',
-                                border: `1px solid ${isPast ? 'var(--border-subtle)' : 'rgba(30,106,255,0.2)'}`,
-                                flexShrink: 0,
-                                display: 'flex', alignItems: 'center', gap: '3px'
-                              }}
+                              className={`text-[0.68rem] font-bold px-2 py-0.5 rounded-pill shrink-0 flex items-center gap-1 border ${
+                                isPast
+                                  ? 'bg-surface-secondary text-text-secondary border-border-subtle'
+                                  : 'bg-brand-primary/10 text-brand-primary border-brand-primary/25'
+                              }`}
                             >
                               {isPast && <Check size={10} strokeWidth={2.5} />}
                               {isPast ? (isKa ? 'დასრულდა' : 'Done') : (isKa ? 'დაგეგმილი' : 'Upcoming')}
                             </span>
                           </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.725rem', color: 'var(--color-text-secondary)' }}>
-                            <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+                          <div className="flex items-center gap-3 text-[0.725rem] text-text-secondary">
+                            <span className="flex items-center gap-1">
                               <Calendar size={11} strokeWidth={2} />
                               {startDt.toLocaleDateString(isKa ? 'ka-GE' : 'en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
                             </span>
-                            <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+                            <span className="flex items-center gap-1">
                               <Clock size={11} strokeWidth={2} />
                               {startDt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} – {endDt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </span>

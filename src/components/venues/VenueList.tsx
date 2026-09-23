@@ -1,11 +1,22 @@
+'use client';
+
 import React, { useState } from 'react';
+import dynamic from 'next/dynamic';
 import { useApp } from '../../context/AppContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { HotelVenue } from '../../types/venue';
 import { VenueCard } from './VenueCard';
-import { VenueFormModal } from './VenueFormModal';
-import { VenueDetailModal } from './VenueDetailModal';
 import { Plus, Building, Search, List, LayoutGrid } from 'lucide-react';
+
+const VenueFormModal = dynamic(
+  () => import('./VenueFormModal').then((mod) => mod.VenueFormModal),
+  { ssr: false }
+);
+
+const VenueDetailModal = dynamic(
+  () => import('./VenueDetailModal').then((mod) => mod.VenueDetailModal),
+  { ssr: false }
+);
 
 export const VenueList: React.FC = () => {
   const { venues, deleteVenue } = useApp();
@@ -34,80 +45,54 @@ export const VenueList: React.FC = () => {
   );
 
   return (
-    <div>
+    <div className="w-full">
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
-          <h1 className="page-title" style={{ marginBottom: '4px' }}>
+          <h1 className="text-4xl font-semibold tracking-tight text-text-primary mb-1">
             {t('venues_title')}
           </h1>
-          <p style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)' }}>
+          <p className="text-sm text-text-secondary">
             {t('venues_subtitle')}
           </p>
         </div>
 
-        <button onClick={handleCreate} className="btn btn-primary">
+        <button
+          onClick={handleCreate}
+          className="inline-flex items-center justify-center gap-2 text-sm font-medium rounded-pill px-5 py-2.5 bg-brand-primary text-white shadow-glow hover:bg-brand-primary-hover hover:-translate-y-0.5 active:translate-y-0 transition-all duration-150 cursor-pointer outline-none whitespace-nowrap"
+        >
           <Plus size={16} strokeWidth={2.5} />
           <span>{t('add_hotel_venue')}</span>
         </button>
       </div>
 
       {/* Search and View Mode Toggle Bar */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: '12px',
-          marginBottom: '20px',
-          flexWrap: 'wrap'
-        }}
-      >
-        <div className="search-pill-container" style={{ width: '100%', maxWidth: '340px' }}>
-          <Search size={16} color="var(--color-text-secondary)" />
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
+        <div className="flex items-center gap-2.5 w-full sm:max-w-xs bg-surface-secondary border border-border-subtle rounded-pill px-4 py-2 transition-all duration-150 focus-within:bg-surface focus-within:border-brand-primary focus-within:ring-2 focus-within:ring-brand-primary/10">
+          <Search size={16} className="text-text-secondary shrink-0" />
           <input
             type="text"
             placeholder={t('search_venues_placeholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="search-pill-input"
+            className="w-full bg-transparent border-none outline-none text-sm text-text-primary placeholder:text-text-tertiary focus:ring-0 focus:outline-none"
           />
         </div>
 
         {/* Right: Counter and View Mode Toggle Pill */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-          <div style={{ fontSize: '0.825rem', color: 'var(--color-text-secondary)' }}>
-            {t('showing')} <strong>{filteredVenues.length}</strong> {t('of')} {venues.length}
+        <div className="flex items-center gap-3.5">
+          <div className="text-xs text-text-secondary">
+            {t('showing')} <strong className="font-semibold text-text-primary">{filteredVenues.length}</strong> {t('of')} {venues.length}
           </div>
 
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              background: 'var(--bg-surface-secondary)',
-              borderRadius: 'var(--radius-pill)',
-              border: '1px solid var(--border-subtle)',
-              padding: '3px',
-              gap: '2px'
-            }}
-          >
+          <div className="flex items-center bg-surface-secondary rounded-pill border border-border-subtle p-0.5 gap-0.5">
             <button
               onClick={() => setViewMode('list')}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '6px 14px',
-                borderRadius: 'var(--radius-pill)',
-                border: 'none',
-                fontSize: '0.8rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                background: viewMode === 'list' ? 'var(--brand-primary)' : 'transparent',
-                color: viewMode === 'list' ? '#FFFFFF' : 'var(--color-text-secondary)',
-                boxShadow: viewMode === 'list' ? '0 2px 8px var(--brand-primary-glow)' : 'none',
-                transition: 'all var(--transition-fast)'
-              }}
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-pill text-xs font-semibold cursor-pointer transition-all duration-150 ${
+                viewMode === 'list'
+                  ? 'bg-brand-primary text-white shadow-sm'
+                  : 'bg-transparent text-text-secondary hover:text-text-primary'
+              }`}
               title={t('view_list')}
             >
               <List size={15} />
@@ -116,21 +101,11 @@ export const VenueList: React.FC = () => {
 
             <button
               onClick={() => setViewMode('grid')}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '6px 14px',
-                borderRadius: 'var(--radius-pill)',
-                border: 'none',
-                fontSize: '0.8rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                background: viewMode === 'grid' ? 'var(--brand-primary)' : 'transparent',
-                color: viewMode === 'grid' ? '#FFFFFF' : 'var(--color-text-secondary)',
-                boxShadow: viewMode === 'grid' ? '0 2px 8px var(--brand-primary-glow)' : 'none',
-                transition: 'all var(--transition-fast)'
-              }}
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-pill text-xs font-semibold cursor-pointer transition-all duration-150 ${
+                viewMode === 'grid'
+                  ? 'bg-brand-primary text-white shadow-sm'
+                  : 'bg-transparent text-text-secondary hover:text-text-primary'
+              }`}
               title={t('view_grid')}
             >
               <LayoutGrid size={15} />
@@ -142,36 +117,24 @@ export const VenueList: React.FC = () => {
 
       {/* Venues Content (Grid or List) */}
       {filteredVenues.length === 0 ? (
-        <div
-          style={{
-            textAlign: 'center',
-            padding: '60px 20px',
-            background: 'var(--bg-surface-secondary)',
-            borderRadius: 'var(--radius-lg)',
-            border: '1px dashed var(--border-medium)',
-            color: 'var(--color-text-secondary)'
-          }}
-        >
-          <Building size={36} style={{ marginBottom: '12px', opacity: 0.4 }} />
-          <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--color-charcoal)', marginBottom: '6px' }}>
+        <div className="flex flex-col items-center justify-center text-center py-16 px-5 bg-surface-secondary rounded-lg border border-dashed border-border-medium text-text-secondary">
+          <Building size={36} className="mb-3 opacity-40 text-text-secondary" />
+          <h3 className="text-lg font-semibold text-text-primary mb-1.5">
             {t('no_venues_found')}
           </h3>
-          <p style={{ fontSize: '0.85rem', marginBottom: '16px' }}>
+          <p className="text-sm mb-4 max-w-md">
             {t('no_venues_desc')}
           </p>
-          <button onClick={handleCreate} className="btn btn-primary">
+          <button
+            onClick={handleCreate}
+            className="inline-flex items-center justify-center gap-2 text-sm font-medium rounded-pill px-5 py-2.5 bg-brand-primary text-white shadow-glow hover:bg-brand-primary-hover hover:-translate-y-0.5 active:translate-y-0 transition-all duration-150 cursor-pointer outline-none whitespace-nowrap"
+          >
             <Plus size={16} strokeWidth={2.5} />
             <span>{t('add_first_hotel')}</span>
           </button>
         </div>
       ) : viewMode === 'grid' ? (
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(420px, 1fr))',
-            gap: '20px'
-          }}
-        >
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
           {filteredVenues.map((venue) => (
             <VenueCard
               key={venue.id}
@@ -185,32 +148,18 @@ export const VenueList: React.FC = () => {
         </div>
       ) : (
         /* LIST VIEW */
-        <div style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-          <div style={{ minWidth: '920px', display: 'flex', flexDirection: 'column' }}>
+        <div className="w-full overflow-x-auto">
+          <div className="min-w-[920px] flex flex-col">
             {/* Table Header Row */}
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'minmax(240px, 2fr) minmax(200px, 1.8fr) minmax(180px, 1.5fr) minmax(180px, 1.4fr) 140px',
-                alignItems: 'center',
-                gap: '16px',
-                padding: '10px 20px',
-                fontSize: '0.75rem',
-                fontWeight: 700,
-                textTransform: 'uppercase',
-                letterSpacing: '0.06em',
-                color: 'var(--color-text-secondary)',
-                marginBottom: '6px'
-              }}
-            >
+            <div className="grid grid-cols-[minmax(240px,2fr)_minmax(200px,1.8fr)_minmax(180px,1.5fr)_minmax(180px,1.4fr)_140px] items-center gap-4 px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-text-secondary mb-1.5">
               <div>{t('venue_name')}</div>
               <div>{t('location')}</div>
               <div>{t('contact_person')}</div>
               <div>{t('status')}</div>
-              <div style={{ textAlign: 'right' }}>{t('actions')}</div>
+              <div className="text-right">{t('actions')}</div>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div className="flex flex-col gap-2">
               {filteredVenues.map((venue) => (
                 <VenueCard
                   key={venue.id}

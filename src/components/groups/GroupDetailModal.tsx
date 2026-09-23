@@ -1,8 +1,9 @@
+'use client';
+
 import React from 'react';
 import { Group } from '../../types/group';
 import { Talent } from '../../types/talent';
 import { Modal } from '../common/Modal';
-import { DutyBadge } from '../common/Badge';
 import { useLanguage } from '../../context/LanguageContext';
 import { useApp } from '../../context/AppContext';
 import { useConfirm } from '../../context/ConfirmContext';
@@ -14,9 +15,7 @@ import {
   Edit2,
   Trash2,
   ShieldCheck,
-  AlertCircle,
   Package,
-  Calendar,
   User,
   CheckCircle2,
   AlertTriangle,
@@ -100,22 +99,29 @@ export const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
       subtitle={group.description || t('group_details_sub')}
       maxWidth="620px"
       footer={
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+        <div className="flex items-center justify-between w-full">
           <button
             type="button"
             onClick={handleDelete}
-            className="btn btn-secondary"
-            style={{ color: '#EF4444' }}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-pill text-sm font-medium border border-danger-border bg-surface text-danger hover:bg-danger-light transition-all duration-150 cursor-pointer"
           >
             <Trash2 size={15} />
             <span>{t('delete')}</span>
           </button>
 
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button type="button" onClick={onClose} className="btn btn-secondary">
+          <div className="flex items-center gap-2.5">
+            <button
+              type="button"
+              onClick={onClose}
+              className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-pill text-sm font-medium border border-border-subtle bg-surface-secondary text-text-primary hover:bg-surface-tertiary hover:border-border-medium transition-all duration-150 cursor-pointer"
+            >
               {t('close')}
             </button>
-            <button type="button" onClick={handleOpenEdit} className="btn btn-primary">
+            <button
+              type="button"
+              onClick={handleOpenEdit}
+              className="inline-flex items-center justify-center gap-2 px-5 py-2 rounded-pill text-sm font-medium bg-brand-primary text-white shadow-glow hover:bg-brand-primary-hover hover:-translate-y-0.5 active:translate-y-0 transition-all duration-150 cursor-pointer"
+            >
               <Edit2 size={15} />
               <span>{t('edit_group')}</span>
             </button>
@@ -123,135 +129,80 @@ export const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
         </div>
       }
     >
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
+      <div className="flex flex-col gap-5.5">
         {/* Top Overview Cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
           {/* Members Stat */}
-          <div
-            style={{
-              padding: '14px 14px',
-              borderRadius: 'var(--radius-md)',
-              background: 'var(--bg-surface-secondary)',
-              border: '1px solid var(--border-subtle)',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              minHeight: '94px'
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: 'var(--color-text-secondary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
-              <Users size={14} color="var(--color-charcoal)" style={{ flexShrink: 0 }} />
-              <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <div className="p-3.5 rounded-md bg-surface-secondary border border-border-subtle flex flex-col justify-between min-h-[94px]">
+            <div className="flex items-center gap-1.5 text-xs text-text-secondary font-semibold uppercase tracking-wider">
+              <Users size={14} className="text-text-primary shrink-0" />
+              <span className="truncate">
                 {language === 'ka' ? 'სულ წევრები' : 'Total Members'}
               </span>
             </div>
-            <div style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--color-charcoal)', marginTop: '4px', lineHeight: 1.2 }}>
+            <div className="text-xl font-extrabold text-text-primary mt-1 leading-tight">
               {members.length}
             </div>
-            <div style={{ fontSize: '0.725rem', color: 'var(--color-text-secondary)', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <div className="text-xs text-text-secondary mt-0.5 truncate">
               {maleCount} {t('males')} • {femaleCount} {t('females')}
             </div>
           </div>
 
           {/* Readiness Stat */}
-          <div
-            style={{
-              padding: '14px 14px',
-              borderRadius: 'var(--radius-md)',
-              background: 'var(--bg-surface-secondary)',
-              border: '1px solid var(--border-subtle)',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              minHeight: '94px'
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: 'var(--color-text-secondary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
-              <ShieldCheck size={14} color="#16A34A" style={{ flexShrink: 0 }} />
-              <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <div className="p-3.5 rounded-md bg-surface-secondary border border-border-subtle flex flex-col justify-between min-h-[94px]">
+            <div className="flex items-center gap-1.5 text-xs text-text-secondary font-semibold uppercase tracking-wider">
+              <ShieldCheck size={14} className="text-emerald-600 shrink-0" />
+              <span className="truncate">
                 {language === 'ka' ? 'მზადყოფნა' : 'Readiness'}
               </span>
             </div>
-            <div style={{ fontSize: '1.35rem', fontWeight: 800, color: nonActiveCount === 0 ? '#16A34A' : '#D97706', marginTop: '4px', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <div className={`text-xl font-extrabold mt-1 leading-tight truncate ${nonActiveCount === 0 ? 'text-emerald-600' : 'text-amber-600'}`}>
               {activeCount} {t('filter_active')}
             </div>
-            <div style={{ fontSize: '0.725rem', color: nonActiveCount > 0 ? '#EF4444' : 'var(--color-text-secondary)', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <div className={`text-xs mt-0.5 truncate ${nonActiveCount > 0 ? 'text-danger' : 'text-text-secondary'}`}>
               {nonActiveCount > 0 ? `${nonActiveCount} ${t('unavailable')}` : t('all_active')}
             </div>
           </div>
 
           {/* Rotation Cycle */}
-          <div
-            style={{
-              padding: '14px 14px',
-              borderRadius: 'var(--radius-md)',
-              background: 'var(--bg-surface-secondary)',
-              border: '1px solid var(--border-subtle)',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              minHeight: '94px'
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: 'var(--color-text-secondary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
-              <Clock size={14} color="var(--color-charcoal)" style={{ flexShrink: 0 }} />
-              <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <div className="p-3.5 rounded-md bg-surface-secondary border border-border-subtle flex flex-col justify-between min-h-[94px]">
+            <div className="flex items-center gap-1.5 text-xs text-text-secondary font-semibold uppercase tracking-wider">
+              <Clock size={14} className="text-text-primary shrink-0" />
+              <span className="truncate">
                 {language === 'ka' ? 'როტაციის ციკლი' : 'Rotation Cycle'}
               </span>
             </div>
-            <div style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--color-charcoal)', marginTop: '4px', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <div className="text-xl font-extrabold text-text-primary mt-1 leading-tight truncate">
               {group.rotationCycleWeeks} {language === 'ka' ? 'კვირა' : 'wks'}
             </div>
-            <div style={{ fontSize: '0.725rem', color: 'var(--color-text-secondary)', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <div className="text-xs text-text-secondary mt-0.5 truncate">
               {language === 'ka' ? 'სამართლიანი როტაცია' : 'Fair-random'}
             </div>
           </div>
         </div>
 
         {/* Location & Info Banner */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '10px 14px',
-            borderRadius: 'var(--radius-sm)',
-            background: 'var(--brand-primary-light)',
-            border: '1px solid rgba(255, 108, 65, 0.35)',
-            fontSize: '0.825rem',
-            color: 'var(--color-charcoal)'
-          }}
-        >
-          <MapPin size={15} color="var(--color-charcoal)" style={{ flexShrink: 0 }} />
+        <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-sm bg-brand-primary/10 border border-brand-primary/30 text-xs text-text-primary">
+          <MapPin size={15} className="text-brand-primary shrink-0" />
           <span>
-            <strong>{language === 'ka' ? 'მთავარი ლოკაცია / ბაზირება:' : 'Primary Destination / Base:'}</strong> {primaryVenue}
+            <strong className="font-bold">{language === 'ka' ? 'მთავარი ლოკაცია / ბაზირება:' : 'Primary Destination / Base:'}</strong> {primaryVenue}
           </span>
         </div>
 
         {/* Section 1: Ensemble Roster */}
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-            <h4 style={{ fontSize: '0.925rem', fontWeight: 700, color: 'var(--color-charcoal)', margin: 0, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          <div className="flex items-center justify-between mb-2.5">
+            <h4 className="text-sm font-bold text-text-primary m-0 uppercase tracking-wider">
               {t('ensemble_roster')} ({members.length})
             </h4>
-            <span style={{ fontSize: '0.775rem', color: 'var(--color-text-secondary)' }}>
+            <span className="text-xs text-text-secondary">
               {t('performers_count', { count: members.length })}
             </span>
           </div>
 
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '8px',
-              borderRadius: 'var(--radius-md)',
-              border: '1px solid var(--border-subtle)',
-              background: 'var(--bg-surface-secondary)',
-              padding: '10px'
-            }}
-          >
+          <div className="flex flex-col gap-2 rounded-md border border-border-subtle bg-surface-secondary p-2.5">
             {members.length === 0 ? (
-              <div style={{ padding: '16px', textAlign: 'center', fontSize: '0.825rem', color: 'var(--color-text-secondary)' }}>
+              <div className="p-4 text-center text-xs text-text-secondary">
                 {t('no_members_in_group')}
               </div>
             ) : (
@@ -260,38 +211,22 @@ export const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
                 return (
                   <div
                     key={member.id}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '10px 12px',
-                      background: 'var(--bg-surface)',
-                      borderRadius: 'var(--radius-sm)',
-                      border: '1px solid var(--border-subtle)',
-                      gap: '12px'
-                    }}
+                    className="flex items-center justify-between p-2.5 sm:px-3 bg-surface rounded-sm border border-border-subtle gap-3"
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                    <div className="flex items-center gap-2.5 min-w-0">
                       <img
                         src={
                           member.avatarUrl ||
                           `https://api.dicebear.com/7.x/avataaars/svg?seed=${member.firstName}${member.lastName}`
                         }
                         alt={member.firstName}
-                        style={{
-                          width: '36px',
-                          height: '36px',
-                          borderRadius: '50%',
-                          objectFit: 'cover',
-                          border: '2px solid var(--border-subtle)',
-                          flexShrink: 0
-                        }}
+                        className="w-9 h-9 rounded-full object-cover border-2 border-border-subtle shrink-0"
                       />
-                      <div style={{ minWidth: 0 }}>
-                        <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-charcoal)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      <div className="min-w-0">
+                        <div className="text-sm font-semibold text-text-primary truncate">
                           {member.firstName} {member.lastName}
                         </div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <div className="text-xs text-text-secondary flex items-center gap-1.5 flex-wrap">
                           <span>{member.primarySkill}</span>
                           <span>•</span>
                           <span>{member.gender === 'Male' ? (language === 'ka' ? 'კაცი' : 'Male') : (language === 'ka' ? 'ქალი' : 'Female')}</span>
@@ -305,19 +240,13 @@ export const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
                       </div>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                    <div className="flex items-center gap-2 shrink-0">
                       <span
-                        style={{
-                          fontSize: '0.725rem',
-                          fontWeight: 600,
-                          padding: '3px 8px',
-                          borderRadius: 'var(--radius-pill)',
-                          background: isActive ? 'rgba(22, 163, 74, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                          color: isActive ? '#16A34A' : '#EF4444',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '4px'
-                        }}
+                        className={`text-xs font-semibold px-2 py-0.5 rounded-pill inline-flex items-center gap-1 ${
+                          isActive
+                            ? 'bg-emerald-500/10 text-emerald-600'
+                            : 'bg-danger/10 text-danger'
+                        }`}
                       >
                         {isActive ? <CheckCircle2 size={12} /> : <AlertTriangle size={12} />}
                         <span>{member.status}</span>
@@ -332,13 +261,13 @@ export const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
 
         {/* Section 2: Inventory Requirements & Duty Rules */}
         <div>
-          <div style={{ marginBottom: '10px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <h4 style={{ fontSize: '0.925rem', fontWeight: 700, color: 'var(--color-charcoal)', margin: 0, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          <div className="mb-2.5">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-bold text-text-primary m-0 uppercase tracking-wider">
                 {language === 'ka' ? 'შოუს ინვენტარის მორიგეობა' : 'Show Inventory Duties'} ({group.inventoryRequirements.length})
               </h4>
             </div>
-            <p style={{ fontSize: '0.775rem', color: 'var(--color-text-secondary)', margin: '3px 0 0 0' }}>
+            <p className="text-xs text-text-secondary mt-0.5">
               {language === 'ka'
                 ? 'შოუს დროს ინვენტარის მომზადებასა და გადატანაზე პასუხისმგებელი მორიგეების წესები'
                 : 'Crew duty requirements for equipment setup and handling during shows'}
@@ -346,113 +275,48 @@ export const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
           </div>
 
           {group.inventoryRequirements.length === 0 ? (
-            <div
-              style={{
-                padding: '16px',
-                borderRadius: 'var(--radius-sm)',
-                background: 'var(--bg-surface-secondary)',
-                border: '1px dashed var(--border-medium)',
-                fontSize: '0.825rem',
-                color: 'var(--color-text-secondary)',
-                textAlign: 'center'
-              }}
-            >
+            <div className="p-4 rounded-sm bg-surface-secondary border border-dashed border-border-medium text-xs text-text-secondary text-center">
               {language === 'ka' ? 'ინვენტარის მორიგეობა არ არის კონფიგურირებული' : t('no_inventory_reqs')}
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div className="flex flex-col gap-2">
               {group.inventoryRequirements.map((req) => (
                 <div
                   key={req.id}
-                  style={{
-                    padding: '12px 14px',
-                    borderRadius: 'var(--radius-sm)',
-                    background: 'var(--bg-surface)',
-                    border: '1px solid var(--border-subtle)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: '12px',
-                    boxShadow: 'var(--shadow-sm)'
-                  }}
+                  className="p-3 px-3.5 rounded-sm bg-surface border border-border-subtle flex items-center justify-between gap-3 shadow-sm"
                 >
                   {/* Left: Item Name with Package Icon */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div
-                      style={{
-                        width: '36px',
-                        height: '36px',
-                        borderRadius: '8px',
-                        background: 'var(--bg-surface-secondary)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: 'var(--color-charcoal)',
-                        flexShrink: 0
-                      }}
-                    >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-9 h-9 rounded-md bg-surface-secondary flex items-center justify-center text-text-primary shrink-0">
                       <Package size={18} />
                     </div>
-                    <div>
-                      <div style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--color-charcoal)' }}>
+                    <div className="min-w-0">
+                      <div className="text-sm font-bold text-text-primary truncate">
                         {req.itemName}
                       </div>
-                      <div style={{ fontSize: '0.725rem', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
+                      <div className="text-xs text-text-secondary mt-0.5">
                         {language === 'ka' ? 'ინვენტარი / რეკვიზიტი' : 'Equipment / Prop'}
                       </div>
                     </div>
                   </div>
 
                   {/* Right: Duty Requirement Details */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                  <div className="flex items-center gap-2 flex-wrap justify-end shrink-0">
                     {/* Required Headcount */}
-                    <span
-                      style={{
-                        padding: '4px 10px',
-                        borderRadius: 'var(--radius-pill)',
-                        background: 'var(--bg-surface-secondary)',
-                        border: '1px solid var(--border-subtle)',
-                        fontSize: '0.75rem',
-                        fontWeight: 600,
-                        color: 'var(--color-charcoal)',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '5px'
-                      }}
-                    >
+                    <span className="px-2.5 py-1 rounded-pill bg-surface-secondary border border-border-subtle text-xs font-semibold text-text-primary inline-flex items-center gap-1.5">
                       <Users size={12} />
                       <span>{language === 'ka' ? `${req.requiredHeadcount} მორიგე` : `${req.requiredHeadcount} crew`}</span>
                     </span>
 
                     {/* Gender Requirement Rule */}
                     <span
-                      style={{
-                        padding: '4px 10px',
-                        borderRadius: 'var(--radius-pill)',
-                        background:
-                          req.assignedGender === 'Male Only'
-                            ? '#EFF6FF'
-                            : req.assignedGender === 'Female Only'
-                            ? '#FDF2F8'
-                            : 'var(--bg-surface-secondary)',
-                        border:
-                          req.assignedGender === 'Male Only'
-                            ? '1px solid #BFDBFE'
-                            : req.assignedGender === 'Female Only'
-                            ? '1px solid #FBCFE8'
-                            : '1px solid var(--border-subtle)',
-                        color:
-                          req.assignedGender === 'Male Only'
-                            ? '#1D4ED8'
-                            : req.assignedGender === 'Female Only'
-                            ? '#BE185D'
-                            : 'var(--color-text-secondary)',
-                        fontSize: '0.75rem',
-                        fontWeight: 600,
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '4px'
-                      }}
+                      className={`px-2.5 py-1 rounded-pill text-xs font-semibold inline-flex items-center gap-1 border ${
+                        req.assignedGender === 'Male Only'
+                          ? 'bg-blue-50 border-blue-200 text-blue-700'
+                          : req.assignedGender === 'Female Only'
+                          ? 'bg-pink-50 border-pink-200 text-pink-700'
+                          : 'bg-surface-secondary border-border-subtle text-text-secondary'
+                      }`}
                     >
                       <User size={12} />
                       <span>
@@ -468,21 +332,8 @@ export const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
               ))}
 
               {/* Explanatory Help Note */}
-              <div
-                style={{
-                  marginTop: '4px',
-                  padding: '8px 12px',
-                  borderRadius: '8px',
-                  background: 'var(--bg-surface-secondary)',
-                  fontSize: '0.75rem',
-                  color: 'var(--color-text-secondary)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  lineHeight: 1.4
-                }}
-              >
-                <Info size={13} style={{ flexShrink: 0 }} />
+              <div className="mt-1 p-2 px-3 rounded-md bg-surface-secondary text-xs text-text-secondary flex items-center gap-1.5 leading-relaxed">
+                <Info size={13} className="shrink-0" />
                 <span>
                   {language === 'ka'
                     ? 'შოუს დაგეგმვისას სისტემა ამ წესების მიხედვით დასის წევრებს შორის ავტომატურად ანაწილებს მორიგეობას სამართლიანი როტაციით.'
@@ -495,64 +346,45 @@ export const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
 
         {/* Section 3: Scheduled Shows */}
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-            <h4 style={{ fontSize: '0.925rem', fontWeight: 700, color: 'var(--color-charcoal)', margin: 0, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          <div className="flex items-center justify-between mb-2.5">
+            <h4 className="text-sm font-bold text-text-primary m-0 uppercase tracking-wider">
               {t('scheduled_events')} ({groupShows.length})
             </h4>
           </div>
 
           {groupShows.length === 0 ? (
-            <div
-              style={{
-                padding: '16px',
-                borderRadius: 'var(--radius-sm)',
-                background: 'var(--bg-surface-secondary)',
-                border: '1px dashed var(--border-medium)',
-                fontSize: '0.825rem',
-                color: 'var(--color-text-secondary)',
-                textAlign: 'center'
-              }}
-            >
+            <div className="p-4 rounded-sm bg-surface-secondary border border-dashed border-border-medium text-xs text-text-secondary text-center">
               {t('no_scheduled_shows_group')}
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div className="flex flex-col gap-2">
               {groupShows.slice(0, 5).map((show) => {
                 const venue = venues.find((v) => v.id === show.hotelId);
                 const startDate = new Date(show.startDateTime);
                 return (
                   <div
                     key={show.id}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '10px 14px',
-                      background: 'var(--bg-surface)',
-                      borderRadius: 'var(--radius-sm)',
-                      border: '1px solid var(--border-subtle)',
-                      gap: '12px'
-                    }}
+                    className="flex items-center justify-between p-2.5 px-3.5 bg-surface rounded-sm border border-border-subtle gap-3"
                   >
                     <div>
-                      <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-charcoal)' }}>
+                      <div className="text-xs sm:text-sm font-semibold text-text-primary">
                         {show.title}
                       </div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <div className="text-xs text-text-secondary mt-0.5 flex items-center gap-1.5">
                         <MapPin size={12} />
                         <span>{venue?.name || 'Hotel'} ({venue?.city || ''})</span>
                       </div>
                     </div>
 
-                    <div style={{ textAlign: 'right', fontSize: '0.775rem' }}>
-                      <div style={{ fontWeight: 600, color: 'var(--color-charcoal)' }}>
+                    <div className="text-right text-xs">
+                      <div className="font-semibold text-text-primary">
                         {startDate.toLocaleDateString(language === 'ka' ? 'ka-GE' : 'en-US', {
                           month: 'short',
                           day: 'numeric',
                           year: 'numeric'
                         })}
                       </div>
-                      <div style={{ color: 'var(--color-text-secondary)' }}>
+                      <div className="text-text-secondary">
                         {show.startDateTime.split('T')[1]?.slice(0, 5)} - {show.endDateTime.split('T')[1]?.slice(0, 5)}
                       </div>
                     </div>
@@ -560,7 +392,7 @@ export const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
                 );
               })}
               {groupShows.length > 5 && (
-                <div style={{ textAlign: 'center', fontSize: '0.775rem', color: 'var(--color-text-secondary)', padding: '4px' }}>
+                <div className="text-center text-xs text-text-secondary p-1">
                   +{groupShows.length - 5} {language === 'ka' ? 'დამატებითი შოუ კალენდარში' : 'more shows in calendar'}
                 </div>
               )}

@@ -1,4 +1,7 @@
+'use client';
+
 import React, { useState, useMemo } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard,
   Sparkles,
@@ -25,8 +28,8 @@ export type NavTab =
   | '/settings/roles';
 
 interface SidebarProps {
-  activeTab: NavTab;
-  onTabChange: (tab: NavTab) => void;
+  activeTab?: NavTab;
+  onTabChange?: (tab: NavTab) => void;
   onOpenNewTalent?: () => void;
   onOpenNewGroup?: () => void;
   onOpenNewVenue?: () => void;
@@ -38,13 +41,44 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
-  activeTab,
+  activeTab: propActiveTab,
   onTabChange,
   isOpen = false,
   onClose
 }) => {
+  const router = useRouter();
+  const pathname = usePathname();
   const { schedule } = useApp();
   const { t } = useLanguage();
+
+  const activeTab: NavTab = useMemo(() => {
+    if (propActiveTab) return propActiveTab;
+    if (pathname === '/talents' || pathname.startsWith('/talents')) return 'talents';
+    if (pathname === '/groups' || pathname.startsWith('/groups')) return 'groups';
+    if (pathname === '/venues' || pathname.startsWith('/venues')) return 'venues';
+    if (pathname === '/calendar' || pathname.startsWith('/calendar')) return 'calendar';
+    if (pathname === '/settings/roles' || pathname.startsWith('/settings/roles')) return '/settings/roles';
+    if (pathname === '/settings/profile' || pathname.startsWith('/settings/profile')) return '/settings/profile';
+    return 'dashboard';
+  }, [propActiveTab, pathname]);
+
+  const handleTabChange = (tab: NavTab) => {
+    if (onTabChange) {
+      onTabChange(tab);
+    } else {
+      const tabPaths: Record<NavTab, string> = {
+        dashboard: '/',
+        talents: '/talents',
+        groups: '/groups',
+        venues: '/venues',
+        calendar: '/calendar',
+        '/settings/profile': '/settings/profile',
+        '/settings/roles': '/settings/roles'
+      };
+      router.push(tabPaths[tab] || '/');
+    }
+    if (onClose) onClose();
+  };
 
   const isSettingsSubActive =
     activeTab === '/settings/profile' || activeTab === '/settings/roles';
@@ -96,509 +130,209 @@ export const Sidebar: React.FC<SidebarProps> = ({
     <>
       {/* Mobile backdrop */}
       <div
-        className="sidebar-backdrop"
         onClick={onClose}
-        style={{
-          position: 'fixed',
-          inset: 0,
-          background: 'rgba(0,0,0,0.45)',
-          zIndex: 49,
-          backdropFilter: 'blur(2px)',
-          opacity: isOpen ? 1 : 0,
-          pointerEvents: isOpen ? 'auto' : 'none',
-          transition: 'opacity 0.25s ease'
-        }}
+        className={`fixed inset-0 bg-black/45 z-40 backdrop-blur-xs transition-opacity duration-200 md:hidden ${
+          isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        }`}
       />
 
       <aside
-        className={isOpen ? 'sidebar sidebar-open' : 'sidebar'}
-        style={{
-          width: '270px',
-          minWidth: '270px',
-          height: '100vh',
-          position: 'sticky',
-          top: 0,
-          background: 'var(--bg-surface)',
-          borderRight: '1px solid var(--border-subtle)',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'space-between',
-          padding: '24px 18px 32px 18px',
-          zIndex: 50,
-          boxShadow: 'var(--shadow-sm)'
-        }}
+        className={`w-[270px] min-w-[270px] h-screen sticky top-0 bg-surface border-r border-border-subtle flex flex-col justify-between p-6 px-4.5 pb-8 z-50 shadow-sm transition-transform duration-200 max-md:fixed max-md:left-0 max-md:top-0 ${
+          isOpen ? 'max-md:translate-x-0' : 'max-md:-translate-x-full'
+        }`}
       >
         {/* Mobile close button – only visible on mobile overlay */}
         <button
-          className="sidebar-close-btn"
           onClick={onClose}
-          style={{
-            display: 'none', // shown via CSS on mobile
-            position: 'absolute',
-            top: '14px',
-            right: '14px',
-            width: '32px',
-            height: '32px',
-            borderRadius: '8px',
-            border: 'none',
-            background: 'var(--bg-surface-secondary)',
-            cursor: 'pointer',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'var(--color-text-secondary)'
-          }}
+          className="md:hidden absolute top-3.5 right-3.5 w-8 h-8 rounded-sm bg-surface-secondary text-text-secondary flex items-center justify-center cursor-pointer hover:text-text-primary"
           aria-label="Close menu"
         >
           <X size={16} />
         </button>
-      {/* Top Section: Brand & Navigation */}
-      <div>
-        {/* Brand Header */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px',
-            padding: '8px 12px',
-            marginBottom: '12px'
-          }}
-        >
-          <div
-            style={{
-              width: '34px',
-              height: '34px',
-              borderRadius: '50%',
-              background: 'var(--brand-primary)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#FFFFFF',
-              boxShadow: '0 2px 8px var(--brand-primary-glow)',
-              flexShrink: 0
-            }}
-          >
-            <Sparkles size={18} strokeWidth={2.4} />
-          </div>
-          <div style={{ minWidth: 0, overflow: 'hidden' }}>
-            <span
-              style={{
-                fontSize: '1.1rem',
-                fontWeight: 700,
-                letterSpacing: '-0.02em',
-                color: 'var(--color-charcoal)',
-                whiteSpace: 'nowrap',
-                display: 'block',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis'
-              }}
-            >
-              {t('brand_name')}
-            </span>
-          </div>
-        </div>
 
-        <div style={{
-          height: '1px',
-          background: 'var(--border-subtle)',
-          margin: '0 0 12px 0',
-          borderRadius: '1px'
-        }} />
-
-        {/* Navigation Links */}
-        <nav style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = activeTab === item.id;
-
-            return (
-              <button
-                key={item.id}
-                onClick={() => onTabChange(item.id)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  width: '100%',
-                  padding: '6px 12px 6px 6px',
-                  borderRadius: '12px',
-                  border: 'none',
-                  outline: 'none',
-                  fontSize: '0.875rem',
-                  fontWeight: isActive ? 650 : 500,
-                  cursor: 'pointer',
-                  transition: 'all var(--transition-fast)',
-                  background: isActive ? 'var(--brand-primary)' : 'transparent',
-                  color: isActive ? '#FFFFFF' : 'var(--color-text-secondary)',
-                  boxShadow: isActive ? '0 4px 14px var(--brand-primary-glow)' : 'none',
-                  textAlign: 'left'
-                }}
-                onMouseEnter={(e) => {
-                  if (!isActive) {
-                    e.currentTarget.style.background = 'var(--bg-surface-secondary)';
-                    e.currentTarget.style.color = 'var(--color-text-primary)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isActive) {
-                    e.currentTarget.style.background = 'transparent';
-                    e.currentTarget.style.color = 'var(--color-text-secondary)';
-                  }
-                }}
-              >
-                <div
-                  style={{
-                    width: '36px',
-                    height: '36px',
-                    borderRadius: '9px',
-                    background: isActive
-                      ? 'rgba(255, 255, 255, 0.22)'
-                      : 'transparent',
-                    backdropFilter: isActive ? 'blur(10px)' : 'none',
-                    WebkitBackdropFilter: isActive ? 'blur(10px)' : 'none',
-                    border: isActive
-                      ? '1px solid rgba(255, 255, 255, 0.35)'
-                      : '1px solid transparent',
-                    boxShadow: isActive
-                      ? 'inset 0 1px 1px rgba(255, 255, 255, 0.4), 0 2px 6px rgba(0, 0, 0, 0.08)'
-                      : 'none',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                    transition: 'all var(--transition-fast)'
-                  }}
-                >
-                  <Icon
-                    size={19}
-                    strokeWidth={isActive ? 2.4 : 1.8}
-                    style={{
-                      color: isActive ? '#FFFFFF' : 'inherit',
-                      transition: 'all var(--transition-fast)'
-                    }}
-                  />
-                </div>
-                <span
-                  style={{
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                    letterSpacing: '-0.01em'
-                  }}
-                >
-                  {item.label}
-                </span>
-              </button>
-            );
-          })}
-        </nav>
-
-        {/* Separator with slightly more gap & Settings Collapsible Accordion */}
-        <div
-          style={{
-            marginTop: '16px',
-            paddingTop: '14px',
-            borderTop: '1px solid var(--border-subtle)',
-            display: 'flex',
-            flexDirection: 'column'
-          }}
-        >
-          {/* Main Parent Button */}
-          <button
-            onClick={() => setIsSettingsOpen((prev) => !prev)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              width: '100%',
-              padding: '6px 12px 6px 6px',
-              borderRadius: '12px',
-              border: 'none',
-              outline: 'none',
-              cursor: 'pointer',
-              background: isSettingsSubActive ? 'rgba(30, 106, 255, 0.08)' : 'transparent',
-              color: isSettingsSubActive ? 'var(--brand-primary)' : 'var(--color-charcoal)',
-              fontSize: '0.875rem',
-              fontWeight: 600,
-              transition: 'all var(--transition-fast)'
-            }}
-            onMouseEnter={(e) => {
-              if (!isSettingsSubActive) {
-                e.currentTarget.style.background = 'var(--bg-surface-secondary)';
-                e.currentTarget.style.color = 'var(--color-text-primary)';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!isSettingsSubActive) {
-                e.currentTarget.style.background = 'transparent';
-                e.currentTarget.style.color = 'var(--color-charcoal)';
-              }
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div
-                style={{
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '9px',
-                  background: isSettingsSubActive
-                    ? 'rgba(30, 106, 255, 0.12)'
-                    : 'transparent',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                  transition: 'all var(--transition-fast)'
-                }}
-              >
-                <Settings
-                  size={19}
-                  strokeWidth={isSettingsSubActive ? 2.4 : 1.8}
-                  style={{
-                    color: isSettingsSubActive ? 'var(--brand-primary)' : 'var(--color-text-secondary)',
-                    transition: 'color var(--transition-fast)'
-                  }}
-                />
-              </div>
-              <span
-                style={{
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                  letterSpacing: '-0.01em'
-                }}
-              >
-                {t('nav_settings')}
+        {/* Top Section: Brand & Navigation */}
+        <div>
+          {/* Brand Header */}
+          <div className="flex items-center gap-3 p-2 px-3 mb-3">
+            <div className="w-8.5 h-8.5 rounded-full bg-brand-primary flex items-center justify-center text-white shadow-glow shrink-0">
+              <Sparkles size={18} strokeWidth={2.4} />
+            </div>
+            <div className="min-w-0 overflow-hidden">
+              <span className="text-lg font-bold tracking-tight text-text-primary truncate block">
+                {t('brand_name')}
               </span>
             </div>
-            <ChevronRight
-              size={16}
-              style={{
-                color: isSettingsSubActive ? 'var(--brand-primary)' : 'var(--color-text-secondary)',
-                transform: isSettingsOpen ? 'rotate(90deg)' : 'rotate(0deg)',
-                transition: 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                marginRight: '2px'
-              }}
-            />
-          </button>
+          </div>
 
-          {/* Submenu Items */}
-          <div
-            style={{
-              overflow: 'hidden',
-              maxHeight: isSettingsOpen ? '140px' : '0px',
-              opacity: isSettingsOpen ? 1 : 0,
-              transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '4px',
-              paddingLeft: '12px',
-              paddingTop: isSettingsOpen ? '4px' : '0px'
-            }}
-          >
-            {/* Submenu Item 1: Profile */}
+          <div className="h-px bg-border-subtle mb-3 rounded" />
+
+          {/* Navigation Links */}
+          <nav className="flex flex-col gap-1.5">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeTab === item.id;
+
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => handleTabChange(item.id)}
+                  className={`flex items-center gap-3 w-full p-1.5 px-3 rounded-md text-sm cursor-pointer transition-all duration-150 text-left ${
+                    isActive
+                      ? 'bg-brand-primary text-white font-semibold shadow-glow'
+                      : 'text-text-secondary font-medium hover:bg-surface-secondary hover:text-text-primary'
+                  }`}
+                >
+                  <div
+                    className={`w-9 h-9 rounded-sm flex items-center justify-center shrink-0 transition-all ${
+                      isActive
+                        ? 'bg-white/20 backdrop-blur-md border border-white/35 shadow-sm text-white'
+                        : 'text-inherit'
+                    }`}
+                  >
+                    <Icon
+                      size={19}
+                      strokeWidth={isActive ? 2.4 : 1.8}
+                      className={isActive ? 'text-white' : 'text-inherit'}
+                    />
+                  </div>
+                  <span className="truncate tracking-tight">
+                    {item.label}
+                  </span>
+                </button>
+              );
+            })}
+          </nav>
+
+          {/* Separator & Settings Collapsible Accordion */}
+          <div className="mt-4 pt-3.5 border-t border-border-subtle flex flex-col">
+            {/* Main Parent Button */}
             <button
-              onClick={() => onTabChange('/settings/profile')}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '10px',
-                width: '100%',
-                padding: '6px 12px 6px 8px',
-                borderRadius: '10px',
-                border: 'none',
-                outline: 'none',
-                cursor: 'pointer',
-                fontSize: '0.825rem',
-                fontWeight: activeTab === '/settings/profile' ? 650 : 500,
-                textAlign: 'left',
-                background: activeTab === '/settings/profile' ? 'var(--brand-primary)' : 'transparent',
-                color: activeTab === '/settings/profile' ? '#FFFFFF' : 'var(--color-text-secondary)',
-                boxShadow: activeTab === '/settings/profile' ? '0 4px 14px var(--brand-primary-glow)' : 'none',
-                transition: 'all var(--transition-fast)'
-              }}
-              onMouseEnter={(e) => {
-                if (activeTab !== '/settings/profile') {
-                  e.currentTarget.style.background = 'var(--bg-surface-secondary)';
-                  e.currentTarget.style.color = 'var(--color-text-primary)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (activeTab !== '/settings/profile') {
-                  e.currentTarget.style.background = 'transparent';
-                  e.currentTarget.style.color = 'var(--color-text-secondary)';
-                }
-              }}
+              onClick={() => setIsSettingsOpen((prev) => !prev)}
+              className={`flex items-center justify-between w-full p-1.5 px-3 rounded-md text-sm font-semibold cursor-pointer transition-all ${
+                isSettingsSubActive
+                  ? 'bg-brand-primary/10 text-brand-primary'
+                  : 'text-text-primary hover:bg-surface-secondary'
+              }`}
             >
-              <div
-                style={{
-                  width: '28px',
-                  height: '28px',
-                  borderRadius: '7px',
-                  background: activeTab === '/settings/profile' ? 'rgba(255, 255, 255, 0.22)' : 'transparent',
-                  backdropFilter: activeTab === '/settings/profile' ? 'blur(10px)' : 'none',
-                  WebkitBackdropFilter: activeTab === '/settings/profile' ? 'blur(10px)' : 'none',
-                  border: activeTab === '/settings/profile' ? '1px solid rgba(255, 255, 255, 0.35)' : '1px solid transparent',
-                  boxShadow: activeTab === '/settings/profile' ? 'inset 0 1px 1px rgba(255,255,255,0.4), 0 2px 6px rgba(0,0,0,0.08)' : 'none',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                  transition: 'all var(--transition-fast)'
-                }}
-              >
-                <User
-                  size={15}
-                  strokeWidth={activeTab === '/settings/profile' ? 2.4 : 1.8}
-                  style={{
-                    color: activeTab === '/settings/profile' ? '#FFFFFF' : 'inherit',
-                    transition: 'all var(--transition-fast)'
-                  }}
-                />
+              <div className="flex items-center gap-3">
+                <div
+                  className={`w-9 h-9 rounded-sm flex items-center justify-center shrink-0 transition-all ${
+                    isSettingsSubActive
+                      ? 'bg-brand-primary/15 text-brand-primary'
+                      : 'text-text-secondary'
+                  }`}
+                >
+                  <Settings
+                    size={19}
+                    strokeWidth={isSettingsSubActive ? 2.4 : 1.8}
+                    className={isSettingsSubActive ? 'text-brand-primary' : 'text-text-secondary'}
+                  />
+                </div>
+                <span className="truncate tracking-tight">
+                  {t('nav_settings')}
+                </span>
               </div>
-              <span
-                style={{
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                  letterSpacing: '-0.01em'
-                }}
-              >
-                {t('settings_profile')}
-              </span>
+              <ChevronRight
+                size={16}
+                className={`transition-transform duration-200 mr-0.5 ${
+                  isSettingsOpen ? 'rotate-90' : 'rotate-0'
+                } ${isSettingsSubActive ? 'text-brand-primary' : 'text-text-secondary'}`}
+              />
             </button>
 
-            {/* Submenu Item 2: Roles & Permissions */}
-            <button
-              onClick={() => onTabChange('/settings/roles')}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '10px',
-                width: '100%',
-                padding: '6px 12px 6px 8px',
-                borderRadius: '10px',
-                border: 'none',
-                outline: 'none',
-                cursor: 'pointer',
-                fontSize: '0.825rem',
-                fontWeight: activeTab === '/settings/roles' ? 650 : 500,
-                textAlign: 'left',
-                background: activeTab === '/settings/roles' ? 'var(--brand-primary)' : 'transparent',
-                color: activeTab === '/settings/roles' ? '#FFFFFF' : 'var(--color-text-secondary)',
-                boxShadow: activeTab === '/settings/roles' ? '0 4px 14px var(--brand-primary-glow)' : 'none',
-                transition: 'all var(--transition-fast)'
-              }}
-              onMouseEnter={(e) => {
-                if (activeTab !== '/settings/roles') {
-                  e.currentTarget.style.background = 'var(--bg-surface-secondary)';
-                  e.currentTarget.style.color = 'var(--color-text-primary)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (activeTab !== '/settings/roles') {
-                  e.currentTarget.style.background = 'transparent';
-                  e.currentTarget.style.color = 'var(--color-text-secondary)';
-                }
-              }}
+            {/* Submenu Items */}
+            <div
+              className={`overflow-hidden transition-all duration-200 flex flex-col gap-1 pl-3 ${
+                isSettingsOpen ? 'max-h-36 opacity-100 pt-1' : 'max-h-0 opacity-0 pt-0'
+              }`}
             >
-              <div
-                style={{
-                  width: '28px',
-                  height: '28px',
-                  borderRadius: '7px',
-                  background: activeTab === '/settings/roles' ? 'rgba(255, 255, 255, 0.22)' : 'transparent',
-                  backdropFilter: activeTab === '/settings/roles' ? 'blur(10px)' : 'none',
-                  WebkitBackdropFilter: activeTab === '/settings/roles' ? 'blur(10px)' : 'none',
-                  border: activeTab === '/settings/roles' ? '1px solid rgba(255, 255, 255, 0.35)' : '1px solid transparent',
-                  boxShadow: activeTab === '/settings/roles' ? 'inset 0 1px 1px rgba(255,255,255,0.4), 0 2px 6px rgba(0,0,0,0.08)' : 'none',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                  transition: 'all var(--transition-fast)'
-                }}
+              {/* Submenu Item 1: Profile */}
+              <button
+                onClick={() => handleTabChange('/settings/profile')}
+                className={`flex items-center gap-2.5 w-full p-1.5 px-3 pl-2 rounded-sm text-xs cursor-pointer transition-all text-left ${
+                  activeTab === '/settings/profile'
+                    ? 'bg-brand-primary text-white font-semibold shadow-glow'
+                    : 'text-text-secondary font-medium hover:bg-surface-secondary hover:text-text-primary'
+                }`}
               >
-                <ShieldCheck
-                  size={15}
-                  strokeWidth={activeTab === '/settings/roles' ? 2.4 : 1.8}
-                  style={{
-                    color: activeTab === '/settings/roles' ? '#FFFFFF' : 'inherit',
-                    transition: 'all var(--transition-fast)'
-                  }}
-                />
-              </div>
-              <span
-                style={{
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                  letterSpacing: '-0.01em'
-                }}
+                <div
+                  className={`w-7 h-7 rounded flex items-center justify-center shrink-0 ${
+                    activeTab === '/settings/profile'
+                      ? 'bg-white/20 backdrop-blur-md border border-white/35 text-white'
+                      : 'text-inherit'
+                  }`}
+                >
+                  <User
+                    size={15}
+                    strokeWidth={activeTab === '/settings/profile' ? 2.4 : 1.8}
+                    className={activeTab === '/settings/profile' ? 'text-white' : 'text-inherit'}
+                  />
+                </div>
+                <span className="truncate tracking-tight">
+                  {t('settings_profile')}
+                </span>
+              </button>
+
+              {/* Submenu Item 2: Roles & Permissions */}
+              <button
+                onClick={() => handleTabChange('/settings/roles')}
+                className={`flex items-center gap-2.5 w-full p-1.5 px-3 pl-2 rounded-sm text-xs cursor-pointer transition-all text-left ${
+                  activeTab === '/settings/roles'
+                    ? 'bg-brand-primary text-white font-semibold shadow-glow'
+                    : 'text-text-secondary font-medium hover:bg-surface-secondary hover:text-text-primary'
+                }`}
               >
-                {t('settings_roles')}
-              </span>
-            </button>
+                <div
+                  className={`w-7 h-7 rounded flex items-center justify-center shrink-0 ${
+                    activeTab === '/settings/roles'
+                      ? 'bg-white/20 backdrop-blur-md border border-white/35 text-white'
+                      : 'text-inherit'
+                  }`}
+                >
+                  <ShieldCheck
+                    size={15}
+                    strokeWidth={activeTab === '/settings/roles' ? 2.4 : 1.8}
+                    className={activeTab === '/settings/roles' ? 'text-white' : 'text-inherit'}
+                  />
+                </div>
+                <span className="truncate tracking-tight">
+                  {t('settings_roles')}
+                </span>
+              </button>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Bottom Section: Today's Shows Indicator */}
-      <div>
-        {/* Quick Indicator Widget: Today's Active Shows */}
-        <div
-          onClick={() => onTabChange('calendar')}
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '4px',
-            padding: '12px 14px',
-            borderRadius: 'var(--radius-md)',
-            background: todayShowsCount > 0 ? 'rgba(30, 106, 255, 0.08)' : 'var(--bg-surface-secondary)',
-            border: todayShowsCount > 0 ? '1px solid rgba(30, 106, 255, 0.25)' : '1px solid var(--border-subtle)',
-            cursor: 'pointer',
-            transition: 'all var(--transition-fast)'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = 'translateY(-1px)';
-            e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = 'none';
-            e.currentTarget.style.boxShadow = 'none';
-          }}
-          title={t('click_to_view_calendar')}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span
-              style={{
-                width: '8px',
-                height: '8px',
-                borderRadius: '50%',
-                background: todayShowsCount > 0 ? '#16A34A' : '#94A3B8',
-                boxShadow: todayShowsCount > 0 ? '0 0 6px rgba(22, 163, 74, 0.7)' : 'none',
-                flexShrink: 0
-              }}
-            />
-            <span
-              style={{
-                fontSize: '0.85rem',
-                fontWeight: 650,
-                color: 'var(--color-charcoal)',
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis'
-              }}
-            >
-              {todayShowsCount === 1
-                ? t('today_active_show', { count: todayShowsCount })
-                : t('today_active_shows', { count: todayShowsCount })}
+        {/* Bottom Section: Today's Shows Indicator */}
+        <div>
+          <div
+            onClick={() => handleTabChange('calendar')}
+            className={`flex flex-col gap-1 p-3 px-3.5 rounded-md cursor-pointer transition-all duration-150 hover:-translate-y-0.5 hover:shadow-sm ${
+              todayShowsCount > 0
+                ? 'bg-brand-primary/10 border border-brand-primary/25'
+                : 'bg-surface-secondary border border-border-subtle'
+            }`}
+            title={t('click_to_view_calendar')}
+          >
+            <div className="flex items-center gap-2">
+              <span
+                className={`w-2 h-2 rounded-full shrink-0 ${
+                  todayShowsCount > 0
+                    ? 'bg-emerald-600 shadow-[0_0_6px_rgba(22,163,74,0.7)]'
+                    : 'bg-slate-400'
+                }`}
+              />
+              <span className="text-xs font-bold text-text-primary truncate">
+                {todayShowsCount === 1
+                  ? t('today_active_show', { count: todayShowsCount })
+                  : t('today_active_shows', { count: todayShowsCount })}
+              </span>
+            </div>
+            <span className="text-[11px] text-text-secondary pl-4">
+              {t('click_to_view_calendar')}
             </span>
           </div>
-          <span style={{ fontSize: '0.725rem', color: 'var(--color-text-secondary)', paddingLeft: '16px' }}>
-            {t('click_to_view_calendar')}
-          </span>
         </div>
-      </div>
       </aside>
     </>
   );

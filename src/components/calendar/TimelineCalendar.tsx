@@ -1,4 +1,7 @@
+'use client';
+
 import React, { useState } from 'react';
+import dynamic from 'next/dynamic';
 import { useApp } from '../../context/AppContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { CalendarViewMode, ShowEvent } from '../../types/schedule';
@@ -6,8 +9,6 @@ import { MonthView } from './MonthView';
 import { WeekView } from './WeekView';
 import { DayView } from './DayView';
 import { YearView } from './YearView';
-import { ScheduleModal } from './ScheduleModal';
-import { EventDetailModal } from './EventDetailModal';
 import { toLocalDateStr } from '../../utils/dateUtils';
 import {
   ChevronLeft,
@@ -17,6 +18,16 @@ import {
   Users,
   Building2
 } from 'lucide-react';
+
+const ScheduleModal = dynamic(
+  () => import('./ScheduleModal').then((mod) => mod.ScheduleModal),
+  { ssr: false }
+);
+
+const EventDetailModal = dynamic(
+  () => import('./EventDetailModal').then((mod) => mod.EventDetailModal),
+  { ssr: false }
+);
 
 interface TimelineCalendarProps {
   onOpenNewSchedule?: () => void;
@@ -121,7 +132,13 @@ export const TimelineCalendar: React.FC<TimelineCalendarProps> = () => {
         const endMonth = endOfWeek.toLocaleDateString(localeStr, { month: 'short' });
         return `${startOfWeek.getDate()} ${startMonth} - ${endOfWeek.getDate()} ${endMonth}, ${startOfWeek.getFullYear()}`;
       } else {
-        return `${startOfWeek.getDate()} ${startOfWeek.toLocaleDateString(localeStr, { month: 'short' })} ${startOfWeek.getFullYear()} - ${endOfWeek.getDate()} ${endOfWeek.toLocaleDateString(localeStr, { month: 'short' })} ${endOfWeek.getFullYear()}`;
+        return `${startOfWeek.getDate()} ${startOfWeek.toLocaleDateString(
+          localeStr,
+          { month: 'short' }
+        )} ${startOfWeek.getFullYear()} - ${endOfWeek.getDate()} ${endOfWeek.toLocaleDateString(
+          localeStr,
+          { month: 'short' }
+        )} ${endOfWeek.getFullYear()}`;
       }
     }
     return currentDate.toLocaleDateString(localeStr, { month: 'long', year: 'numeric' });
@@ -130,104 +147,71 @@ export const TimelineCalendar: React.FC<TimelineCalendarProps> = () => {
   const displayDateLabel = getDisplayDateLabel();
 
   return (
-    <div>
+    <div className="flex flex-col">
       {/* Top Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '16px' }}>
+      <div className="flex items-center justify-between mb-5 flex-wrap gap-4">
         <div>
-          <h1 className="page-title" style={{ marginBottom: '4px' }}>
+          <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-text-primary mb-1">
             {t('timeline_title')}
           </h1>
-          <p style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)' }}>
+          <p className="text-sm text-text-secondary">
             {t('timeline_subtitle')}
           </p>
         </div>
 
         <button
+          type="button"
           onClick={() => {
             setScheduleDefaultDate(undefined);
             setIsScheduleModalOpen(true);
           }}
-          className="btn btn-primary"
+          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-pill text-sm font-medium bg-brand-primary text-text-inverse shadow-glow hover:bg-brand-primary-hover hover:-translate-y-0.5 active:translate-y-0 transition-all duration-150 cursor-pointer outline-none"
         >
-          <Plus size={16} strokeWidth={2.5} />
+          <Plus className="w-4 h-4" strokeWidth={2.5} />
           <span>{t('book_and_schedule')}</span>
         </button>
       </div>
 
       {/* Control Bar: View Switcher, Date Navigator, Filters */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: '20px',
-          flexWrap: 'wrap',
-          gap: '14px',
-          padding: '10px 16px',
-          background: 'var(--bg-surface-secondary)',
-          borderRadius: 'var(--radius-md)',
-          border: '1px solid var(--border-subtle)',
-          minHeight: '56px'
-        }}
-      >
+      <div className="flex items-center justify-between mb-5 flex-wrap gap-3.5 px-4 py-2.5 bg-surface-secondary rounded-md border border-border-subtle min-h-[56px]">
         {/* Left: Month Navigator */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: '1 1 0', minWidth: '340px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+        <div className="flex items-center gap-2.5 flex-1 min-w-[320px]">
+          <div className="flex items-center gap-1 shrink-0">
             <button
+              type="button"
               onClick={handlePrev}
-              className="btn btn-secondary btn-icon"
-              style={{ width: '32px', height: '32px' }}
+              className="w-8 h-8 rounded-full border border-border-subtle bg-surface text-text-primary hover:bg-surface-tertiary hover:border-border-medium flex items-center justify-center transition-all duration-150 cursor-pointer outline-none"
               title="Previous"
             >
-              <ChevronLeft size={16} />
+              <ChevronLeft className="w-4 h-4" />
             </button>
             <button
+              type="button"
               onClick={handleNext}
-              className="btn btn-secondary btn-icon"
-              style={{ width: '32px', height: '32px' }}
+              className="w-8 h-8 rounded-full border border-border-subtle bg-surface text-text-primary hover:bg-surface-tertiary hover:border-border-medium flex items-center justify-center transition-all duration-150 cursor-pointer outline-none"
               title="Next"
             >
-              <ChevronRight size={16} />
+              <ChevronRight className="w-4 h-4" />
             </button>
           </div>
 
           <button
+            type="button"
             onClick={handleToday}
-            className="btn btn-secondary"
-            style={{ fontSize: '0.8rem', padding: '5px 12px', flexShrink: 0 }}
+            className="text-xs px-3 py-1.5 rounded-pill border border-border-subtle bg-surface text-text-primary hover:bg-surface-tertiary hover:border-border-medium font-medium transition-all duration-150 cursor-pointer outline-none shrink-0"
           >
             {t('today')}
           </button>
 
-          <div style={{ minWidth: '220px', display: 'inline-flex', alignItems: 'center' }}>
-            <span
-              style={{
-                fontSize: '1.05rem',
-                fontWeight: 700,
-                color: 'var(--color-charcoal)',
-                marginLeft: '6px',
-                whiteSpace: 'nowrap',
-                fontVariantNumeric: 'tabular-nums'
-              }}
-            >
+          <div className="min-w-[200px] inline-flex items-center">
+            <span className="text-base sm:text-lg font-bold text-text-primary ml-1.5 whitespace-nowrap tabular-nums">
               {displayDateLabel}
             </span>
           </div>
         </div>
 
         {/* Center: View Switcher Pills (Day, Week, Month, Year) */}
-        <div
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            background: 'var(--bg-surface)',
-            borderRadius: 'var(--radius-pill)',
-            padding: '3px',
-            border: '1px solid var(--border-subtle)',
-            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)',
-            flexShrink: 0
-          }}
-        >
+        <div className="inline-flex items-center bg-surface rounded-pill p-1 border border-border-subtle shadow-sm shrink-0">
           {(['day', 'week', 'month', 'year'] as CalendarViewMode[]).map((mode) => {
             const isActive = viewMode === mode;
             const labelMap: Record<CalendarViewMode, string> = {
@@ -240,31 +224,13 @@ export const TimelineCalendar: React.FC<TimelineCalendarProps> = () => {
             return (
               <button
                 key={mode}
+                type="button"
                 onClick={() => setViewMode(mode)}
-                style={{
-                  padding: '6px 16px',
-                  minWidth: '68px',
-                  textAlign: 'center',
-                  borderRadius: 'var(--radius-pill)',
-                  border: 'none',
-                  fontSize: '0.8rem',
-                  fontWeight: isActive ? 650 : 500,
-                  cursor: 'pointer',
-                  background: isActive ? 'var(--brand-primary)' : 'transparent',
-                  color: isActive ? '#FFFFFF' : 'var(--color-text-secondary)',
-                  boxShadow: isActive ? '0 2px 8px var(--brand-primary-glow)' : 'none',
-                  transition: 'all 0.18s cubic-bezier(0.4, 0, 0.2, 1)'
-                }}
-                onMouseEnter={(e) => {
-                  if (!isActive) {
-                    e.currentTarget.style.color = 'var(--color-charcoal)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isActive) {
-                    e.currentTarget.style.color = 'var(--color-text-secondary)';
-                  }
-                }}
+                className={`px-4 py-1.5 min-w-[64px] text-center rounded-pill text-xs font-semibold cursor-pointer transition-all duration-150 outline-none ${
+                  isActive
+                    ? 'bg-brand-primary text-text-inverse shadow-sm'
+                    : 'bg-transparent text-text-secondary hover:text-text-primary'
+                }`}
               >
                 {labelMap[mode]}
               </button>
@@ -273,36 +239,21 @@ export const TimelineCalendar: React.FC<TimelineCalendarProps> = () => {
         </div>
 
         {/* Right: Filters (Group and Hotel) */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: '1 1 0', justifyContent: 'flex-end', minWidth: '320px', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Filter size={14} color="var(--color-text-secondary)" />
+        <div className="flex items-center gap-2.5 flex-1 justify-end min-w-[300px] flex-wrap">
+          <div className="flex items-center gap-2">
+            <Filter className="w-3.5 h-3.5 text-text-secondary shrink-0" />
 
             {/* Filter by Group */}
-            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-              <Users
-                size={13}
-                style={{
-                  position: 'absolute',
-                  left: '10px',
-                  color: 'var(--color-text-secondary)',
-                  pointerEvents: 'none'
-                }}
-              />
+            <div className="relative flex items-center">
+              <Users className="w-3.5 h-3.5 absolute left-3 text-text-secondary pointer-events-none" />
               <select
                 value={selectedGroupId}
                 onChange={(e) => setSelectedGroupId(e.target.value)}
-                style={{
-                  fontFamily: 'inherit',
-                  fontSize: '0.8rem',
-                  padding: '6px 14px 6px 30px',
-                  borderRadius: 'var(--radius-pill)',
-                  border: selectedGroupId !== 'ALL' ? '1.5px solid var(--brand-primary)' : '1px solid var(--border-subtle)',
-                  background: selectedGroupId !== 'ALL' ? 'var(--brand-primary-light)' : 'var(--bg-surface)',
-                  color: 'var(--color-text-primary)',
-                  fontWeight: selectedGroupId !== 'ALL' ? 600 : 400,
-                  outline: 'none',
-                  cursor: 'pointer'
-                }}
+                className={`text-xs py-1.5 pl-8 pr-3.5 rounded-pill outline-none cursor-pointer transition-all duration-150 ${
+                  selectedGroupId !== 'ALL'
+                    ? 'border border-brand-primary bg-brand-primary/10 text-brand-primary font-semibold'
+                    : 'border border-border-subtle bg-surface text-text-primary font-normal hover:border-border-medium'
+                }`}
               >
                 <option value="ALL">{t('all_groups')}</option>
                 {groups.map((g) => (
@@ -314,31 +265,16 @@ export const TimelineCalendar: React.FC<TimelineCalendarProps> = () => {
             </div>
 
             {/* Filter by Hotel Venue */}
-            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-              <Building2
-                size={13}
-                style={{
-                  position: 'absolute',
-                  left: '10px',
-                  color: 'var(--color-text-secondary)',
-                  pointerEvents: 'none'
-                }}
-              />
+            <div className="relative flex items-center">
+              <Building2 className="w-3.5 h-3.5 absolute left-3 text-text-secondary pointer-events-none" />
               <select
                 value={selectedHotelId}
                 onChange={(e) => setSelectedHotelId(e.target.value)}
-                style={{
-                  fontFamily: 'inherit',
-                  fontSize: '0.8rem',
-                  padding: '6px 14px 6px 30px',
-                  borderRadius: 'var(--radius-pill)',
-                  border: selectedHotelId !== 'ALL' ? '1.5px solid var(--brand-primary)' : '1px solid var(--border-subtle)',
-                  background: selectedHotelId !== 'ALL' ? 'var(--brand-primary-light)' : 'var(--bg-surface)',
-                  color: 'var(--color-text-primary)',
-                  fontWeight: selectedHotelId !== 'ALL' ? 600 : 400,
-                  outline: 'none',
-                  cursor: 'pointer'
-                }}
+                className={`text-xs py-1.5 pl-8 pr-3.5 rounded-pill outline-none cursor-pointer transition-all duration-150 ${
+                  selectedHotelId !== 'ALL'
+                    ? 'border border-brand-primary bg-brand-primary/10 text-brand-primary font-semibold'
+                    : 'border border-border-subtle bg-surface text-text-primary font-normal hover:border-border-medium'
+                }`}
               >
                 <option value="ALL">{t('all_venues')}</option>
                 {venues.map((v) => (
@@ -353,7 +289,7 @@ export const TimelineCalendar: React.FC<TimelineCalendarProps> = () => {
       </div>
 
       {/* Calendar Views */}
-      <div key={viewMode} style={{ minHeight: '500px', animation: 'fadeIn 0.2s ease-out' }}>
+      <div key={viewMode} className="min-h-[500px]">
         {viewMode === 'day' && (
           <DayView
             currentDate={currentDate}

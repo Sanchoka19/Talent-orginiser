@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState } from 'react';
 import {
   X,
@@ -41,6 +43,10 @@ const CATEGORIES: {
   descKa: string;
   descEn: string;
   color: string;
+  borderColor: string;
+  bgColor: string;
+  textColor: string;
+  dotColor: string;
 }[] = [
   {
     id: 'Management',
@@ -50,7 +56,11 @@ const CATEGORIES: {
     titleEn: 'Management',
     descKa: 'ეს დონე მოიცავს შოუების დაგეგმვას, ტალანტების მართვასა და როტაციების კონტროლს.',
     descEn: 'This level covers show planning, talent roster management, and schedule rotation controls.',
-    color: '#0891B2'
+    color: '#0891B2',
+    borderColor: 'border-category-management',
+    bgColor: 'bg-category-management/10',
+    textColor: 'text-category-management',
+    dotColor: 'bg-category-management'
   },
   {
     id: 'Operations',
@@ -60,7 +70,11 @@ const CATEGORIES: {
     titleEn: 'Operations / Field Management',
     descKa: 'ეს დონე ეთმობა ყოველდღიურ საველე პროცესებს: განრიგის შესრულებას, დასწრებასა და ინვენტარს.',
     descEn: 'This level is dedicated to daily field processes: schedule execution, attendance, and inventory.',
-    color: '#16A34A'
+    color: '#16A34A',
+    borderColor: 'border-category-operations',
+    bgColor: 'bg-category-operations/10',
+    textColor: 'text-category-operations',
+    dotColor: 'bg-category-operations'
   },
   {
     id: 'Custom',
@@ -70,20 +84,24 @@ const CATEGORIES: {
     titleEn: 'Custom',
     descKa: 'ინდივიდუალური სისტემური წვდომის დონე.',
     descEn: 'Custom system access level.',
-    color: '#7C3AED'
+    color: '#7C3AED',
+    borderColor: 'border-category-custom',
+    bgColor: 'bg-category-custom/10',
+    textColor: 'text-category-custom',
+    dotColor: 'bg-category-custom'
   }
 ];
 
 const renderModuleIcon = (type: PermissionModuleData['iconType']) => {
   switch (type) {
     case 'talents':
-      return <Users size={16} />;
+      return <Users className="w-4 h-4" />;
     case 'schedule':
-      return <Calendar size={16} />;
+      return <Calendar className="w-4 h-4" />;
     case 'groups':
-      return <Layers size={16} />;
+      return <Layers className="w-4 h-4" />;
     case 'duty':
-      return <ClipboardList size={16} />;
+      return <ClipboardList className="w-4 h-4" />;
   }
 };
 
@@ -149,7 +167,6 @@ export const CreateRoleModal: React.FC<CreateRoleModalProps> = ({
     } else if (selectedCat === 'Management') {
       setSelectedPermissions([...ROLE_TEMPLATES.Management]);
     }
-    // If 'Custom', preserve the current selection
   };
 
   const handleReset = () => {
@@ -223,7 +240,11 @@ export const CreateRoleModal: React.FC<CreateRoleModalProps> = ({
       };
       await new Promise((r) => setTimeout(r, 200));
       onUpdated(updatedRole);
-      toast.success(isKa ? `როლის „${finalRoleTitle}“ ცვლილებები შენახულია` : `Changes to role "${finalRoleTitle}" saved`);
+      toast.success(
+        isKa
+          ? `როლის „${finalRoleTitle}“ ცვლილებები შენახულია`
+          : `Changes to role "${finalRoleTitle}" saved`
+      );
     } else {
       const newRole: RoleDefinition = {
         id: `role-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
@@ -235,7 +256,11 @@ export const CreateRoleModal: React.FC<CreateRoleModalProps> = ({
       };
       await new Promise((r) => setTimeout(r, 200));
       onCreated(newRole);
-      toast.success(isKa ? `როლი „${newRole.title}“ წარმატებით შეიქმნა` : `Role "${newRole.title}" created successfully`);
+      toast.success(
+        isKa
+          ? `როლი „${newRole.title}“ წარმატებით შეიქმნა`
+          : `Role "${newRole.title}" created successfully`
+      );
     }
 
     setIsSubmitting(false);
@@ -243,103 +268,31 @@ export const CreateRoleModal: React.FC<CreateRoleModalProps> = ({
     onClose();
   };
 
-  const labelBase: React.CSSProperties = {
-    fontSize: '0.775rem',
-    fontWeight: 650,
-    color: 'var(--color-text-secondary)',
-    letterSpacing: '0.02em',
-    textTransform: 'uppercase',
-    marginBottom: '8px',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px'
-  };
-
   return (
     <div
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        zIndex: 1100,
-        display: 'flex',
-        justifyContent: 'flex-end',
-        background: 'rgba(35, 35, 35, 0.55)',
-        backdropFilter: 'blur(6px)',
-        WebkitBackdropFilter: 'blur(6px)',
-        animation: 'fadeIn 0.2s ease-out'
-      }}
+      className="fixed inset-0 z-[1100] flex justify-end bg-surface-overlay backdrop-blur-sm transition-opacity duration-200"
       onClick={(e) => {
         if (e.target === e.currentTarget) handleClose();
       }}
     >
-      <div
-        style={{
-          background: 'var(--bg-surface)',
-          width: '100%',
-          maxWidth: '560px',
-          height: '100vh',
-          maxHeight: '100vh',
-          boxShadow: 'var(--shadow-modal)',
-          borderLeft: '1px solid var(--border-subtle)',
-          borderRadius: 0,
-          display: 'flex',
-          flexDirection: 'column',
-          position: 'relative',
-          overflow: 'hidden',
-          animation: 'slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
-        }}
-      >
+      <div className="bg-surface w-full max-w-[560px] h-screen max-h-screen shadow-modal border-l border-border-subtle flex flex-col relative overflow-hidden animate-in slide-in-from-right duration-300">
         {/* Header */}
-        <div
-          style={{
-            padding: '22px 26px 18px',
-            borderBottom: '1px solid var(--border-subtle)',
-            display: 'flex',
-            alignItems: 'flex-start',
-            justifyContent: 'space-between',
-            background: 'linear-gradient(135deg, rgba(30,106,255,0.07) 0%, transparent 65%)',
-            flexShrink: 0
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div
-              style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '11px',
-                background: 'var(--brand-primary)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 4px 12px var(--brand-primary-glow)',
-                color: '#fff'
-              }}
-            >
-              <ShieldCheck size={20} strokeWidth={2.2} />
+        <div className="px-6 py-5 border-b border-border-subtle flex items-start justify-between bg-gradient-to-br from-brand-primary/10 to-transparent shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-sm bg-brand-primary flex items-center justify-center shadow-glow text-text-inverse shrink-0">
+              <ShieldCheck className="w-5 h-5" strokeWidth={2.2} />
             </div>
             <div>
-              <h2
-                style={{
-                  fontSize: '1.15rem',
-                  fontWeight: 700,
-                  color: 'var(--color-charcoal)',
-                  margin: 0
-                }}
-              >
+              <h2 className="text-lg font-bold text-text-primary">
                 {editingRole
-                  ? (isKa ? 'როლის რედაქტირება' : 'Edit Role')
-                  : (isKa ? 'ახალი როლის შექმნა' : 'Create New Role')}
+                  ? isKa
+                    ? 'როლის რედაქტირება'
+                    : 'Edit Role'
+                  : isKa
+                  ? 'ახალი როლის შექმნა'
+                  : 'Create New Role'}
               </h2>
-              <p
-                style={{
-                  fontSize: '0.8rem',
-                  color: 'var(--color-text-secondary)',
-                  margin: '2px 0 0'
-                }}
-              >
+              <p className="text-xs text-text-secondary mt-0.5">
                 {isKa
                   ? 'აირჩიეთ კატეგორია და მიანიჭეთ სისტემური წვდომები'
                   : 'Select role category and assign system permissions'}
@@ -347,76 +300,42 @@ export const CreateRoleModal: React.FC<CreateRoleModalProps> = ({
             </div>
           </div>
           <button
+            type="button"
             onClick={handleClose}
             aria-label={isKa ? 'დახურვა' : 'Close'}
-            style={{
-              background: 'var(--bg-surface-secondary)',
-              border: '1px solid var(--border-subtle)',
-              borderRadius: '8px',
-              padding: '6px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'var(--color-text-secondary)',
-              transition: 'all 0.15s'
-            }}
+            className="p-1.5 rounded-xs bg-surface-secondary border border-border-subtle text-text-secondary hover:text-text-primary hover:bg-surface-tertiary transition-all duration-150 cursor-pointer"
           >
-            <X size={17} />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Form Body */}
         <form
           onSubmit={handleSubmit}
-          style={{
-            padding: '22px 26px',
-            flex: 1,
-            overflowY: 'auto',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '20px'
-          }}
+          className="p-6 flex-1 overflow-y-auto flex flex-col gap-5"
         >
           {/* Role Title Input */}
-          <div>
-            <label style={labelBase}>
-              {isKa ? 'როლის დასახელება' : 'Role Title'}
-              <span style={{ color: '#EF4444', marginLeft: '4px' }}>*</span>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold uppercase tracking-wider text-text-secondary flex items-center gap-1">
+              <span>{isKa ? 'როლის დასახელება' : 'Role Title'}</span>
+              <span className="text-danger">*</span>
             </label>
             <input
               type="text"
               value={roleTitle}
               onChange={(e) => setRoleTitle(e.target.value)}
               placeholder={isKa ? 'მაგ: მენეჯმენტი' : 'e.g. Management'}
-              style={{
-                width: '100%',
-                padding: '10px 14px',
-                borderRadius: '10px',
-                border: '1.5px solid var(--border-subtle)',
-                background: 'var(--bg-surface)',
-                color: 'var(--color-charcoal)',
-                fontSize: '0.875rem',
-                fontWeight: 600,
-                outline: 'none',
-                boxSizing: 'border-box'
-              }}
+              className="w-full px-3.5 py-2.5 rounded-sm border border-border-subtle bg-surface text-text-primary text-sm font-semibold outline-none transition-all duration-150 focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10"
               required
             />
           </div>
 
           {/* Category Badge Selection */}
-          <div>
-            <label style={labelBase}>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
               {isKa ? 'კატეგორიის ბეიჯი' : 'Category Badge'}
             </label>
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(3, 1fr)',
-                gap: '10px'
-              }}
-            >
+            <div className="grid grid-cols-3 gap-2.5">
               {CATEGORIES.map((cat) => {
                 const isSelected = category === cat.id;
                 const labelText = isKa ? cat.labelKa : cat.labelEn;
@@ -425,34 +344,13 @@ export const CreateRoleModal: React.FC<CreateRoleModalProps> = ({
                     key={cat.id}
                     type="button"
                     onClick={() => handleCategorySelect(cat.id)}
-                    style={{
-                      padding: '11px 12px',
-                      borderRadius: '10px',
-                      border: isSelected
-                        ? `2px solid ${cat.color}`
-                        : '1.5px solid var(--border-subtle)',
-                      background: isSelected ? `${cat.color}15` : 'var(--bg-surface-secondary)',
-                      color: isSelected ? cat.color : 'var(--color-charcoal)',
-                      fontWeight: 650,
-                      fontSize: '0.85rem',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '8px',
-                      transition: 'all 0.15s',
-                      boxShadow: isSelected ? `0 2px 8px ${cat.color}25` : 'none'
-                    }}
+                    className={`p-3 rounded-sm border text-xs font-semibold cursor-pointer flex items-center justify-center gap-2 transition-all duration-150 outline-none ${
+                      isSelected
+                        ? `${cat.borderColor} ${cat.bgColor} ${cat.textColor} shadow-sm`
+                        : 'border-border-subtle bg-surface-secondary text-text-primary hover:border-border-medium'
+                    }`}
                   >
-                    <span
-                      style={{
-                        width: '8px',
-                        height: '8px',
-                        borderRadius: '50%',
-                        background: cat.color,
-                        flexShrink: 0
-                      }}
-                    />
+                    <span className={`w-2 h-2 rounded-full shrink-0 ${cat.dotColor}`} />
                     <span>{labelText}</span>
                   </button>
                 );
@@ -461,27 +359,16 @@ export const CreateRoleModal: React.FC<CreateRoleModalProps> = ({
           </div>
 
           {/* Permissions Matrix */}
-          <div>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                marginBottom: '8px'
-              }}
-            >
-              <label style={{ ...labelBase, marginBottom: 0 }}>
-                {isKa ? 'უფლებების მატრიცა' : 'Permissions Matrix'}
+          <div className="flex flex-col">
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs font-semibold uppercase tracking-wider text-text-secondary flex items-center gap-2">
+                <span>{isKa ? 'უფლებების მატრიცა' : 'Permissions Matrix'}</span>
                 <span
-                  style={{
-                    fontSize: '0.725rem',
-                    fontWeight: 600,
-                    padding: '2px 7px',
-                    borderRadius: '12px',
-                    background: selectedPermissions.length > 0 ? 'var(--brand-primary-light)' : 'var(--bg-surface-secondary)',
-                    color: selectedPermissions.length > 0 ? 'var(--brand-primary)' : 'var(--color-text-secondary)',
-                    border: '1px solid var(--border-subtle)'
-                  }}
+                  className={`text-[11px] font-semibold px-2 py-0.5 rounded-pill border border-border-subtle ${
+                    selectedPermissions.length > 0
+                      ? 'bg-brand-primary/10 text-brand-primary'
+                      : 'bg-surface-secondary text-text-secondary'
+                  }`}
                 >
                   {selectedPermissions.length} / {totalAvailablePermissions}
                 </span>
@@ -490,95 +377,46 @@ export const CreateRoleModal: React.FC<CreateRoleModalProps> = ({
               <button
                 type="button"
                 onClick={handleSelectAllGlobal}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: 'var(--brand-primary)',
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  padding: '2px 6px',
-                  borderRadius: '4px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px'
-                }}
+                className="text-xs font-semibold text-brand-primary hover:underline cursor-pointer flex items-center gap-1 p-1 outline-none"
               >
-                <CheckCheck size={13} />
-                {selectedPermissions.length === totalAvailablePermissions
-                  ? (isKa ? 'ყველას მოხსნა' : 'Clear All')
-                  : (isKa ? 'სრული წვდომა' : 'Full Access')}
+                <CheckCheck className="w-3.5 h-3.5" />
+                <span>
+                  {selectedPermissions.length === totalAvailablePermissions
+                    ? isKa
+                      ? 'ყველას მოხსნა'
+                      : 'Clear All'
+                    : isKa
+                    ? 'სრული წვდომა'
+                    : 'Full Access'}
+                </span>
               </button>
             </div>
 
-            {/* Matrix Container without internal scroll */}
-            <div
-              className="permissions-container"
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '10px',
-                padding: '4px',
-                border: '1.5px solid var(--border-subtle)',
-                borderRadius: '14px',
-                background: 'var(--bg-canvas)'
-              }}
-            >
+            {/* Matrix Container */}
+            <div className="flex flex-col gap-2.5 p-1 border border-border-subtle rounded-md bg-canvas">
               {PERMISSION_MODULES.map((module) => {
                 const modulePermIds = module.permissions.map((p) => p.id);
                 const selectedInModule = modulePermIds.filter((id) =>
                   selectedPermissions.includes(id)
                 ).length;
                 const isAllModuleSelected = selectedInModule === modulePermIds.length;
-                const moduleTitle = isKa ? (module.titleKa || module.title) : (module.titleEn || module.title);
+                const moduleTitle = isKa
+                  ? module.titleKa || module.title
+                  : module.titleEn || module.title;
 
                 return (
                   <div
                     key={module.id}
-                    style={{
-                      background: 'var(--bg-surface)',
-                      borderRadius: '10px',
-                      border: '1px solid var(--border-subtle)',
-                      padding: '12px 14px',
-                      boxShadow: '0 1px 3px rgba(0,0,0,0.03)'
-                    }}
+                    className="bg-surface rounded-sm border border-border-subtle p-3 sm:p-3.5 shadow-sm"
                   >
                     {/* Module Header */}
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        marginBottom: '10px'
-                      }}
-                    >
-                      <div
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '8px',
-                          color: 'var(--color-charcoal)',
-                          fontWeight: 650,
-                          fontSize: '0.85rem'
-                        }}
-                      >
-                        <span
-                          style={{
-                            color: 'var(--brand-primary)',
-                            display: 'flex',
-                            alignItems: 'center'
-                          }}
-                        >
+                    <div className="flex items-center justify-between mb-2.5">
+                      <div className="flex items-center gap-2 text-text-primary font-semibold text-sm">
+                        <span className="text-brand-primary flex items-center">
                           {renderModuleIcon(module.iconType)}
                         </span>
                         <span>{moduleTitle}</span>
-                        <span
-                          style={{
-                            fontSize: '0.7rem',
-                            color: 'var(--color-text-secondary)',
-                            fontWeight: 500
-                          }}
-                        >
+                        <span className="text-xs text-text-secondary font-normal">
                           ({selectedInModule}/{module.permissions.length})
                         </span>
                       </div>
@@ -587,92 +425,52 @@ export const CreateRoleModal: React.FC<CreateRoleModalProps> = ({
                       <button
                         type="button"
                         onClick={() => toggleModuleAll(module)}
-                        style={{
-                          background: isAllModuleSelected
-                            ? 'var(--brand-primary-light)'
-                            : 'var(--bg-surface-secondary)',
-                          border: `1px solid ${isAllModuleSelected ? 'var(--brand-primary)' : 'var(--border-subtle)'}`,
-                          color: isAllModuleSelected
-                            ? 'var(--brand-primary)'
-                            : 'var(--color-text-secondary)',
-                          fontSize: '0.72rem',
-                          fontWeight: 600,
-                          padding: '3px 8px',
-                          borderRadius: '6px',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                          transition: 'all 0.15s'
-                        }}
+                        className={`text-xs font-semibold px-2 py-1 rounded-xs border cursor-pointer flex items-center gap-1 transition-all duration-150 outline-none ${
+                          isAllModuleSelected
+                            ? 'bg-brand-primary/10 border-brand-primary text-brand-primary'
+                            : 'bg-surface-secondary border-border-subtle text-text-secondary hover:text-text-primary hover:border-border-medium'
+                        }`}
                       >
-                        <Check size={11} strokeWidth={2.5} />
-                        {isAllModuleSelected
-                          ? (isKa ? 'მონიშნულია' : 'Selected')
-                          : (isKa ? 'ყველას მონიშვნა' : 'Select All')}
+                        <Check className="w-3 h-3" strokeWidth={2.5} />
+                        <span>
+                          {isAllModuleSelected
+                            ? isKa
+                              ? 'მონიშნულია'
+                              : 'Selected'
+                            : isKa
+                            ? 'ყველას მონიშვნა'
+                            : 'Select All'}
+                        </span>
                       </button>
                     </div>
 
                     {/* Permissions list in Module */}
-                    <div
-                      style={{
-                        display: 'flex',
-                        flexWrap: 'wrap',
-                        gap: '6px'
-                      }}
-                    >
+                    <div className="flex flex-wrap gap-1.5">
                       {module.permissions.map((perm) => {
                         const isChecked = selectedPermissions.includes(perm.id);
                         const permLabel = isKa
-                          ? (perm.labelKa || perm.label)
-                          : (perm.labelEn || perm.label);
+                          ? perm.labelKa || perm.label
+                          : perm.labelEn || perm.label;
 
                         return (
                           <button
                             key={perm.id}
                             type="button"
                             onClick={() => togglePermission(perm.id)}
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '6px',
-                              padding: '5px 10px',
-                              borderRadius: '7px',
-                              border: isChecked
-                                ? '1.5px solid var(--brand-primary)'
-                                : '1px solid var(--border-subtle)',
-                              background: isChecked
-                                ? 'var(--brand-primary-light)'
-                                : 'var(--bg-surface-secondary)',
-                              color: isChecked
-                                ? 'var(--brand-primary)'
-                                : 'var(--color-charcoal)',
-                              fontSize: '0.78rem',
-                              fontWeight: isChecked ? 600 : 500,
-                              cursor: 'pointer',
-                              transition: 'all 0.12s',
-                              userSelect: 'none'
-                            }}
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xs border text-xs font-medium cursor-pointer transition-all duration-150 select-none outline-none ${
+                              isChecked
+                                ? 'border-brand-primary bg-brand-primary/10 text-brand-primary font-semibold'
+                                : 'border-border-subtle bg-surface-secondary text-text-primary hover:border-border-medium'
+                            }`}
                           >
                             <span
-                              style={{
-                                width: '14px',
-                                height: '14px',
-                                borderRadius: '4px',
-                                border: isChecked
-                                  ? 'none'
-                                  : '1.5px solid var(--border-medium)',
-                                background: isChecked
-                                  ? 'var(--brand-primary)'
-                                  : 'var(--bg-surface)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                color: '#fff',
-                                fontSize: '10px'
-                              }}
+                              className={`w-3.5 h-3.5 rounded-xs flex items-center justify-center text-text-inverse text-[10px] ${
+                                isChecked
+                                  ? 'bg-brand-primary'
+                                  : 'border border-border-medium bg-surface'
+                              }`}
                             >
-                              {isChecked && <Check size={10} strokeWidth={3} />}
+                              {isChecked && <Check className="w-2.5 h-2.5" strokeWidth={3} />}
                             </span>
                             <span>{permLabel}</span>
                           </button>
@@ -685,52 +483,23 @@ export const CreateRoleModal: React.FC<CreateRoleModalProps> = ({
             </div>
 
             {hasNoPermissions && (
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  fontSize: '0.75rem',
-                  color: '#EF4444',
-                  marginTop: '8px'
-                }}
-              >
-                <Info size={13} />
-                {isKa
-                  ? 'აირჩიეთ მინიმუმ ერთი სისტემური უფლება როლის შესაქმნელად'
-                  : 'Select at least one permission to create role'}
+              <div className="flex items-center gap-1.5 text-xs text-danger mt-2">
+                <Info className="w-3.5 h-3.5 shrink-0" />
+                <span>
+                  {isKa
+                    ? 'აირჩიეთ მინიმუმ ერთი სისტემური უფლება როლის შესაქმნელად'
+                    : 'Select at least one permission to create role'}
+                </span>
               </div>
             )}
           </div>
 
           {/* Footer Actions */}
-          <div
-            style={{
-              marginTop: 'auto',
-              paddingTop: '16px',
-              borderTop: '1px solid var(--border-subtle)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'flex-end',
-              gap: '10px',
-              background: 'var(--bg-surface)',
-              flexShrink: 0
-            }}
-          >
+          <div className="mt-auto pt-4 border-t border-border-subtle flex items-center justify-end gap-2.5 bg-surface shrink-0">
             <button
               type="button"
               onClick={handleClose}
-              style={{
-                padding: '9px 16px',
-                borderRadius: '9px',
-                border: '1.5px solid var(--border-subtle)',
-                background: 'transparent',
-                color: 'var(--color-text-secondary)',
-                fontSize: '0.85rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                transition: 'all 0.15s'
-              }}
+              className="px-4 py-2 rounded-pill border border-border-subtle bg-surface text-text-secondary hover:bg-surface-secondary hover:text-text-primary font-semibold text-sm transition-all duration-150 cursor-pointer outline-none"
             >
               {isKa ? 'გაუქმება' : 'Cancel'}
             </button>
@@ -739,51 +508,26 @@ export const CreateRoleModal: React.FC<CreateRoleModalProps> = ({
               type="submit"
               id="btn-submit-role"
               disabled={isSubmitDisabled}
-              style={{
-                padding: '9px 20px',
-                borderRadius: '9px',
-                border: 'none',
-                background: isSubmitDisabled
-                  ? 'var(--border-medium)'
-                  : 'var(--brand-primary)',
-                color: isSubmitDisabled ? 'var(--color-text-tertiary)' : '#fff',
-                fontSize: '0.85rem',
-                fontWeight: 650,
-                cursor: isSubmitDisabled ? 'not-allowed' : 'pointer',
-                boxShadow: isSubmitDisabled
-                  ? 'none'
-                  : '0 4px 14px var(--brand-primary-glow)',
-                transition: 'all 0.15s',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}
+              className="inline-flex items-center gap-2 px-5 py-2 rounded-pill text-sm font-semibold text-text-inverse bg-brand-primary shadow-glow hover:bg-brand-primary-hover hover:-translate-y-0.5 active:translate-y-0 transition-all duration-150 cursor-pointer outline-none disabled:opacity-45 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:shadow-none"
             >
-              <Sparkles size={15} />
-              {isSubmitting
-                ? (isKa ? 'ინახება...' : 'Saving...')
-                : editingRole
-                ? (isKa ? 'ცვლილებების შენახვა' : 'Save Changes')
-                : (isKa ? 'როლის შექმნა' : 'Create Role')}
+              <Sparkles className="w-4 h-4" />
+              <span>
+                {isSubmitting
+                  ? isKa
+                    ? 'ინახება...'
+                    : 'Saving...'
+                  : editingRole
+                  ? isKa
+                    ? 'ცვლილებების შენახვა'
+                    : 'Save Changes'
+                  : isKa
+                  ? 'როლის შექმნა'
+                  : 'Create Role'}
+              </span>
             </button>
           </div>
         </form>
       </div>
-
-      <style>{`
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes slideInRight {
-          from {
-            transform: translateX(100%);
-          }
-          to {
-            transform: translateX(0);
-          }
-        }
-      `}</style>
     </div>
   );
 };

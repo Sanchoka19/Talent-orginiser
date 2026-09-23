@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
 
@@ -39,77 +41,44 @@ export const Modal: React.FC<ModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="modal-overlay" onClick={onClose} style={zIndex ? { zIndex } : undefined}>
+    <div
+      className="fixed inset-0 bg-surface-overlay backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200"
+      onClick={onClose}
+      style={zIndex ? { zIndex } : undefined}
+    >
       <div
-        className="modal-content"
+        className="bg-surface rounded-lg border border-border-subtle shadow-modal w-full max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
         style={{ maxWidth }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div
-          style={{
-            padding: '24px 28px 18px 28px',
-            borderBottom: '1px solid var(--border-subtle)',
-            display: 'flex',
-            alignItems: 'flex-start',
-            justifyContent: 'space-between',
-            gap: '16px',
-            flexShrink: 0
-          }}
-        >
+        <div className="p-6 sm:px-7 sm:py-5 border-b border-border-subtle flex items-start justify-between gap-4 shrink-0">
           <div>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-charcoal)', letterSpacing: '-0.02em' }}>
+            <h3 className="text-lg sm:text-xl font-bold text-text-primary tracking-tight m-0">
               {title}
             </h3>
             {subtitle && (
-              <p style={{ fontSize: '0.825rem', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
+              <p className="text-xs text-text-secondary mt-1 m-0">
                 {subtitle}
               </p>
             )}
           </div>
           <button
             onClick={onClose}
-            className="btn btn-secondary btn-icon"
-            style={{
-              width: '32px',
-              height: '32px',
-              flexShrink: 0,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
+            className="w-8 h-8 rounded-full inline-flex items-center justify-center border border-border-subtle bg-surface-secondary text-text-primary hover:bg-surface-tertiary hover:border-border-medium transition-all duration-150 cursor-pointer shrink-0"
           >
             <X size={16} />
           </button>
         </div>
 
         {/* Scrollable Body */}
-        <div
-          className="thin-scrollbar"
-          style={{
-            padding: '24px 28px',
-            flex: 1,
-            overflowY: 'auto',
-            overflowX: 'hidden'
-          }}
-        >
+        <div className="p-6 sm:px-7 flex-1 overflow-y-auto overflow-x-hidden">
           {children}
         </div>
 
         {/* Sticky Footer */}
         {footer && (
-          <div
-            style={{
-              padding: '16px 28px 20px 28px',
-              borderTop: '1px solid var(--border-subtle)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'flex-end',
-              gap: '12px',
-              background: 'var(--bg-surface-secondary)',
-              flexShrink: 0
-            }}
-          >
+          <div className="p-4 sm:px-7 sm:py-5 border-t border-border-subtle flex items-center justify-end gap-3 bg-surface-secondary shrink-0">
             {footer}
           </div>
         )}

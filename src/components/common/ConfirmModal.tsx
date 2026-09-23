@@ -1,4 +1,6 @@
-import React, { useEffect } from 'react';
+'use client';
+
+import React, { useEffect, useState } from 'react';
 import { Trash2, AlertTriangle, RotateCw, X } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 
@@ -34,9 +36,9 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   isSubmitting = false
 }) => {
   const { language } = useLanguage();
-  const [typedInput, setTypedInput] = React.useState('');
+  const [typedInput, setTypedInput] = useState('');
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (isOpen) {
       setTypedInput('');
     }
@@ -78,127 +80,61 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   // Icon selection
   const renderIcon = () => {
     if (icon === 'refresh' || variant === 'info') {
-      return <RotateCw size={24} strokeWidth={2.2} />;
+      return <RotateCw size={22} strokeWidth={2.2} />;
     }
     if (icon === 'alert' || variant === 'warning') {
-      return <AlertTriangle size={24} strokeWidth={2.2} />;
+      return <AlertTriangle size={22} strokeWidth={2.2} />;
     }
-    return <Trash2 size={24} strokeWidth={2.2} />;
+    return <Trash2 size={22} strokeWidth={2.2} />;
   };
 
-  const getVariantStyles = () => {
+  const getVariantClasses = () => {
     if (variant === 'warning') {
       return {
-        iconBg: 'rgba(245, 158, 11, 0.12)',
-        iconColor: '#D97706',
-        btnBg: '#D97706',
-        btnHover: '#B45309'
+        iconBox: 'bg-amber-500/10 text-amber-600',
+        dot: 'bg-amber-500',
+        btnBg: 'bg-amber-600 hover:bg-amber-700 text-white'
       };
     }
     if (variant === 'info') {
       return {
-        iconBg: 'var(--brand-primary-light)',
-        iconColor: 'var(--brand-primary)',
-        btnBg: 'var(--brand-primary)',
-        btnHover: '#003A54'
+        iconBox: 'bg-brand-primary/10 text-brand-primary',
+        dot: 'bg-brand-primary',
+        btnBg: 'bg-brand-primary hover:bg-brand-primary-hover text-white'
       };
     }
     // Danger default
     return {
-      iconBg: 'rgba(239, 68, 68, 0.1)',
-      iconColor: '#DC2626',
-      btnBg: '#DC2626',
-      btnHover: '#B91C1C'
+      iconBox: 'bg-danger/10 text-danger',
+      dot: 'bg-danger',
+      btnBg: 'bg-danger hover:bg-danger/90 text-white'
     };
   };
 
-  const vStyles = getVariantStyles();
+  const vClasses = getVariantClasses();
 
   return (
     <div
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        zIndex: 99999, // Highest z-index to always render on top of any open modal or drawer
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '24px',
-        backgroundColor: 'rgba(15, 23, 42, 0.65)',
-        backdropFilter: 'blur(8px)',
-        WebkitBackdropFilter: 'blur(8px)',
-        animation: 'confirmOverlayFadeIn 0.15s ease-out'
-      }}
+      className="fixed inset-0 z-[99999] flex items-center justify-center p-6 bg-slate-900/65 backdrop-blur-md animate-in fade-in duration-150"
       onClick={() => {
         if (!isSubmitting) onClose();
       }}
     >
       <div
-        style={{
-          width: '100%',
-          maxWidth: '460px',
-          height: 'auto',
-          maxHeight: '90vh',
-          borderRadius: '20px',
-          overflow: 'hidden',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)',
-          backgroundColor: 'var(--bg-surface)',
-          border: '1px solid var(--border-subtle)',
-          display: 'flex',
-          flexDirection: 'column',
-          position: 'relative',
-          animation: 'confirmBoxScaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
-        }}
+        className="w-full max-w-[460px] h-auto max-h-[90vh] rounded-[20px] overflow-hidden shadow-2xl bg-surface border border-border-subtle flex flex-col relative animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div
-          style={{
-            padding: '24px 24px 16px 24px',
-            display: 'flex',
-            alignItems: 'flex-start',
-            justifyContent: 'space-between',
-            gap: '14px'
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-            <div
-              style={{
-                width: '46px',
-                height: '46px',
-                borderRadius: '14px',
-                background: vStyles.iconBg,
-                color: vStyles.iconColor,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0
-              }}
-            >
+        <div className="p-6 pb-4 flex items-start justify-between gap-3.5">
+          <div className="flex items-center gap-3.5">
+            <div className={`w-11.5 h-11.5 rounded-[14px] flex items-center justify-center shrink-0 ${vClasses.iconBox}`}>
               {renderIcon()}
             </div>
             <div>
-              <h3
-                style={{
-                  fontSize: '1.15rem',
-                  fontWeight: 700,
-                  color: 'var(--color-charcoal)',
-                  margin: 0,
-                  letterSpacing: '-0.015em'
-                }}
-              >
+              <h3 className="text-base sm:text-lg font-bold text-text-primary m-0 tracking-tight">
                 {title}
               </h3>
-              <p
-                style={{
-                  fontSize: '0.8rem',
-                  color: 'var(--color-text-secondary)',
-                  margin: '3px 0 0 0'
-                }}
-              >
+              <p className="text-xs text-text-secondary mt-0.5 m-0">
                 {variant === 'danger'
                   ? language === 'ka'
                     ? 'ეს მოქმედება შეუქცევადია'
@@ -214,65 +150,23 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
             type="button"
             onClick={onClose}
             disabled={isSubmitting}
-            className="btn btn-secondary btn-icon"
-            style={{
-              width: '32px',
-              height: '32px',
-              flexShrink: 0,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
+            className="w-8 h-8 rounded-full inline-flex items-center justify-center border border-border-subtle bg-surface-secondary text-text-primary hover:bg-surface-tertiary hover:border-border-medium transition-all shrink-0 cursor-pointer"
           >
             <X size={15} />
           </button>
         </div>
 
         {/* Modal Body */}
-        <div style={{ padding: '0 24px 22px 24px' }}>
-          <p
-            style={{
-              fontSize: '0.875rem',
-              color: 'var(--color-text-secondary)',
-              lineHeight: 1.5,
-              margin: '0 0 14px 0'
-            }}
-          >
+        <div className="px-6 pb-5.5">
+          <p className="text-sm text-text-secondary leading-relaxed m-0 mb-3.5">
             {message}
           </p>
 
           {/* Item Highlight Chip (if provided) */}
           {itemName && (
-            <div
-              style={{
-                padding: '10px 14px',
-                borderRadius: '10px',
-                background: 'var(--bg-surface-secondary)',
-                border: '1px solid var(--border-subtle)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '10px'
-              }}
-            >
-              <div
-                style={{
-                  width: '8px',
-                  height: '8px',
-                  borderRadius: '50%',
-                  background: vStyles.iconColor,
-                  flexShrink: 0
-                }}
-              />
-              <span
-                style={{
-                  fontSize: '0.875rem',
-                  fontWeight: 600,
-                  color: 'var(--color-charcoal)',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap'
-                }}
-              >
+            <div className="p-2.5 px-3.5 rounded-sm bg-surface-secondary border border-border-subtle flex items-center gap-2.5 mb-3.5">
+              <div className={`w-2 h-2 rounded-full shrink-0 ${vClasses.dot}`} />
+              <span className="text-sm font-semibold text-text-primary truncate">
                 {itemName}
               </span>
             </div>
@@ -280,58 +174,20 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
 
           {/* GitHub-style Match Confirmation Input */}
           {isMatchRequired && (
-            <div
-              style={{
-                marginTop: '16px',
-                padding: '14px',
-                borderRadius: '12px',
-                background: 'var(--bg-surface-secondary)',
-                border: '1px solid var(--border-subtle)'
-              }}
-            >
-              <label
-                style={{
-                  fontSize: '0.8rem',
-                  fontWeight: 600,
-                  color: 'var(--color-charcoal)',
-                  display: 'block',
-                  marginBottom: '8px',
-                  lineHeight: 1.45
-                }}
-              >
+            <div className="mt-4 p-3.5 rounded-md bg-surface-secondary border border-border-subtle">
+              <label className="text-xs font-semibold text-text-primary block mb-2 leading-relaxed">
                 {matchInstruction || (
                   language === 'ka' ? (
                     <>
                       დასადასტურებლად ქვემოთ აკრიფეთ:{' '}
-                      <span
-                        style={{
-                          display: 'inline-block',
-                          fontWeight: 700,
-                          color: '#DC2626',
-                          background: 'rgba(220, 38, 38, 0.08)',
-                          padding: '1px 8px',
-                          borderRadius: '6px',
-                          userSelect: 'all',
-                          letterSpacing: '0.01em'
-                        }}
-                      >
+                      <span className="inline-block font-bold text-danger bg-danger/10 px-2 py-0.5 rounded select-all tracking-wide">
                         {requiredMatch}
                       </span>
                     </>
                   ) : (
                     <>
                       To confirm, type{' '}
-                      <span
-                        style={{
-                          display: 'inline-block',
-                          fontWeight: 700,
-                          color: '#DC2626',
-                          background: 'rgba(220, 38, 38, 0.08)',
-                          padding: '1px 8px',
-                          borderRadius: '6px',
-                          userSelect: 'all'
-                        }}
-                      >
+                      <span className="inline-block font-bold text-danger bg-danger/10 px-2 py-0.5 rounded select-all tracking-wide">
                         {requiredMatch}
                       </span>{' '}
                       below:
@@ -351,27 +207,16 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
                 }}
                 placeholder={requiredMatch}
                 autoFocus
-                className="form-input"
-                style={{
-                  width: '100%',
-                  padding: '9px 12px',
-                  fontSize: '0.875rem',
-                  borderRadius: 'var(--radius-sm)',
-                  border: isMatchValid && typedInput.length > 0
-                    ? '1.5px solid #16A34A'
+                className={`w-full px-3 py-2 text-sm rounded-sm bg-surface outline-none transition-all placeholder:text-text-tertiary ${
+                  isMatchValid && typedInput.length > 0
+                    ? 'border-2 border-emerald-600 ring-2 ring-emerald-500/20'
                     : typedInput.length > 0
-                    ? '1.5px solid #EF4444'
-                    : '1px solid var(--border-medium)',
-                  backgroundColor: 'var(--bg-surface)',
-                  outline: 'none',
-                  boxShadow: isMatchValid && typedInput.length > 0
-                    ? '0 0 0 3px rgba(22, 163, 74, 0.15)'
-                    : 'none',
-                  transition: 'all 0.2s ease'
-                }}
+                    ? 'border-2 border-danger'
+                    : 'border border-border-medium focus:border-brand-primary'
+                }`}
               />
               {typedInput.length > 0 && !isMatchValid && (
-                <div style={{ fontSize: '0.725rem', color: '#DC2626', marginTop: '6px', fontWeight: 500 }}>
+                <div className="text-xs text-danger mt-1.5 font-medium">
                   {language === 'ka' ? 'შეყვანილი სახელი არ ემთხვევა' : 'Entered name does not match'}
                 </div>
               )}
@@ -380,27 +225,12 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
         </div>
 
         {/* Modal Footer */}
-        <div
-          style={{
-            padding: '16px 24px',
-            background: 'var(--bg-surface-secondary)',
-            borderTop: '1px solid var(--border-subtle)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'flex-end',
-            gap: '10px'
-          }}
-        >
+        <div className="p-4 px-6 bg-surface-secondary border-t border-border-subtle flex items-center justify-end gap-2.5">
           <button
             type="button"
             onClick={onClose}
             disabled={isSubmitting}
-            className="btn btn-secondary"
-            style={{
-              padding: '8px 16px',
-              fontSize: '0.875rem',
-              fontWeight: 600
-            }}
+            className="inline-flex items-center justify-center px-4 py-2 rounded-pill text-sm font-semibold border border-border-subtle bg-surface text-text-primary hover:bg-surface-secondary transition-all cursor-pointer"
           >
             {cancelLabel || defaultCancelText}
           </button>
@@ -409,45 +239,21 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
             type="button"
             onClick={onConfirm}
             disabled={isConfirmDisabled}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '8px 20px',
-              borderRadius: 'var(--radius-pill)',
-              border: 'none',
-              background: isConfirmDisabled ? 'var(--border-subtle)' : vStyles.btnBg,
-              color: isConfirmDisabled ? 'var(--color-text-tertiary)' : '#FFFFFF',
-              fontSize: '0.875rem',
-              fontWeight: 600,
-              cursor: isConfirmDisabled ? 'not-allowed' : 'pointer',
-              opacity: isConfirmDisabled ? 0.65 : 1,
-              boxShadow: isConfirmDisabled ? 'none' : 'var(--shadow-sm)',
-              transition: 'all var(--transition-fast)'
-            }}
-            onMouseEnter={(e) => {
-              if (!isConfirmDisabled) e.currentTarget.style.background = vStyles.btnHover;
-            }}
-            onMouseLeave={(e) => {
-              if (!isConfirmDisabled) e.currentTarget.style.background = vStyles.btnBg;
-            }}
+            className={`inline-flex items-center gap-1.5 px-5 py-2 rounded-pill text-sm font-semibold transition-all shadow-sm ${
+              isConfirmDisabled
+                ? 'bg-border-subtle text-text-tertiary cursor-not-allowed opacity-65 shadow-none'
+                : `${vClasses.btnBg} cursor-pointer`
+            }`}
           >
             {variant === 'danger' && <Trash2 size={14} />}
-            <span>{isSubmitting ? (language === 'ka' ? 'მიმდინარეობს...' : 'Processing...') : confirmLabel || defaultConfirmText}</span>
+            <span>
+              {isSubmitting
+                ? (language === 'ka' ? 'მიმდინარეობს...' : 'Processing...')
+                : confirmLabel || defaultConfirmText}
+            </span>
           </button>
         </div>
       </div>
-
-      <style>{`
-        @keyframes confirmOverlayFadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes confirmBoxScaleIn {
-          from { opacity: 0; transform: scale(0.94); }
-          to { opacity: 1; transform: scale(1); }
-        }
-      `}</style>
     </div>
   );
 };

@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useCallback } from 'react';
 import { X, User, Mail, ShieldCheck, ShieldAlert, ShieldPlus, Key, RefreshCw, Eye, EyeOff, Check, Send } from 'lucide-react';
 import { SystemUser } from '../../types/user';
@@ -94,7 +96,11 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
     const errs = validate();
     if (Object.keys(errs).length) {
       setErrors(errs);
-      toast.error(isKa ? 'გთხოვთ შეავსოთ სავალდებულო ველები და აირჩიოთ მინიმუმ ერთი უფლება' : 'Please fill in required fields and select a role');
+      toast.error(
+        isKa
+          ? 'გთხოვთ შეავსოთ სავალდებულო ველები და აირჩიოთ მინიმუმ ერთი უფლება'
+          : 'Please fill in required fields and select a role'
+      );
       return;
     }
 
@@ -126,141 +132,49 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
 
   if (!isOpen) return null;
 
-  const inputBase: React.CSSProperties = {
-    width: '100%',
-    padding: '10px 14px',
-    borderRadius: '10px',
-    border: '1.5px solid var(--border-subtle)',
-    background: 'var(--bg-surface)',
-    color: 'var(--color-charcoal)',
-    fontSize: '0.875rem',
-    outline: 'none',
-    transition: 'border-color 0.15s',
-    boxSizing: 'border-box'
-  };
-
-  const labelBase: React.CSSProperties = {
-    fontSize: '0.775rem',
-    fontWeight: 650,
-    color: 'var(--color-text-secondary)',
-    letterSpacing: '0.02em',
-    textTransform: 'uppercase',
-    marginBottom: '6px',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px'
-  };
-
   return (
     <div
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        zIndex: 1000,
-        display: 'flex',
-        justifyContent: 'flex-end',
-        background: 'rgba(35, 35, 35, 0.55)',
-        backdropFilter: 'blur(6px)',
-        WebkitBackdropFilter: 'blur(6px)',
-        animation: 'fadeIn 0.2s ease-out'
-      }}
+      className="fixed inset-0 z-[1000] flex justify-end bg-surface-overlay backdrop-blur-sm transition-opacity duration-200"
       onClick={(e) => {
         if (e.target === e.currentTarget) handleClose();
       }}
     >
-      <div
-        style={{
-          background: 'var(--bg-surface)',
-          width: '100%',
-          maxWidth: '520px',
-          height: '100vh',
-          maxHeight: '100vh',
-          boxShadow: 'var(--shadow-modal)',
-          borderLeft: '1px solid var(--border-subtle)',
-          borderRadius: 0,
-          display: 'flex',
-          flexDirection: 'column',
-          position: 'relative',
-          overflow: 'hidden',
-          animation: 'slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
-        }}
-      >
+      <div className="bg-surface w-full max-w-[520px] h-screen max-h-screen shadow-modal border-l border-border-subtle flex flex-col relative overflow-hidden animate-in slide-in-from-right duration-300">
         {/* Header */}
-        <div
-          style={{
-            padding: '24px 28px 20px',
-            borderBottom: '1px solid var(--border-subtle)',
-            display: 'flex',
-            alignItems: 'flex-start',
-            justifyContent: 'space-between',
-            background: 'linear-gradient(135deg, rgba(30,106,255,0.06) 0%, transparent 60%)'
-          }}
-        >
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '4px' }}>
-              <div
-                style={{
-                  width: '38px',
-                  height: '38px',
-                  borderRadius: '10px',
-                  background: 'var(--brand-primary)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: '0 4px 12px var(--brand-primary-glow)'
-                }}
-              >
-                <User size={18} color="#fff" strokeWidth={2.2} />
-              </div>
-              <div>
-                <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-charcoal)', margin: 0 }}>
-                  {isKa ? 'თანამშრომლის დამატება' : 'Add Staff Member'}
-                </h2>
-                <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', margin: 0 }}>
-                  {isKa ? 'ახალი ანგარიშის შექმნა სისტემაში' : 'Create new account in system'}
-                </p>
-              </div>
+        <div className="px-6 py-5 border-b border-border-subtle flex items-start justify-between bg-gradient-to-br from-brand-primary/10 to-transparent shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-sm bg-brand-primary flex items-center justify-center shadow-glow text-text-inverse shrink-0">
+              <User className="w-5 h-5" strokeWidth={2.2} />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-text-primary">
+                {isKa ? 'თანამშრომლის დამატება' : 'Add Staff Member'}
+              </h2>
+              <p className="text-xs text-text-secondary mt-0.5">
+                {isKa ? 'ახალი ანგარიშის შექმნა სისტემაში' : 'Create new account in system'}
+              </p>
             </div>
           </div>
           <button
+            type="button"
             onClick={handleClose}
-            style={{
-              background: 'var(--bg-surface-secondary)',
-              border: '1px solid var(--border-subtle)',
-              borderRadius: '8px',
-              padding: '6px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'var(--color-text-secondary)',
-              transition: 'all 0.15s'
-            }}
+            className="p-1.5 rounded-xs bg-surface-secondary border border-border-subtle text-text-secondary hover:text-text-primary hover:bg-surface-tertiary transition-all duration-150 cursor-pointer"
           >
-            <X size={17} />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Form */}
         <form
           onSubmit={handleSubmit}
-          style={{
-            padding: '24px 28px',
-            flex: 1,
-            overflowY: 'auto',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '18px'
-          }}
+          className="p-6 flex-1 overflow-y-auto flex flex-col gap-4.5"
         >
           {/* Full Name */}
-          <div>
-            <label style={labelBase}>
-              <User size={13} />
-              {isKa ? 'სახელი და გვარი' : 'Full Name'}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold uppercase tracking-wider text-text-secondary flex items-center gap-1.5">
+              <User className="w-3.5 h-3.5" />
+              <span>{isKa ? 'სახელი და გვარი' : 'Full Name'}</span>
+              <span className="text-danger">*</span>
             </label>
             <input
               id="cu-fullname"
@@ -268,23 +182,23 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               placeholder={isKa ? 'მაგ. სანდრო ჩოკორაია' : 'e.g. Sandro Chokoraia'}
-              style={{
-                ...inputBase,
-                borderColor: errors.fullName ? '#EF4444' : 'var(--border-subtle)'
-              }}
+              className={`w-full px-3.5 py-2.5 rounded-sm border bg-surface text-text-primary text-sm outline-none transition-all duration-150 focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10 ${
+                errors.fullName ? 'border-danger' : 'border-border-subtle'
+              }`}
             />
             {errors.fullName && (
-              <span style={{ fontSize: '0.75rem', color: '#EF4444', marginTop: '4px', display: 'block' }}>
+              <span className="text-xs text-danger mt-0.5 block">
                 {errors.fullName}
               </span>
             )}
           </div>
 
           {/* Email */}
-          <div>
-            <label style={labelBase}>
-              <Mail size={13} />
-              {isKa ? 'ელ-ფოსტა' : 'Email'}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold uppercase tracking-wider text-text-secondary flex items-center gap-1.5">
+              <Mail className="w-3.5 h-3.5" />
+              <span>{isKa ? 'ელ-ფოსტა' : 'Email'}</span>
+              <span className="text-danger">*</span>
             </label>
             <input
               id="cu-email"
@@ -292,44 +206,32 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="sandro@artistent.com"
-              style={{
-                ...inputBase,
-                borderColor: errors.email ? '#EF4444' : 'var(--border-subtle)'
-              }}
+              className={`w-full px-3.5 py-2.5 rounded-sm border bg-surface text-text-primary text-sm outline-none transition-all duration-150 focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10 ${
+                errors.email ? 'border-danger' : 'border-border-subtle'
+              }`}
             />
             {errors.email && (
-              <span style={{ fontSize: '0.75rem', color: '#EF4444', marginTop: '4px', display: 'block' }}>
+              <span className="text-xs text-danger mt-0.5 block">
                 {errors.email}
               </span>
             )}
           </div>
 
           {/* Role selector - ONLY CREATED ROLES */}
-          <div>
-            <label style={labelBase}>
-              <ShieldCheck size={13} />
-              {isKa ? 'როლი სისტემაში' : 'Role in System'}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold uppercase tracking-wider text-text-secondary flex items-center gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>{isKa ? 'როლი სისტემაში' : 'Role in System'}</span>
+              <span className="text-danger">*</span>
             </label>
 
             {roles.length === 0 ? (
-              <div
-                style={{
-                  padding: '16px',
-                  borderRadius: '12px',
-                  border: '1.5px dashed var(--border-medium)',
-                  background: 'var(--bg-surface-secondary)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  textAlign: 'center',
-                  gap: '8px'
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#D97706', fontSize: '0.85rem', fontWeight: 650 }}>
-                  <ShieldAlert size={17} />
+              <div className="p-4 rounded-md border border-dashed border-border-medium bg-surface-secondary flex flex-col items-center text-center gap-2">
+                <div className="flex items-center gap-2 text-status-rest-text text-sm font-semibold">
+                  <ShieldAlert className="w-4.5 h-4.5" />
                   <span>{isKa ? 'როლები ჯერ არ არის შექმნილი' : 'No roles created yet'}</span>
                 </div>
-                <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--color-text-secondary)', lineHeight: 1.45, maxWidth: '360px' }}>
+                <p className="text-xs text-text-secondary leading-relaxed max-w-[360px]">
                   {isKa
                     ? 'თანამშრომლის დასამატებლად აუცილებელია ჯერ შეიქმნას შესაბამისი როლი „როლები და უფლებები“ განყოფილებიდან.'
                     : 'To add a staff member, you must first create an appropriate role from the Roles & Permissions tab.'}
@@ -341,79 +243,32 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
                       onClose();
                       onRequestCreateRole();
                     }}
-                    style={{
-                      marginTop: '6px',
-                      padding: '7px 16px',
-                      borderRadius: '8px',
-                      border: 'none',
-                      background: 'var(--brand-primary)',
-                      color: '#fff',
-                      fontSize: '0.78rem',
-                      fontWeight: 650,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      boxShadow: '0 2px 8px var(--brand-primary-glow)'
-                    }}
+                    className="mt-1.5 px-4 py-2 rounded-pill bg-brand-primary text-text-inverse text-xs font-semibold shadow-glow hover:bg-brand-primary-hover flex items-center gap-1.5 transition-all duration-150 cursor-pointer outline-none"
                   >
-                    <ShieldPlus size={14} />
+                    <ShieldPlus className="w-3.5 h-3.5" />
                     <span>{isKa ? 'როლის შექმნა' : 'Create Role'}</span>
                   </button>
                 )}
               </div>
             ) : (
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: roles.length === 1 ? '1fr' : roles.length === 2 ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(130px, 1fr))',
-                  gap: '8px'
-                }}
-              >
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {roles.map((r) => {
                   const isSelected = activeRole === r.id;
-                  const badgeColor = r.badgeColor || 'var(--brand-primary)';
                   return (
                     <button
                       key={r.id}
                       type="button"
                       onClick={() => setSelectedRoleId(r.id)}
-                      style={{
-                        padding: '12px 10px',
-                        borderRadius: '10px',
-                        border: isSelected
-                          ? `2px solid ${badgeColor}`
-                          : '1.5px solid var(--border-subtle)',
-                        background: isSelected ? `${badgeColor}14` : 'var(--bg-surface-secondary)',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        gap: '4px',
-                        transition: 'all 0.15s'
-                      }}
+                      className={`p-3 rounded-sm border text-xs cursor-pointer flex flex-col items-center gap-1 transition-all duration-150 outline-none ${
+                        isSelected
+                          ? 'border-brand-primary bg-brand-primary/10 text-brand-primary font-semibold shadow-sm'
+                          : 'border-border-subtle bg-surface-secondary text-text-primary hover:border-border-medium'
+                      }`}
                     >
-                      <span
-                        style={{
-                          fontSize: '0.825rem',
-                          fontWeight: 650,
-                          color: isSelected ? badgeColor : 'var(--color-charcoal)',
-                          textAlign: 'center',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                          maxWidth: '100%'
-                        }}
-                      >
+                      <span className="font-semibold text-xs text-center truncate max-w-full">
                         {r.title}
                       </span>
-                      <span
-                        style={{
-                          fontSize: '0.675rem',
-                          color: isSelected ? badgeColor : 'var(--color-text-secondary)',
-                          fontWeight: 500
-                        }}
-                      >
+                      <span className="text-[10px] text-text-secondary font-medium">
                         {r.badge}
                       </span>
                     </button>
@@ -422,38 +277,27 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
               </div>
             )}
             {errors.role && (
-              <span style={{ fontSize: '0.75rem', color: '#EF4444', marginTop: '4px', display: 'block' }}>
+              <span className="text-xs text-danger mt-0.5 block">
                 {errors.role}
               </span>
             )}
           </div>
 
           {/* Authorization Section with Email Invite toggle */}
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-              <label style={{ ...labelBase, marginBottom: 0 }}>
-                <Key size={13} />
-                {isKa ? 'ავტორიზაცია' : 'Authorization'}
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-xs font-semibold uppercase tracking-wider text-text-secondary flex items-center gap-1.5">
+                <Key className="w-3.5 h-3.5" />
+                <span>{isKa ? 'ავტორიზაცია' : 'Authorization'}</span>
               </label>
               {!sendInvite && (
                 <button
                   type="button"
                   onClick={handleGenerate}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: 'var(--brand-primary)',
-                    fontSize: '0.775rem',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    padding: '2px 4px'
-                  }}
+                  className="text-xs font-semibold text-brand-primary hover:underline cursor-pointer flex items-center gap-1 p-0.5 outline-none"
                 >
-                  <RefreshCw size={12} />
-                  {isKa ? 'პაროლის გენერირება' : 'Generate Password'}
+                  <RefreshCw className="w-3 h-3" />
+                  <span>{isKa ? 'პაროლის გენერირება' : 'Generate Password'}</span>
                 </button>
               )}
             </div>
@@ -474,61 +318,30 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
                   return next;
                 });
               }}
-              style={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: '12px',
-                padding: '12px 14px',
-                borderRadius: '10px',
-                border: sendInvite
-                  ? '1.5px solid var(--brand-primary)'
-                  : '1.5px solid var(--border-subtle)',
-                background: sendInvite
-                  ? 'rgba(30, 106, 255, 0.06)'
-                  : 'var(--bg-surface-secondary)',
-                cursor: 'pointer',
-                marginBottom: sendInvite ? '0' : '10px',
-                transition: 'all 0.15s'
-              }}
+              className={`flex items-start gap-3 p-3 sm:p-3.5 rounded-sm border cursor-pointer transition-all duration-150 select-none ${
+                sendInvite
+                  ? 'border-brand-primary bg-brand-primary/10'
+                  : 'border-border-subtle bg-surface-secondary hover:border-border-medium'
+              } ${sendInvite ? 'mb-0' : 'mb-2.5'}`}
             >
               <div
-                style={{
-                  width: '18px',
-                  height: '18px',
-                  borderRadius: '5px',
-                  border: sendInvite
-                    ? 'none'
-                    : '1.5px solid var(--border-medium)',
-                  background: sendInvite ? 'var(--brand-primary)' : 'var(--bg-surface)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#fff',
-                  flexShrink: 0,
-                  marginTop: '2px',
-                  transition: 'all 0.15s'
-                }}
+                className={`w-4.5 h-4.5 rounded-xs flex items-center justify-center shrink-0 mt-0.5 text-text-inverse transition-all duration-150 ${
+                  sendInvite
+                    ? 'bg-brand-primary'
+                    : 'border border-border-medium bg-surface'
+                }`}
               >
-                {sendInvite && <Check size={12} strokeWidth={3} />}
+                {sendInvite && <Check className="w-3 h-3" strokeWidth={3} />}
               </div>
-              <div style={{ flex: 1 }}>
+              <div className="flex-1">
                 <div
-                  style={{
-                    fontSize: '0.85rem',
-                    fontWeight: 650,
-                    color: sendInvite ? 'var(--brand-primary)' : 'var(--color-charcoal)'
-                  }}
+                  className={`text-sm font-semibold ${
+                    sendInvite ? 'text-brand-primary' : 'text-text-primary'
+                  }`}
                 >
                   {isKa ? 'მოწვევის ბმულის გაგზავნა მეილზე' : 'Send invitation link via email'}
                 </div>
-                <div
-                  style={{
-                    fontSize: '0.75rem',
-                    color: 'var(--color-text-secondary)',
-                    marginTop: '2px',
-                    lineHeight: 1.4
-                  }}
-                >
+                <div className="text-xs text-text-secondary mt-0.5 leading-normal">
                   {isKa
                     ? 'თანამშრომელი მეილზე მიიღებს ლინკს და პაროლს თვითონ დააყენებს'
                     : 'Employee will receive an email link and set their own password'}
@@ -538,41 +351,28 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
 
             {/* If sendInvite is false, show temporary password input */}
             {!sendInvite && (
-              <div style={{ marginTop: '10px' }}>
-                <div style={{ position: 'relative' }}>
+              <div className="mt-2.5 flex flex-col gap-1">
+                <div className="relative">
                   <input
                     id="cu-password"
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder={isKa ? 'დროებითი პაროლი' : 'Temporary password'}
-                    style={{
-                      ...inputBase,
-                      paddingRight: '40px',
-                      borderColor: errors.password ? '#EF4444' : 'var(--border-subtle)'
-                    }}
+                    className={`w-full px-3.5 py-2.5 pr-10 rounded-sm border bg-surface text-text-primary text-sm outline-none transition-all duration-150 focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10 ${
+                      errors.password ? 'border-danger' : 'border-border-subtle'
+                    }`}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword((p) => !p)}
-                    style={{
-                      position: 'absolute',
-                      right: '10px',
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      background: 'none',
-                      border: 'none',
-                      cursor: 'pointer',
-                      color: 'var(--color-text-secondary)',
-                      display: 'flex',
-                      alignItems: 'center'
-                    }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary cursor-pointer p-0.5 outline-none"
                   >
-                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
                 {errors.password && (
-                  <span style={{ fontSize: '0.75rem', color: '#EF4444', marginTop: '4px', display: 'block' }}>
+                  <span className="text-xs text-danger mt-0.5 block">
                     {errors.password}
                   </span>
                 )}
@@ -581,32 +381,11 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
           </div>
 
           {/* Actions */}
-          <div
-            style={{
-              display: 'flex',
-              gap: '10px',
-              marginTop: 'auto',
-              paddingTop: '16px',
-              borderTop: '1px solid var(--border-subtle)',
-              background: 'var(--bg-surface)',
-              flexShrink: 0
-            }}
-          >
+          <div className="flex items-center gap-2.5 mt-auto pt-4 border-t border-border-subtle bg-surface shrink-0">
             <button
               type="button"
               onClick={handleClose}
-              style={{
-                flex: 1,
-                padding: '11px',
-                borderRadius: '10px',
-                border: '1.5px solid var(--border-subtle)',
-                background: 'transparent',
-                color: 'var(--color-text-secondary)',
-                fontSize: '0.875rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                transition: 'all 0.15s'
-              }}
+              className="flex-1 py-2.5 px-4 rounded-pill border border-border-subtle bg-surface text-text-secondary hover:bg-surface-secondary hover:text-text-primary font-semibold text-sm transition-all duration-150 cursor-pointer outline-none"
             >
               {isKa ? 'გაუქმება' : 'Cancel'}
             </button>
@@ -614,67 +393,39 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
               id="cu-submit-btn"
               type="submit"
               disabled={isSubmitting || roles.length === 0}
-              style={{
-                flex: 2,
-                padding: '11px',
-                borderRadius: '10px',
-                border: 'none',
-                background:
-                  isSubmitting || roles.length === 0
-                    ? 'rgba(30,106,255,0.45)'
-                    : 'var(--brand-primary)',
-                color: '#fff',
-                fontSize: '0.875rem',
-                fontWeight: 650,
-                cursor: isSubmitting || roles.length === 0 ? 'not-allowed' : 'pointer',
-                transition: 'all 0.15s',
-                boxShadow: isSubmitting || roles.length === 0 ? 'none' : '0 4px 14px var(--brand-primary-glow)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px'
-              }}
+              className="flex-[2] py-2.5 px-4 rounded-pill text-sm font-semibold text-text-inverse bg-brand-primary shadow-glow hover:bg-brand-primary-hover hover:-translate-y-0.5 active:translate-y-0 transition-all duration-150 cursor-pointer flex items-center justify-center gap-2 outline-none disabled:opacity-45 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:shadow-none"
             >
               {isSubmitting ? (
                 <>
-                  <div
-                    style={{
-                      width: '15px',
-                      height: '15px',
-                      border: '2px solid rgba(255,255,255,0.4)',
-                      borderTopColor: '#fff',
-                      borderRadius: '50%',
-                      animation: 'spin 0.7s linear infinite'
-                    }}
-                  />
-                  {sendInvite
-                    ? (isKa ? 'იგზავნება...' : 'Sending...')
-                    : (isKa ? 'იქმნება...' : 'Creating...')}
+                  <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                  <span>
+                    {sendInvite
+                      ? isKa
+                        ? 'იგზავნება...'
+                        : 'Sending...'
+                      : isKa
+                      ? 'იქმნება...'
+                      : 'Creating...'}
+                  </span>
                 </>
               ) : (
                 <>
-                  {sendInvite ? <Send size={15} /> : <User size={15} />}
-                  {sendInvite
-                    ? (isKa ? 'მოწვევის გაგზავნა' : 'Send Invite')
-                    : (isKa ? 'ანგარიშის შექმნა' : 'Create Account')}
+                  {sendInvite ? <Send className="w-4 h-4" /> : <User className="w-4 h-4" />}
+                  <span>
+                    {sendInvite
+                      ? isKa
+                        ? 'მოწვევის გაგზავნა'
+                        : 'Send Invite'
+                      : isKa
+                      ? 'ანგარიშის შექმნა'
+                      : 'Create Account'}
+                  </span>
                 </>
               )}
             </button>
           </div>
         </form>
       </div>
-
-      <style>{`
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes slideInRight {
-          from { transform: translateX(100%); }
-          to { transform: translateX(0); }
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-      `}</style>
     </div>
   );
 };

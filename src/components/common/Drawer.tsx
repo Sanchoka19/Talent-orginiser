@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
 
@@ -33,62 +35,23 @@ export const Drawer: React.FC<DrawerProps> = ({
 
   return (
     <div
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(8, 39, 52, 0.4)',
-        backdropFilter: 'blur(4px)',
-        zIndex: 1000,
-        display: 'flex',
-        justifyContent: 'flex-end',
-        animation: 'fadeIn 0.2s ease-out'
-      }}
+      className="fixed inset-0 bg-surface-overlay backdrop-blur-sm flex justify-end z-[1000] animate-in fade-in duration-200"
       onClick={onClose}
     >
       <div
-        style={{
-          width: '100%',
-          maxWidth: width,
-          height: '100vh',
-          maxHeight: '100vh',
-          backgroundColor: 'var(--bg-surface)',
-          boxShadow: 'var(--shadow-modal)',
-          borderLeft: '1px solid var(--border-subtle)',
-          display: 'flex',
-          flexDirection: 'column',
-          position: 'relative',
-          overflow: 'hidden',
-          animation: 'slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
-        }}
+        className="w-full h-screen max-h-screen bg-surface shadow-modal border-l border-border-subtle flex flex-col relative overflow-hidden animate-in slide-in-from-right duration-300"
+        style={{ maxWidth: width }}
         onClick={(e) => e.stopPropagation()}
       >
         <button
           onClick={onClose}
-          className="btn btn-secondary btn-icon"
-          style={{
-            position: 'absolute',
-            top: '16px',
-            right: '16px',
-            zIndex: 10,
-            background: 'rgba(255, 255, 255, 0.85)',
-            backdropFilter: 'blur(6px)'
-          }}
+          className="w-8 h-8 rounded-full inline-flex items-center justify-center border border-border-subtle bg-surface/90 backdrop-blur-md text-text-primary hover:bg-surface-secondary hover:border-border-medium transition-all duration-150 cursor-pointer absolute top-4 right-4 z-10 shadow-sm"
         >
           <X size={16} />
         </button>
 
         {children}
       </div>
-
-      <style>{`
-        @keyframes slideInRight {
-          from { transform: translateX(100%); }
-          to { transform: translateX(0); }
-        }
-      `}</style>
     </div>
   );
 };

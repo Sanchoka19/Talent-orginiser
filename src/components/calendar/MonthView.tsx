@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import { ShowEvent } from '../../types/schedule';
 import { Group } from '../../types/group';
@@ -42,7 +44,9 @@ export const MonthView: React.FC<MonthViewProps> = ({
 
   // Today's local date string (avoid UTC day shift)
   const now = new Date();
-  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(
+    now.getDate()
+  ).padStart(2, '0')}`;
 
   // Days array for grid (6 rows x 7 days = 42 cells)
   const calendarCells = [];
@@ -51,7 +55,9 @@ export const MonthView: React.FC<MonthViewProps> = ({
   for (let i = startDayOfWeek - 1; i >= 0; i--) {
     const prevD = prevMonthTotalDays - i;
     const prevMonthDate = new Date(year, month - 1, prevD);
-    const dateStr = `${prevMonthDate.getFullYear()}-${String(prevMonthDate.getMonth() + 1).padStart(2, '0')}-${String(prevMonthDate.getDate()).padStart(2, '0')}`;
+    const dateStr = `${prevMonthDate.getFullYear()}-${String(
+      prevMonthDate.getMonth() + 1
+    ).padStart(2, '0')}-${String(prevMonthDate.getDate()).padStart(2, '0')}`;
     calendarCells.push({
       dayNumber: prevD,
       isCurrentMonth: false,
@@ -85,7 +91,9 @@ export const MonthView: React.FC<MonthViewProps> = ({
   const remainingCells = 42 - calendarCells.length;
   for (let d = 1; d <= remainingCells; d++) {
     const nextMonthDate = new Date(year, month + 1, d);
-    const dateStr = `${nextMonthDate.getFullYear()}-${String(nextMonthDate.getMonth() + 1).padStart(2, '0')}-${String(nextMonthDate.getDate()).padStart(2, '0')}`;
+    const dateStr = `${nextMonthDate.getFullYear()}-${String(
+      nextMonthDate.getMonth() + 1
+    ).padStart(2, '0')}-${String(nextMonthDate.getDate()).padStart(2, '0')}`;
     calendarCells.push({
       dayNumber: d,
       isCurrentMonth: false,
@@ -100,158 +108,81 @@ export const MonthView: React.FC<MonthViewProps> = ({
     language === 'ka'
       ? ['ორშ', 'სამ', 'ოთხ', 'ხუთ', 'პარ', 'შაბ', 'კვი']
       : language === 'tr'
-        ? ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz']
-        : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      ? ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz']
+      : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
   return (
-    <div
-      style={{
-        width: '100%',
-        overflowX: 'auto',
-        WebkitOverflowScrolling: 'touch',
-        paddingBottom: '8px'
-      }}
-    >
-      <div
-        style={{
-          minWidth: '920px',
-          display: 'flex',
-          flexDirection: 'column',
-          border: '1px solid var(--border-subtle)',
-          borderRadius: 'var(--radius-lg)',
-          overflow: 'hidden',
-          background: 'var(--bg-surface)',
-          boxShadow: 'var(--shadow-sm)'
-        }}
-      >
+    <div className="w-full overflow-x-auto pb-2">
+      <div className="min-w-[920px] flex flex-col border border-border-subtle rounded-lg overflow-hidden bg-surface shadow-sm">
         {/* Day Names Header */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(7, minmax(130px, 1fr))',
-            background: 'var(--bg-surface-secondary)',
-            borderBottom: '1px solid var(--border-subtle)',
-            padding: '11px 0',
-            textAlign: 'center',
-            fontSize: '0.8rem',
-            fontWeight: 700,
-            color: 'var(--color-text-secondary)',
-            letterSpacing: '0.04em'
-          }}
-        >
+        <div className="grid grid-cols-7 bg-surface-secondary border-b border-border-subtle py-2.5 text-center text-xs font-bold text-text-secondary tracking-wider">
           {daysOfWeek.map((day, idx) => (
-            <div key={day} style={{ color: idx >= 5 ? '#DC2626' : 'inherit' }}>
+            <div
+              key={day}
+              className={idx >= 5 ? 'text-danger font-bold' : 'text-inherit'}
+            >
               {day}
             </div>
           ))}
         </div>
 
         {/* 42 Calendar Cells Grid */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(7, minmax(130px, 1fr))',
-            gridAutoRows: '140px'
-          }}
-        >
+        <div className="grid grid-cols-7 auto-rows-[140px]">
           {calendarCells.map((cell, idx) => {
             // Find events on this date
             const dayEvents = events.filter((ev) => ev.startDateTime.startsWith(cell.dateStr));
+            const isLastInRow = (idx + 1) % 7 === 0;
+            const isBottomRow = idx >= 35;
 
             return (
               <div
                 key={idx}
                 onClick={() => onSelectDate(cell.dateStr)}
-                className={!cell.isCurrentMonth ? 'pattern-striped' : ''}
-                style={{
-                  borderRight: (idx + 1) % 7 !== 0 ? '1px solid var(--border-subtle)' : 'none',
-                  borderBottom: idx < 35 ? '1px solid var(--border-subtle)' : 'none',
-                  padding: '8px',
-                  background: !cell.isCurrentMonth
-                    ? undefined
+                className={`p-2 relative flex flex-col overflow-hidden cursor-pointer transition-all duration-150 ${
+                  !isLastInRow ? 'border-r border-border-subtle' : ''
+                } ${!isBottomRow ? 'border-b border-border-subtle' : ''} ${
+                  !cell.isCurrentMonth
+                    ? 'pattern-striped opacity-45'
                     : cell.isToday
-                      ? 'rgba(30, 106, 255, 0.05)'
-                      : cell.isPast
-                        ? 'rgba(0, 0, 0, 0.018)'
-                        : 'var(--bg-surface)',
-                  opacity: !cell.isCurrentMonth ? 0.45 : cell.isPast ? 0.72 : 1,
-                  position: 'relative',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  overflow: 'hidden',
-                  cursor: 'pointer',
-                  transition: 'opacity 0.15s ease, background 0.15s ease'
-                }}
-                onMouseEnter={(e) => {
-                  if (cell.isPast && cell.isCurrentMonth) e.currentTarget.style.opacity = '1';
-                }}
-                onMouseLeave={(e) => {
-                  if (cell.isPast && cell.isCurrentMonth) e.currentTarget.style.opacity = '0.72';
-                }}
+                    ? 'bg-brand-primary/5 opacity-100'
+                    : cell.isPast
+                    ? 'bg-canvas/40 opacity-75 hover:opacity-100'
+                    : 'bg-surface opacity-100 hover:bg-surface-secondary/40'
+                }`}
               >
                 {/* Day Number Header */}
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    marginBottom: '6px'
-                  }}
-                >
+                <div className="flex items-center justify-between mb-1.5 shrink-0">
                   <span
-                    style={{
-                      fontSize: '0.825rem',
-                      fontWeight: cell.isToday ? 700 : cell.isPast ? 500 : 600,
-                      width: '24px',
-                      height: '24px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      borderRadius: '50%',
-                      background: cell.isToday ? 'var(--brand-primary)' : 'transparent',
-                      color: cell.isToday
-                        ? '#FFFFFF'
+                    className={`text-xs w-6 h-6 flex items-center justify-center rounded-full ${
+                      cell.isToday
+                        ? 'bg-brand-primary text-text-inverse font-bold shadow-sm'
                         : cell.isPast
-                          ? 'var(--color-text-tertiary)'
-                          : 'var(--color-text-primary)'
-                    }}
+                        ? 'font-medium text-text-tertiary'
+                        : 'font-semibold text-text-primary'
+                    }`}
                   >
                     {cell.dayNumber}
                   </span>
 
                   {dayEvents.length > 0 && (
                     <span
-                      style={{
-                        fontSize: '0.675rem',
-                        fontWeight: 700,
-                        color: cell.isPast ? 'var(--color-text-secondary)' : '#FFFFFF',
-                        background: cell.isPast ? 'var(--bg-surface-secondary)' : 'var(--brand-primary)',
-                        border: cell.isPast ? '1px solid var(--border-subtle)' : 'none',
-                        padding: '1px 6px',
-                        borderRadius: 'var(--radius-pill)',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '3px'
-                      }}
+                      className={`text-[10px] font-bold px-1.5 py-0.5 rounded-pill inline-flex items-center gap-1 ${
+                        cell.isPast
+                          ? 'text-text-secondary bg-surface-secondary border border-border-subtle'
+                          : 'text-text-inverse bg-brand-primary shadow-sm'
+                      }`}
                     >
-                      {cell.isPast && <Check size={10} strokeWidth={2.5} style={{ opacity: 0.7 }} />}
-                      <span>{dayEvents.length} {dayEvents.length > 1 ? t('shows') : t('show')}</span>
+                      {cell.isPast && <Check className="w-2.5 h-2.5" strokeWidth={2.5} />}
+                      <span>
+                        {dayEvents.length} {dayEvents.length > 1 ? t('shows') : t('show')}
+                      </span>
                     </span>
                   )}
                 </div>
 
                 {/* Event Bars / Pills — scrollable after 2 cards */}
                 <div
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '4px',
-                    overflowY: 'auto',
-                    flex: 1,
-                    /* Custom thin scrollbar */
-                    scrollbarWidth: 'thin',
-                    scrollbarColor: 'var(--border-medium) transparent'
-                  }}
+                  className="flex flex-col gap-1 overflow-y-auto flex-1"
                   onClick={(e) => e.stopPropagation()}
                 >
                   {dayEvents.map((ev) => {
@@ -262,12 +193,16 @@ export const MonthView: React.FC<MonthViewProps> = ({
                       minute: '2-digit'
                     });
 
-                    const effectiveLobby = ev.lobbyTime || (() => {
-                      const d = new Date(ev.startDateTime);
-                      const travel = evVenue?.travelTimeMinutes ?? 45;
-                      const totalM = (d.getHours() * 60 + d.getMinutes() - travel + 1440) % 1440;
-                      return `${String(Math.floor(totalM / 60)).padStart(2, '0')}:${String(totalM % 60).padStart(2, '0')}`;
-                    })();
+                    const effectiveLobby =
+                      ev.lobbyTime ||
+                      (() => {
+                        const d = new Date(ev.startDateTime);
+                        const travel = evVenue?.travelTimeMinutes ?? 45;
+                        const totalM = (d.getHours() * 60 + d.getMinutes() - travel + 1440) % 1440;
+                        return `${String(Math.floor(totalM / 60)).padStart(2, '0')}:${String(
+                          totalM % 60
+                        ).padStart(2, '0')}`;
+                      })();
 
                     const isEventPast = cell.isPast || new Date(ev.endDateTime).getTime() < Date.now();
 
@@ -278,69 +213,39 @@ export const MonthView: React.FC<MonthViewProps> = ({
                           e.stopPropagation();
                           onSelectEvent(ev);
                         }}
-                        style={{
-                          padding: '5px 7px',
-                          borderRadius: 'var(--radius-sm)',
-                          background: isEventPast ? 'var(--bg-surface-secondary)' : 'var(--brand-primary)',
-                          color: isEventPast ? 'var(--color-text-secondary)' : '#FFFFFF',
-                          fontSize: '0.7rem',
-                          fontWeight: 600,
-                          lineHeight: 1.25,
-                          boxShadow: isEventPast ? 'none' : '0 2px 4px var(--brand-primary-glow)',
-                          cursor: 'pointer',
-                          flexShrink: 0,
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '2px',
-                          border: isEventPast ? '1px solid var(--border-medium)' : '1px solid var(--brand-primary-hover)',
-                          opacity: isEventPast ? 0.85 : 1,
-                          transition: 'all 0.15s ease'
-                        }}
-                        onMouseEnter={(e) => {
-                          if (isEventPast) e.currentTarget.style.opacity = '1';
-                        }}
-                        onMouseLeave={(e) => {
-                          if (isEventPast) e.currentTarget.style.opacity = '0.85';
-                        }}
-                        title={`${ev.title}\n${t('group_label')}: ${evGroup?.name || ev.groupId}\n${t('hotel_label')}: ${evVenue?.name || ev.hotelId}\n${t('gathering_label')}: ${effectiveLobby}\n${t('show_time_label')}: ${startTime}${isEventPast ? `\n[${language === 'ka' ? 'დასრულებული' : 'Completed'}]` : ''}`}
+                        className={`p-1.5 rounded-xs text-[11px] font-semibold leading-tight flex flex-col gap-0.5 shrink-0 border cursor-pointer transition-all duration-150 ${
+                          isEventPast
+                            ? 'bg-surface-secondary text-text-secondary border-border-medium opacity-85 hover:opacity-100'
+                            : 'bg-brand-primary text-text-inverse border-brand-primary-hover shadow-sm hover:shadow-glow hover:-translate-y-0.5 active:translate-y-0'
+                        }`}
+                        title={`${ev.title}\n${t('group_label')}: ${evGroup?.name || ev.groupId}\n${t('hotel_label')}: ${
+                          evVenue?.name || ev.hotelId
+                        }\n${t('gathering_label')}: ${effectiveLobby}\n${t('show_time_label')}: ${startTime}${
+                          isEventPast ? `\n[${language === 'ka' ? 'დასრულებული' : 'Completed'}]` : ''
+                        }`}
                       >
                         {/* Group Name */}
-                        <div
-                          style={{
-                            fontWeight: 700,
-                            fontSize: '0.72rem',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '4px'
-                          }}
-                        >
-                          <Users size={11} strokeWidth={2} style={{ flexShrink: 0, opacity: isEventPast ? 0.65 : 1 }} />
-                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {evGroup?.name || ev.title}
-                          </span>
+                        <div className="font-bold text-xs truncate flex items-center gap-1">
+                          <Users
+                            className={`w-3 h-3 shrink-0 ${isEventPast ? 'opacity-65' : 'opacity-100'}`}
+                            strokeWidth={2}
+                          />
+                          <span className="truncate">{evGroup?.name || ev.title}</span>
                         </div>
 
                         {/* Times: Lobby & Show */}
                         <div
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                            fontSize: '0.64rem',
-                            color: isEventPast ? 'var(--color-text-tertiary)' : 'rgba(255, 255, 255, 0.95)',
-                            fontWeight: 600
-                          }}
+                          className={`flex items-center gap-1.5 text-[10px] font-semibold ${
+                            isEventPast ? 'text-text-tertiary' : 'text-white/95'
+                          }`}
                         >
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
-                            <Bus size={10} strokeWidth={2} style={{ flexShrink: 0 }} />
+                          <span className="inline-flex items-center gap-0.5">
+                            <Bus className="w-2.5 h-2.5 shrink-0" strokeWidth={2} />
                             <span>{effectiveLobby}</span>
                           </span>
                           <span>•</span>
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
-                            <Sparkles size={10} strokeWidth={2} style={{ flexShrink: 0 }} />
+                          <span className="inline-flex items-center gap-0.5">
+                            <Sparkles className="w-2.5 h-2.5 shrink-0" strokeWidth={2} />
                             <span>{startTime}</span>
                           </span>
                         </div>
@@ -348,22 +253,12 @@ export const MonthView: React.FC<MonthViewProps> = ({
                         {/* Hotel Venue */}
                         {evVenue && (
                           <div
-                            style={{
-                              fontSize: '0.62rem',
-                              fontWeight: 500,
-                              color: isEventPast ? 'var(--color-text-tertiary)' : 'rgba(255, 255, 255, 0.85)',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '3px'
-                            }}
+                            className={`text-[10px] font-medium truncate flex items-center gap-1 ${
+                              isEventPast ? 'text-text-tertiary' : 'text-white/85'
+                            }`}
                           >
-                            <Building size={9} strokeWidth={2} style={{ flexShrink: 0 }} />
-                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              {evVenue.name}
-                            </span>
+                            <Building className="w-2.5 h-2.5 shrink-0" strokeWidth={2} />
+                            <span className="truncate">{evVenue.name}</span>
                           </div>
                         )}
                       </div>

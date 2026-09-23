@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState } from 'react';
 import { Modal } from '../common/Modal';
 import { ShowEvent } from '../../types/schedule';
@@ -80,55 +82,51 @@ export const DutySwapModal: React.FC<DutySwapModalProps> = ({
       maxWidth="540px"
       zIndex={1100}
       footer={
-        <>
-          <button type="button" onClick={onClose} className="btn btn-secondary">
+        <div className="flex items-center justify-end gap-2.5 w-full">
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex items-center justify-center px-4 py-2 rounded-pill text-sm font-medium border border-border-subtle bg-surface-secondary text-text-primary hover:bg-surface-tertiary hover:border-border-medium transition-all duration-150 cursor-pointer outline-none"
+          >
             {t('cancel')}
           </button>
           <button
             type="submit"
             form="swap-form"
-            className="btn btn-primary"
             disabled={!replacementTalentId}
+            className="inline-flex items-center justify-center gap-2 px-5 py-2 rounded-pill text-sm font-medium bg-brand-primary text-text-inverse shadow-glow hover:bg-brand-primary-hover hover:-translate-y-0.5 active:translate-y-0 transition-all duration-150 cursor-pointer outline-none disabled:opacity-45 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:shadow-none"
           >
             {t('confirm_reassignment')}
           </button>
-        </>
+        </div>
       }
     >
-      <form id="swap-form" onSubmit={handleSwap}>
+      <form id="swap-form" onSubmit={handleSwap} className="flex flex-col">
         {/* Currently Assigned Talent */}
-        <div
-          style={{
-            padding: '12px 16px',
-            borderRadius: 'var(--radius-sm)',
-            background: 'var(--bg-surface-secondary)',
-            border: '1px solid var(--border-subtle)',
-            marginBottom: '16px'
-          }}
-        >
-          <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--color-text-secondary)', fontWeight: 600, marginBottom: '6px' }}>
+        <div className="p-3.5 sm:p-4 rounded-sm bg-surface-secondary border border-border-subtle mb-4">
+          <div className="text-[11px] uppercase text-text-secondary font-semibold mb-1.5 tracking-wider">
             {t('current_performer')}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-2.5">
               <img
                 src={
                   originalTalent.avatarUrl ||
                   `https://api.dicebear.com/7.x/avataaars/svg?seed=${originalTalent.firstName}`
                 }
                 alt={originalTalent.firstName}
-                style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover' }}
+                className="w-9 h-9 rounded-full object-cover shrink-0 border border-border-subtle"
               />
               <div>
-                <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>
+                <div className="font-semibold text-sm text-text-primary">
                   {originalTalent.firstName} {originalTalent.lastName}
                 </div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>
+                <div className="text-xs text-text-secondary">
                   {originalTalent.primarySkill}
                 </div>
               </div>
             </div>
-            <div style={{ display: 'flex', gap: '6px' }}>
+            <div className="flex items-center gap-1.5 shrink-0">
               <GenderBadge gender={originalTalent.gender} />
               <StatusBadge status={originalTalent.status} />
             </div>
@@ -136,15 +134,17 @@ export const DutySwapModal: React.FC<DutySwapModalProps> = ({
         </div>
 
         {/* Swap Arrow Icon */}
-        <div style={{ textAlign: 'center', margin: '4px 0 12px 0', color: 'var(--color-text-secondary)' }}>
-          <RefreshCw size={20} />
+        <div className="flex items-center justify-center my-2 text-text-secondary">
+          <RefreshCw className="w-5 h-5 text-text-secondary animate-none" />
         </div>
 
         {/* Replacement Candidate Selector */}
-        <div className="form-group">
-          <label className="form-label">{t('select_replacement')}</label>
+        <div className="flex flex-col gap-1.5 mb-3">
+          <label className="text-xs font-semibold text-text-secondary">
+            {t('select_replacement')}
+          </label>
           <select
-            className="form-select"
+            className="w-full text-sm px-3.5 py-2.5 rounded-sm border border-border-subtle bg-surface-secondary text-text-primary outline-none transition-all duration-150 focus:bg-surface focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10 cursor-pointer"
             value={replacementTalentId}
             onChange={(e) => setReplacementTalentId(e.target.value)}
             required
@@ -160,21 +160,8 @@ export const DutySwapModal: React.FC<DutySwapModalProps> = ({
 
         {/* Warning if candidate is on rest or sick */}
         {isCandidateNonActive && (
-          <div
-            style={{
-              padding: '10px 14px',
-              borderRadius: 'var(--radius-sm)',
-              background: '#FEF3C7',
-              border: '1px solid #FCD34D',
-              color: '#92400E',
-              fontSize: '0.8rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              marginBottom: '12px'
-            }}
-          >
-            <AlertTriangle size={16} style={{ flexShrink: 0 }} />
+          <div className="p-3 rounded-sm bg-status-rest-bg border border-status-rest-dot/30 text-status-rest-text text-xs flex items-center gap-2 mb-3">
+            <AlertTriangle className="w-4 h-4 shrink-0 text-status-rest-dot" />
             <span>
               {t('warning_candidate_status', {
                 name: selectedCandidate?.firstName || '',
@@ -186,21 +173,8 @@ export const DutySwapModal: React.FC<DutySwapModalProps> = ({
 
         {/* Warning if gender mismatch */}
         {isCandidateGenderMismatch && (
-          <div
-            style={{
-              padding: '10px 14px',
-              borderRadius: 'var(--radius-sm)',
-              background: '#FEE2E2',
-              border: '1px solid #FCA5A5',
-              color: '#991B1B',
-              fontSize: '0.8rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              marginBottom: '12px'
-            }}
-          >
-            <AlertTriangle size={16} style={{ flexShrink: 0 }} />
+          <div className="p-3 rounded-sm bg-danger-light border border-danger-border text-danger text-xs flex items-center gap-2 mb-3">
+            <AlertTriangle className="w-4 h-4 shrink-0 text-danger" />
             <span>
               {t('warning_gender_rule', {
                 req: duty.assignedGender,
@@ -210,8 +184,8 @@ export const DutySwapModal: React.FC<DutySwapModalProps> = ({
           </div>
         )}
 
-        <div style={{ fontSize: '0.775rem', color: 'var(--color-text-secondary)', lineHeight: 1.4, display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <Info size={14} strokeWidth={2} style={{ flexShrink: 0 }} />
+        <div className="text-xs text-text-secondary leading-relaxed flex items-center gap-1.5 mt-2">
+          <Info className="w-3.5 h-3.5 shrink-0 text-text-tertiary" strokeWidth={2} />
           <em>{t('admin_override_notice')}</em>
         </div>
       </form>

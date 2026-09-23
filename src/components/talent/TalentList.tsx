@@ -1,12 +1,22 @@
+'use client';
+
 import React, { useState, useMemo } from 'react';
+import dynamic from 'next/dynamic';
 import { useApp } from '../../context/AppContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { Talent } from '../../types/talent';
 import { TalentCard } from './TalentCard';
-import { TalentDetailDrawer } from './TalentDetailDrawer';
-import { TalentFormModal } from './TalentFormModal';
-import { SplitProgressBar } from '../common/ProgressBar';
 import { Search, Plus, Filter, List, LayoutGrid } from 'lucide-react';
+
+const TalentDetailDrawer = dynamic(
+  () => import('./TalentDetailDrawer').then((mod) => mod.TalentDetailDrawer),
+  { ssr: false }
+);
+
+const TalentFormModal = dynamic(
+  () => import('./TalentFormModal').then((mod) => mod.TalentFormModal),
+  { ssr: false }
+);
 
 export const TalentList: React.FC = () => {
   const { talents, selectedTalent, setSelectedTalent } = useApp();
@@ -56,69 +66,49 @@ export const TalentList: React.FC = () => {
   };
 
   return (
-    <div>
+    <div className="w-full">
       {/* Top Title & Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <div>
-          <h1 className="page-title" style={{ marginBottom: '4px' }}>
+          <h1 className="text-4xl font-semibold tracking-tight text-text-primary mb-1">
             {t('talent_title')}
           </h1>
-          <p style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)' }}>
+          <p className="text-sm text-text-secondary">
             {t('talent_subtitle')}
           </p>
         </div>
 
-        <button onClick={handleOpenCreate} className="btn btn-primary">
+        <button
+          onClick={handleOpenCreate}
+          className="inline-flex items-center justify-center gap-2 text-sm font-medium rounded-pill px-5 py-2.5 bg-brand-primary text-white shadow-glow hover:bg-brand-primary-hover hover:-translate-y-0.5 active:translate-y-0 transition-all duration-150 cursor-pointer outline-none whitespace-nowrap"
+        >
           <Plus size={16} strokeWidth={2.5} />
           <span>{t('add_performer')}</span>
         </button>
       </div>
 
       {/* 3 Compact Status KPI Cards */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-          gap: '14px',
-          marginBottom: '24px'
-        }}
-      >
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 mb-6">
         {/* Active Card */}
         <div
           onClick={() => setStatusFilter(statusFilter === 'Active' ? 'ALL' : 'Active')}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '14px',
-            padding: '14px 18px',
-            borderRadius: 'var(--radius-md)',
-            background: statusFilter === 'Active' ? 'rgba(21, 128, 61, 0.08)' : 'var(--bg-surface)',
-            border: statusFilter === 'Active' ? '1.5px solid #16A34A' : '1px solid var(--border-subtle)',
-            boxShadow: 'var(--shadow-sm)',
-            cursor: 'pointer',
-            transition: 'all var(--transition-fast)'
-          }}
+          className={`flex items-center gap-3.5 px-4.5 py-3.5 rounded-md cursor-pointer transition-all duration-150 ${
+            statusFilter === 'Active'
+              ? 'bg-status-active-bg/80 border-2 border-status-active-dot shadow-sm'
+              : 'bg-surface border border-border-subtle shadow-sm hover:border-border-medium hover:shadow-md'
+          }`}
           title={statusFilter === 'Active' ? t('status_all') : t('status_active_only')}
         >
-          <div
-            style={{
-              width: '12px',
-              height: '12px',
-              borderRadius: '50%',
-              background: '#16A34A',
-              boxShadow: '0 0 8px rgba(22, 163, 74, 0.4)',
-              flexShrink: 0
-            }}
-          />
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          <div className="w-3 h-3 rounded-full bg-status-active-dot shadow-[0_0_8px_rgba(34,197,94,0.4)] shrink-0" />
+          <div className="flex-1 min-w-0">
+            <div className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
               {t('status_active')}
             </div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', marginTop: '2px' }}>
-              <span style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--color-charcoal)', lineHeight: 1 }}>
+            <div className="flex items-baseline gap-1.5 mt-0.5">
+              <span className="text-2xl font-bold text-text-primary leading-none">
                 {activeCount}
               </span>
-              <span style={{ fontSize: '0.8rem', color: '#16A34A', fontWeight: 600 }}>
+              <span className="text-xs text-status-active-text font-semibold">
                 {activePercent}%
               </span>
             </div>
@@ -128,39 +118,23 @@ export const TalentList: React.FC = () => {
         {/* Rest Card */}
         <div
           onClick={() => setStatusFilter(statusFilter === 'Rest' ? 'ALL' : 'Rest')}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '14px',
-            padding: '14px 18px',
-            borderRadius: 'var(--radius-md)',
-            background: statusFilter === 'Rest' ? 'rgba(234, 179, 8, 0.1)' : 'var(--bg-surface)',
-            border: statusFilter === 'Rest' ? '1.5px solid #EAB308' : '1px solid var(--border-subtle)',
-            boxShadow: 'var(--shadow-sm)',
-            cursor: 'pointer',
-            transition: 'all var(--transition-fast)'
-          }}
+          className={`flex items-center gap-3.5 px-4.5 py-3.5 rounded-md cursor-pointer transition-all duration-150 ${
+            statusFilter === 'Rest'
+              ? 'bg-status-rest-bg/80 border-2 border-status-rest-dot shadow-sm'
+              : 'bg-surface border border-border-subtle shadow-sm hover:border-border-medium hover:shadow-md'
+          }`}
           title={statusFilter === 'Rest' ? t('status_all') : t('status_rest_only')}
         >
-          <div
-            style={{
-              width: '12px',
-              height: '12px',
-              borderRadius: '50%',
-              background: '#EAB308',
-              boxShadow: '0 0 8px rgba(234, 179, 8, 0.4)',
-              flexShrink: 0
-            }}
-          />
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          <div className="w-3 h-3 rounded-full bg-status-rest-dot shadow-[0_0_8px_rgba(245,158,11,0.4)] shrink-0" />
+          <div className="flex-1 min-w-0">
+            <div className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
               {t('status_rest')}
             </div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', marginTop: '2px' }}>
-              <span style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--color-charcoal)', lineHeight: 1 }}>
+            <div className="flex items-baseline gap-1.5 mt-0.5">
+              <span className="text-2xl font-bold text-text-primary leading-none">
                 {restCount}
               </span>
-              <span style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', fontWeight: 500 }}>
+              <span className="text-xs text-text-secondary font-medium">
                 {restPercent}%
               </span>
             </div>
@@ -170,39 +144,23 @@ export const TalentList: React.FC = () => {
         {/* Sick/Injured Card */}
         <div
           onClick={() => setStatusFilter(statusFilter === 'Sick/Injured' ? 'ALL' : 'Sick/Injured')}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '14px',
-            padding: '14px 18px',
-            borderRadius: 'var(--radius-md)',
-            background: statusFilter === 'Sick/Injured' ? 'rgba(239, 68, 68, 0.08)' : 'var(--bg-surface)',
-            border: statusFilter === 'Sick/Injured' ? '1.5px solid #EF4444' : '1px solid var(--border-subtle)',
-            boxShadow: 'var(--shadow-sm)',
-            cursor: 'pointer',
-            transition: 'all var(--transition-fast)'
-          }}
+          className={`flex items-center gap-3.5 px-4.5 py-3.5 rounded-md cursor-pointer transition-all duration-150 ${
+            statusFilter === 'Sick/Injured'
+              ? 'bg-status-sick-bg/80 border-2 border-status-sick-dot shadow-sm'
+              : 'bg-surface border border-border-subtle shadow-sm hover:border-border-medium hover:shadow-md'
+          }`}
           title={statusFilter === 'Sick/Injured' ? t('status_all') : t('status_sick_only')}
         >
-          <div
-            style={{
-              width: '12px',
-              height: '12px',
-              borderRadius: '50%',
-              background: '#EF4444',
-              boxShadow: '0 0 8px rgba(239, 68, 68, 0.4)',
-              flexShrink: 0
-            }}
-          />
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          <div className="w-3 h-3 rounded-full bg-status-sick-dot shadow-[0_0_8px_rgba(239,68,68,0.4)] shrink-0" />
+          <div className="flex-1 min-w-0">
+            <div className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
               {t('status_sick')}
             </div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', marginTop: '2px' }}>
-              <span style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--color-charcoal)', lineHeight: 1 }}>
+            <div className="flex items-baseline gap-1.5 mt-0.5">
+              <span className="text-2xl font-bold text-text-primary leading-none">
                 {sickCount}
               </span>
-              <span style={{ fontSize: '0.8rem', color: '#EF4444', fontWeight: 600 }}>
+              <span className="text-xs text-status-sick-text font-semibold">
                 {sickPercent}%
               </span>
             </div>
@@ -211,26 +169,17 @@ export const TalentList: React.FC = () => {
       </div>
 
       {/* Search, Filters and View Toggle Bar */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: '12px',
-          marginBottom: '20px',
-          flexWrap: 'wrap'
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: '280px', flexWrap: 'wrap' }}>
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
+        <div className="flex items-center gap-2.5 flex-1 min-w-[280px] flex-wrap">
           {/* Pill Search */}
-          <div className="search-pill-container" style={{ width: '100%', maxWidth: '340px' }}>
-            <Search size={16} color="var(--color-text-secondary)" />
+          <div className="flex items-center gap-2.5 w-full sm:max-w-xs bg-surface-secondary border border-border-subtle rounded-pill px-4 py-2 transition-all duration-150 focus-within:bg-surface focus-within:border-brand-primary focus-within:ring-2 focus-within:ring-brand-primary/10">
+            <Search size={16} className="text-text-secondary shrink-0" />
             <input
               type="text"
               placeholder={t('search_talent_placeholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="search-pill-input"
+              className="w-full bg-transparent border-none outline-none text-sm text-text-primary placeholder:text-text-tertiary focus:ring-0 focus:outline-none"
             />
           </div>
 
@@ -238,17 +187,7 @@ export const TalentList: React.FC = () => {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            style={{
-              fontFamily: 'inherit',
-              fontSize: '0.825rem',
-              padding: '8px 14px',
-              borderRadius: 'var(--radius-pill)',
-              border: '1px solid var(--border-subtle)',
-              background: 'var(--bg-surface-secondary)',
-              color: 'var(--color-text-primary)',
-              cursor: 'pointer',
-              outline: 'none'
-            }}
+            className="text-xs px-3.5 py-2 rounded-pill border border-border-subtle bg-surface-secondary text-text-primary cursor-pointer outline-none focus:border-brand-primary focus:bg-surface transition-all duration-150"
           >
             <option value="ALL">{t('status_all')}</option>
             <option value="Active">{t('status_active_only')}</option>
@@ -260,17 +199,7 @@ export const TalentList: React.FC = () => {
           <select
             value={genderFilter}
             onChange={(e) => setGenderFilter(e.target.value)}
-            style={{
-              fontFamily: 'inherit',
-              fontSize: '0.825rem',
-              padding: '8px 14px',
-              borderRadius: 'var(--radius-pill)',
-              border: '1px solid var(--border-subtle)',
-              background: 'var(--bg-surface-secondary)',
-              color: 'var(--color-text-primary)',
-              cursor: 'pointer',
-              outline: 'none'
-            }}
+            className="text-xs px-3.5 py-2 rounded-pill border border-border-subtle bg-surface-secondary text-text-primary cursor-pointer outline-none focus:border-brand-primary focus:bg-surface transition-all duration-150"
           >
             <option value="ALL">{t('gender_all')}</option>
             <option value="Female">{t('gender_female')}</option>
@@ -279,40 +208,20 @@ export const TalentList: React.FC = () => {
         </div>
 
         {/* Right: View Switcher (List / Grid) & Counter */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
-          <div style={{ fontSize: '0.825rem', color: 'var(--color-text-secondary)', whiteSpace: 'nowrap' }}>
-            {t('showing')} <strong>{filteredTalents.length}</strong> {t('of')} {totalTalents} {t('performers')}
+        <div className="flex items-center gap-3.5 flex-wrap">
+          <div className="text-xs text-text-secondary whitespace-nowrap">
+            {t('showing')} <strong className="font-semibold text-text-primary">{filteredTalents.length}</strong> {t('of')} {totalTalents} {t('performers')}
           </div>
 
           {/* View Mode Toggle Pill */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              background: 'var(--bg-surface-secondary)',
-              borderRadius: 'var(--radius-pill)',
-              border: '1px solid var(--border-subtle)',
-              padding: '3px',
-              gap: '2px'
-            }}
-          >
+          <div className="flex items-center bg-surface-secondary rounded-pill border border-border-subtle p-0.5 gap-0.5">
             <button
               onClick={() => setViewMode('list')}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '6px 14px',
-                borderRadius: 'var(--radius-pill)',
-                border: 'none',
-                fontSize: '0.8rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                background: viewMode === 'list' ? 'var(--brand-primary)' : 'transparent',
-                color: viewMode === 'list' ? '#FFFFFF' : 'var(--color-text-secondary)',
-                boxShadow: viewMode === 'list' ? '0 2px 8px var(--brand-primary-glow)' : 'none',
-                transition: 'all var(--transition-fast)'
-              }}
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-pill text-xs font-semibold cursor-pointer transition-all duration-150 ${
+                viewMode === 'list'
+                  ? 'bg-brand-primary text-white shadow-sm'
+                  : 'bg-transparent text-text-secondary hover:text-text-primary'
+              }`}
               title={t('view_list')}
             >
               <List size={15} />
@@ -321,21 +230,11 @@ export const TalentList: React.FC = () => {
 
             <button
               onClick={() => setViewMode('grid')}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '6px 14px',
-                borderRadius: 'var(--radius-pill)',
-                border: 'none',
-                fontSize: '0.8rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                background: viewMode === 'grid' ? 'var(--brand-primary)' : 'transparent',
-                color: viewMode === 'grid' ? '#FFFFFF' : 'var(--color-text-secondary)',
-                boxShadow: viewMode === 'grid' ? '0 2px 8px var(--brand-primary-glow)' : 'none',
-                transition: 'all var(--transition-fast)'
-              }}
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-pill text-xs font-semibold cursor-pointer transition-all duration-150 ${
+                viewMode === 'grid'
+                  ? 'bg-brand-primary text-white shadow-sm'
+                  : 'bg-transparent text-text-secondary hover:text-text-primary'
+              }`}
               title={t('view_grid')}
             >
               <LayoutGrid size={15} />
@@ -347,39 +246,23 @@ export const TalentList: React.FC = () => {
 
       {/* Talent Display Area: List or Grid */}
       {filteredTalents.length === 0 ? (
-        <div
-          style={{
-            textAlign: 'center',
-            padding: '48px 20px',
-            background: 'var(--bg-surface-secondary)',
-            borderRadius: 'var(--radius-md)',
-            border: '1px dashed var(--border-medium)',
-            color: 'var(--color-text-secondary)'
-          }}
-        >
-          <Filter size={32} style={{ marginBottom: '12px', opacity: 0.5 }} />
-          <p style={{ fontWeight: 500 }}>{t('no_performers_match')}</p>
+        <div className="text-center py-12 px-5 bg-surface-secondary rounded-md border border-dashed border-border-medium text-text-secondary flex flex-col items-center">
+          <Filter size={32} className="mb-3 opacity-50" />
+          <p className="font-medium text-sm">{t('no_performers_match')}</p>
           <button
             onClick={() => {
               setSearchQuery('');
               setStatusFilter('ALL');
               setGenderFilter('ALL');
             }}
-            className="btn btn-secondary"
-            style={{ marginTop: '12px' }}
+            className="mt-3 inline-flex items-center px-4 py-2 rounded-pill text-xs font-semibold border border-border-subtle bg-surface text-text-primary hover:bg-surface-secondary hover:border-border-medium transition-all duration-150 cursor-pointer"
           >
             {t('clear_filters')}
           </button>
         </div>
       ) : viewMode === 'grid' ? (
         /* GRID VIEW */
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
-            gap: '16px'
-          }}
-        >
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
           {filteredTalents.map((talent) => (
             <TalentCard
               key={talent.id}
@@ -392,41 +275,14 @@ export const TalentList: React.FC = () => {
         </div>
       ) : (
         /* LIST VIEW */
-        <div
-          style={{
-            width: '100%',
-            overflowX: 'auto',
-            WebkitOverflowScrolling: 'touch',
-            paddingBottom: '12px'
-          }}
-        >
-          <div
-            style={{
-              minWidth: '920px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '8px'
-            }}
-          >
+        <div className="w-full overflow-x-auto pb-3">
+          <div className="min-w-[920px] flex flex-col gap-2">
             {/* Table header row */}
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(4, 1fr)',
-                alignItems: 'center',
-                padding: '10px 20px',
-                fontSize: '0.75rem',
-                fontWeight: 700,
-                textTransform: 'uppercase',
-                letterSpacing: '0.06em',
-                color: 'var(--color-text-secondary)',
-                marginBottom: '2px'
-              }}
-            >
+            <div className="grid grid-cols-4 items-center px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-text-secondary mb-0.5">
               <div>{t('performer_name_specialty')}</div>
               <div>{t('gender_and_height')}</div>
               <div>{t('documents')}</div>
-              <div style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>{t('availability_status')}</div>
+              <div className="text-right whitespace-nowrap">{t('availability_status')}</div>
             </div>
 
             {filteredTalents.map((talent) => (

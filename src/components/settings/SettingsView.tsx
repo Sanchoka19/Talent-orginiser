@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import { RolesAndPermissions } from './RolesAndPermissions';
 import { ProfileView } from './ProfileView';

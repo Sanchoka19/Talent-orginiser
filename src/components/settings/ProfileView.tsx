@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useRef } from 'react';
 import {
   User,
@@ -16,8 +18,7 @@ import {
   Save,
   CheckCircle2,
   Globe,
-  Clock,
-  Sparkles
+  Clock
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useToast } from '../../context/ToastContext';
@@ -26,7 +27,7 @@ import { useConfirm } from '../../context/ConfirmContext';
 type ProfileTab = 'personal' | 'security' | 'notifications' | 'preferences';
 
 export const ProfileView: React.FC = () => {
-  const { language, setLanguage, t } = useLanguage();
+  const { language, setLanguage } = useLanguage();
   const toast = useToast();
   const { confirm } = useConfirm();
   const isKa = language === 'ka';
@@ -54,7 +55,6 @@ export const ProfileView: React.FC = () => {
   const [notifyShowBooking, setNotifyShowBooking] = useState(true);
   const [notifyDutyRotation, setNotifyDutyRotation] = useState(true);
   const [notifyDocExpiry, setNotifyDocExpiry] = useState(false);
-  const [notifyEmailDigest, setNotifyEmailDigest] = useState(true);
 
   // ── Tab 4: Preferences State ───────────────────────────────────────────────
   const [timeFormat, setTimeFormat] = useState<'24h' | '12h'>('24h');
@@ -118,11 +118,10 @@ export const ProfileView: React.FC = () => {
     });
   };
 
-  const handleToggleNotification = (type: 'show' | 'duty' | 'doc' | 'digest') => {
+  const handleToggleNotification = (type: 'show' | 'duty' | 'doc') => {
     if (type === 'show') setNotifyShowBooking((p) => !p);
     if (type === 'duty') setNotifyDutyRotation((p) => !p);
     if (type === 'doc') setNotifyDocExpiry((p) => !p);
-    if (type === 'digest') setNotifyEmailDigest((p) => !p);
     toast.success(isKa ? 'შეტყობინებების პარამეტრი განახლდა' : 'Notification preference updated');
   };
 
@@ -130,58 +129,33 @@ export const ProfileView: React.FC = () => {
     {
       id: 'personal' as ProfileTab,
       label: isKa ? 'პირადი მონაცემები' : 'Personal Data',
-      icon: <User size={18} />
+      icon: <User className="w-4 h-4" />
     },
     {
       id: 'security' as ProfileTab,
       label: isKa ? 'უსაფრთხოება' : 'Security',
-      icon: <ShieldCheck size={18} />
+      icon: <ShieldCheck className="w-4 h-4" />
     },
     {
       id: 'notifications' as ProfileTab,
       label: isKa ? 'შეტყობინებები' : 'Notifications',
-      icon: <Bell size={18} />
+      icon: <Bell className="w-4 h-4" />
     },
     {
       id: 'preferences' as ProfileTab,
       label: isKa ? 'პრეფერენციები' : 'Preferences',
-      icon: <Sliders size={18} />
+      icon: <Sliders className="w-4 h-4" />
     }
   ];
 
-  // ── Common Styling ─────────────────────────────────────────────────────────
-  const inputStyle: React.CSSProperties = {
-    width: '100%',
-    padding: '11px 14px',
-    borderRadius: '10px',
-    border: '1.5px solid var(--border-subtle)',
-    background: 'var(--bg-surface)',
-    color: 'var(--color-charcoal)',
-    fontSize: '0.875rem',
-    fontWeight: 500,
-    outline: 'none',
-    boxSizing: 'border-box',
-    transition: 'border-color 0.15s, box-shadow 0.15s'
-  };
-
-  const labelStyle: React.CSSProperties = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px',
-    fontSize: '0.785rem',
-    fontWeight: 650,
-    color: 'var(--color-text-secondary)',
-    marginBottom: '7px'
-  };
-
   return (
-    <div style={{ maxWidth: '1100px', width: '100%' }}>
+    <div className="w-full max-w-[1100px] flex flex-col">
       {/* ── Page Header ───────────────────────────────────────────────────── */}
-      <div style={{ marginBottom: '22px' }}>
-        <h1 className="page-title" style={{ marginBottom: '6px' }}>
+      <div className="mb-5">
+        <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-text-primary mb-1.5">
           {isKa ? 'პროფილი' : 'Profile'}
         </h1>
-        <p style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', margin: 0 }}>
+        <p className="text-sm text-text-secondary">
           {isKa
             ? 'თქვენი პირადი ანგარიშის დეტალები, უსაფრთხოება და სისტემური პარამეტრები'
             : 'Your personal account details, security settings, and system preferences'}
@@ -189,21 +163,7 @@ export const ProfileView: React.FC = () => {
       </div>
 
       {/* ── 1. Horizontal Header Tabs ─────────────────────────────────────── */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          background: 'var(--bg-surface-secondary)',
-          padding: '5px',
-          borderRadius: '14px',
-          border: '1px solid var(--border-subtle)',
-          marginBottom: '26px',
-          width: 'fit-content',
-          maxWidth: '100%',
-          overflowX: 'auto'
-        }}
-      >
+      <div className="flex items-center gap-1.5 bg-surface-secondary p-1 rounded-md border border-border-subtle mb-6 w-fit max-w-full overflow-x-auto">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
           return (
@@ -211,22 +171,11 @@ export const ProfileView: React.FC = () => {
               key={tab.id}
               type="button"
               onClick={() => setActiveTab(tab.id)}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '9px 18px',
-                borderRadius: '10px',
-                border: 'none',
-                cursor: 'pointer',
-                fontSize: '0.86rem',
-                fontWeight: isActive ? 650 : 500,
-                background: isActive ? 'var(--brand-primary)' : 'transparent',
-                color: isActive ? '#FFFFFF' : 'var(--color-text-secondary)',
-                boxShadow: isActive ? '0 3px 12px var(--brand-primary-glow)' : 'none',
-                transition: 'all 0.18s ease-in-out',
-                whiteSpace: 'nowrap'
-              }}
+              className={`inline-flex items-center gap-2 px-4.5 py-2 rounded-sm border-none cursor-pointer text-sm font-semibold transition-all duration-150 whitespace-nowrap outline-none ${
+                isActive
+                  ? 'bg-brand-primary text-text-inverse shadow-glow'
+                  : 'bg-transparent text-text-secondary hover:text-text-primary'
+              }`}
             >
               {tab.icon}
               <span>{tab.label}</span>
@@ -239,209 +188,126 @@ export const ProfileView: React.FC = () => {
 
       {/* TAB 1: PERSONAL DATA */}
       {activeTab === 'personal' && (
-        <form onSubmit={handleSavePersonal} style={{ maxWidth: '100%' }}>
-          <div
-            className="card"
-            style={{
-              background: 'var(--bg-surface)',
-              borderRadius: '18px',
-              border: '1px solid var(--border-subtle)',
-              padding: '28px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '24px',
-              boxShadow: '0 2px 10px rgba(0,0,0,0.03)'
-            }}
-          >
+        <form onSubmit={handleSavePersonal} className="w-full">
+          <div className="bg-surface rounded-lg border border-border-subtle p-6 sm:p-7 flex flex-col gap-6 shadow-sm">
             {/* Avatar & Badges Hero */}
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '22px',
-                paddingBottom: '22px',
-                borderBottom: '1px solid var(--border-subtle)',
-                flexWrap: 'wrap'
-              }}
-            >
-              <div style={{ position: 'relative', width: '84px', height: '84px', flexShrink: 0 }}>
+            <div className="flex items-center gap-5 pb-5 border-b border-border-subtle flex-wrap">
+              <div className="relative w-20 h-20 shrink-0">
                 <img
                   src={avatarUrl}
                   alt={fullName}
-                  style={{
-                    width: '84px',
-                    height: '84px',
-                    borderRadius: '50%',
-                    objectFit: 'cover',
-                    border: '3px solid #FFFFFF',
-                    boxShadow: '0 4px 14px rgba(0,0,0,0.12)'
-                  }}
+                  className="w-20 h-20 rounded-full object-cover border-2 border-surface shadow-md"
                 />
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  style={{
-                    position: 'absolute',
-                    bottom: 0,
-                    right: 0,
-                    width: '28px',
-                    height: '28px',
-                    borderRadius: '50%',
-                    background: 'var(--brand-primary)',
-                    color: '#FFFFFF',
-                    border: '2px solid #FFFFFF',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    boxShadow: '0 2px 6px rgba(0,0,0,0.2)'
-                  }}
+                  className="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-brand-primary text-text-inverse border-2 border-surface flex items-center justify-center cursor-pointer shadow-sm hover:bg-brand-primary-hover transition-colors duration-150"
                   title={isKa ? 'ფოტოს შეცვლა' : 'Change photo'}
                 >
-                  <Camera size={14} />
+                  <Camera className="w-3.5 h-3.5" />
                 </button>
                 <input
                   ref={fileInputRef}
                   type="file"
                   accept="image/*"
                   onChange={handleAvatarChange}
-                  style={{ display: 'none' }}
+                  className="hidden"
                 />
               </div>
 
               <div>
-                <div style={{ fontSize: '1.25rem', fontWeight: 750, color: 'var(--color-charcoal)', letterSpacing: '-0.02em' }}>
+                <div className="text-xl font-bold text-text-primary tracking-tight">
                   {fullName}
                 </div>
-                <div style={{ fontSize: '0.825rem', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
+                <div className="text-xs text-text-secondary mt-0.5">
                   {email}
                 </div>
 
-                <div style={{ display: 'flex', gap: '8px', marginTop: '10px', flexWrap: 'wrap' }}>
+                <div className="flex gap-2 mt-2.5 flex-wrap">
                   {/* Status Badge */}
-                  <span
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '5px',
-                      padding: '3px 10px',
-                      borderRadius: 'var(--radius-pill)',
-                      fontSize: '0.725rem',
-                      fontWeight: 650,
-                      background: 'rgba(22, 163, 74, 0.08)',
-                      color: '#15803D',
-                      border: '1px solid rgba(22, 163, 74, 0.25)'
-                    }}
-                  >
-                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#16A34A' }} />
-                    {isKa ? 'სისტემა აქტიურია' : 'System Active'}
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-pill text-xs font-semibold bg-status-active-bg text-status-active-text border border-status-active-dot/25">
+                    <span className="w-1.5 h-1.5 rounded-full bg-status-active-dot" />
+                    <span>{isKa ? 'სისტემა აქტიურია' : 'System Active'}</span>
                   </span>
 
                   {/* Role Badge */}
-                  <span
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '5px',
-                      padding: '3px 10px',
-                      borderRadius: 'var(--radius-pill)',
-                      fontSize: '0.725rem',
-                      fontWeight: 650,
-                      background: '#0891B214',
-                      color: '#0891B2',
-                      border: '1px solid #0891B230'
-                    }}
-                  >
-                    <ShieldCheck size={12} />
-                    {isKa ? 'მენეჯმენტი' : 'Management'}
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-pill text-xs font-semibold bg-category-management/10 text-category-management border border-category-management/25">
+                    <ShieldCheck className="w-3 h-3" />
+                    <span>{isKa ? 'მენეჯმენტი' : 'Management'}</span>
                   </span>
                 </div>
               </div>
             </div>
 
             {/* Inputs Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '18px' }}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4.5">
               {/* Full Name */}
-              <div>
-                <label style={labelStyle}>
-                  <User size={14} />
+              <div className="flex flex-col gap-1.5">
+                <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-text-secondary">
+                  <User className="w-3.5 h-3.5" />
                   <span>{isKa ? 'სრული სახელი' : 'Full Name'}</span>
                 </label>
                 <input
                   type="text"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  style={inputStyle}
+                  className="w-full px-3.5 py-2.5 rounded-sm border border-border-subtle bg-surface text-text-primary text-sm outline-none transition-all duration-150 focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10"
                   required
                 />
               </div>
 
               {/* Email */}
-              <div>
-                <label style={labelStyle}>
-                  <Mail size={14} />
+              <div className="flex flex-col gap-1.5">
+                <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-text-secondary">
+                  <Mail className="w-3.5 h-3.5" />
                   <span>{isKa ? 'ელ-ფოსტა' : 'Email Address'}</span>
                 </label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  style={inputStyle}
+                  className="w-full px-3.5 py-2.5 rounded-sm border border-border-subtle bg-surface text-text-primary text-sm outline-none transition-all duration-150 focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10"
                   required
                 />
               </div>
 
               {/* Phone */}
-              <div>
-                <label style={labelStyle}>
-                  <Phone size={14} />
+              <div className="flex flex-col gap-1.5">
+                <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-text-secondary">
+                  <Phone className="w-3.5 h-3.5" />
                   <span>{isKa ? 'ტელეფონის ნომერი' : 'Phone Number'}</span>
                 </label>
                 <input
                   type="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  style={inputStyle}
                   placeholder="+995 599 00 00 00"
+                  className="w-full px-3.5 py-2.5 rounded-sm border border-border-subtle bg-surface text-text-primary text-sm outline-none transition-all duration-150 focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10"
                 />
               </div>
 
               {/* Role Readonly Preview */}
-              <div>
-                <label style={labelStyle}>
-                  <ShieldCheck size={14} />
+              <div className="flex flex-col gap-1.5">
+                <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-text-secondary">
+                  <ShieldCheck className="w-3.5 h-3.5" />
                   <span>{isKa ? 'სისტემური როლი' : 'System Role'}</span>
                 </label>
                 <input
                   type="text"
                   value={isKa ? 'მენეჯმენტი' : 'Management'}
                   disabled
-                  style={{
-                    ...inputStyle,
-                    background: 'var(--bg-surface-secondary)',
-                    color: 'var(--color-text-secondary)',
-                    cursor: 'not-allowed'
-                  }}
+                  className="w-full px-3.5 py-2.5 rounded-sm border border-border-subtle bg-surface-secondary text-text-secondary text-sm cursor-not-allowed outline-none"
                 />
               </div>
             </div>
 
             {/* Bottom Action Bar */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '10px' }}>
+            <div className="flex justify-end pt-2">
               <button
                 type="submit"
-                className="btn btn-primary"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '10px 24px',
-                  borderRadius: '10px',
-                  fontWeight: 650,
-                  fontSize: '0.875rem'
-                }}
+                className="inline-flex items-center gap-2 px-6 py-2.5 rounded-pill font-semibold text-sm bg-brand-primary text-text-inverse shadow-glow hover:bg-brand-primary-hover hover:-translate-y-0.5 active:translate-y-0 transition-all duration-150 cursor-pointer outline-none"
               >
-                <Save size={16} />
+                <Save className="w-4 h-4" />
                 <span>{isKa ? 'მონაცემების შენახვა' : 'Save Changes'}</span>
               </button>
             </div>
@@ -451,42 +317,19 @@ export const ProfileView: React.FC = () => {
 
       {/* TAB 2: SECURITY */}
       {activeTab === 'security' && (
-        <div style={{ maxWidth: '100%', display: 'flex', flexDirection: 'column', gap: '22px' }}>
+        <div className="w-full flex flex-col gap-5">
           {/* Change Password Card */}
           <form onSubmit={handlePasswordChange}>
-            <div
-              className="card"
-              style={{
-                background: 'var(--bg-surface)',
-                borderRadius: '18px',
-                border: '1px solid var(--border-subtle)',
-                padding: '26px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '18px',
-                boxShadow: '0 2px 10px rgba(0,0,0,0.03)'
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
-                <div
-                  style={{
-                    width: '36px',
-                    height: '36px',
-                    borderRadius: '10px',
-                    background: 'rgba(30, 106, 255, 0.08)',
-                    color: 'var(--brand-primary)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}
-                >
-                  <Lock size={18} />
+            <div className="bg-surface rounded-lg border border-border-subtle p-6 sm:p-7 flex flex-col gap-4.5 shadow-sm">
+              <div className="flex items-center gap-3 mb-1">
+                <div className="w-9 h-9 rounded-sm bg-brand-primary/10 text-brand-primary flex items-center justify-center shrink-0">
+                  <Lock className="w-4.5 h-4.5" />
                 </div>
                 <div>
-                  <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--color-charcoal)', margin: 0 }}>
+                  <h3 className="text-base font-bold text-text-primary">
                     {isKa ? 'პაროლის შეცვლა' : 'Change Password'}
                   </h3>
-                  <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', margin: '2px 0 0' }}>
+                  <p className="text-xs text-text-secondary mt-0.5">
                     {isKa
                       ? 'უსაფრთხოების გასაძლიერებლად რეგულარულად განაახლეთ თქვენი პაროლი'
                       : 'Regularly update your password to keep your account safe'}
@@ -495,107 +338,82 @@ export const ProfileView: React.FC = () => {
               </div>
 
               {/* Current Password */}
-              <div>
-                <label style={labelStyle}>{isKa ? 'მიმდინარე პაროლი' : 'Current Password'}</label>
-                <div style={{ position: 'relative' }}>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
+                  {isKa ? 'მიმდინარე პაროლი' : 'Current Password'}
+                </label>
+                <div className="relative">
                   <input
                     type={showCurrentPassword ? 'text' : 'password'}
                     value={currentPassword}
                     onChange={(e) => setCurrentPassword(e.target.value)}
                     placeholder="••••••••"
-                    style={{ ...inputStyle, paddingRight: '40px' }}
+                    className="w-full px-3.5 py-2.5 pr-10 rounded-sm border border-border-subtle bg-surface text-text-primary text-sm outline-none transition-all duration-150 focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10"
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                    style={{
-                      position: 'absolute',
-                      right: '12px',
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      background: 'none',
-                      border: 'none',
-                      color: 'var(--color-text-tertiary)',
-                      cursor: 'pointer',
-                      padding: 0
-                    }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-primary cursor-pointer p-0.5 outline-none"
                   >
-                    {showCurrentPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
               </div>
 
               {/* New Password & Confirm Grid */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }}>
-                <div>
-                  <label style={labelStyle}>{isKa ? 'ახალი პაროლი' : 'New Password'}</label>
-                  <div style={{ position: 'relative' }}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
+                    {isKa ? 'ახალი პაროლი' : 'New Password'}
+                  </label>
+                  <div className="relative">
                     <input
                       type={showNewPassword ? 'text' : 'password'}
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                       placeholder="••••••••"
-                      style={{ ...inputStyle, paddingRight: '40px' }}
+                      className="w-full px-3.5 py-2.5 pr-10 rounded-sm border border-border-subtle bg-surface text-text-primary text-sm outline-none transition-all duration-150 focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10"
                       required
                     />
                     <button
                       type="button"
                       onClick={() => setShowNewPassword(!showNewPassword)}
-                      style={{
-                        position: 'absolute',
-                        right: '12px',
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        background: 'none',
-                        border: 'none',
-                        color: 'var(--color-text-tertiary)',
-                        cursor: 'pointer',
-                        padding: 0
-                      }}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-primary cursor-pointer p-0.5 outline-none"
                     >
-                      {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
                 </div>
 
-                <div>
-                  <label style={labelStyle}>{isKa ? 'დაადასტურეთ ახალი პაროლი' : 'Confirm New Password'}</label>
-                  <div style={{ position: 'relative' }}>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
+                    {isKa ? 'დაადასტურეთ ახალი პაროლი' : 'Confirm New Password'}
+                  </label>
+                  <div className="relative">
                     <input
                       type={showConfirmPassword ? 'text' : 'password'}
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="••••••••"
-                      style={{ ...inputStyle, paddingRight: '40px' }}
+                      className="w-full px-3.5 py-2.5 pr-10 rounded-sm border border-border-subtle bg-surface text-text-primary text-sm outline-none transition-all duration-150 focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10"
                       required
                     />
                     <button
                       type="button"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      style={{
-                        position: 'absolute',
-                        right: '12px',
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        background: 'none',
-                        border: 'none',
-                        color: 'var(--color-text-tertiary)',
-                        cursor: 'pointer',
-                        padding: 0
-                      }}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-primary cursor-pointer p-0.5 outline-none"
                     >
-                      {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
                 </div>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '6px' }}>
+              <div className="flex justify-end pt-1.5">
                 <button
                   type="submit"
-                  className="btn btn-primary"
-                  style={{ padding: '9px 22px', borderRadius: '10px', fontSize: '0.85rem', fontWeight: 650 }}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-pill text-sm font-semibold bg-brand-primary text-text-inverse shadow-glow hover:bg-brand-primary-hover transition-all duration-150 cursor-pointer outline-none"
                 >
                   {isKa ? 'პაროლის განახლება' : 'Update Password'}
                 </button>
@@ -604,41 +422,20 @@ export const ProfileView: React.FC = () => {
           </form>
 
           {/* Active Sessions Card */}
-          <div
-            className="card"
-            style={{
-              background: 'var(--bg-surface)',
-              borderRadius: '18px',
-              border: '1px solid var(--border-subtle)',
-              padding: '26px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '16px',
-              boxShadow: '0 2px 10px rgba(0,0,0,0.03)'
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div
-                  style={{
-                    width: '36px',
-                    height: '36px',
-                    borderRadius: '10px',
-                    background: 'rgba(22, 163, 74, 0.08)',
-                    color: '#16A34A',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}
-                >
-                  <Laptop size={18} />
+          <div className="bg-surface rounded-lg border border-border-subtle p-6 sm:p-7 flex flex-col gap-4 shadow-sm">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-sm bg-status-active-bg text-status-active-text flex items-center justify-center shrink-0">
+                  <Laptop className="w-4.5 h-4.5" />
                 </div>
                 <div>
-                  <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--color-charcoal)', margin: 0 }}>
+                  <h3 className="text-base font-bold text-text-primary">
                     {isKa ? 'აქტიური სესიები' : 'Active Sessions'}
                   </h3>
-                  <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', margin: '2px 0 0' }}>
-                    {isKa ? 'მოწყობილობები, სადაც თქვენი ანგარიშია ავტორიზებული' : 'Devices where your account is currently signed in'}
+                  <p className="text-xs text-text-secondary mt-0.5">
+                    {isKa
+                      ? 'მოწყობილობები, სადაც თქვენი ანგარიშია ავტორიზებული'
+                      : 'Devices where your account is currently signed in'}
                   </p>
                 </div>
               </div>
@@ -646,92 +443,51 @@ export const ProfileView: React.FC = () => {
               <button
                 type="button"
                 onClick={handleLogout}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '7px 14px',
-                  borderRadius: '8px',
-                  border: '1px solid rgba(239, 68, 68, 0.3)',
-                  background: 'rgba(239, 68, 68, 0.06)',
-                  color: '#DC2626',
-                  fontSize: '0.825rem',
-                  fontWeight: 600,
-                  cursor: 'pointer'
-                }}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-pill border border-danger-border bg-danger-light text-danger text-xs font-semibold cursor-pointer hover:bg-danger hover:text-white transition-all duration-150 outline-none"
               >
-                <LogOut size={14} />
+                <LogOut className="w-3.5 h-3.5" />
                 <span>{isKa ? 'სისტემიდან გამოსვლა' : 'Log Out'}</span>
               </button>
             </div>
 
             {/* Current Session Item */}
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '14px 16px',
-                borderRadius: '12px',
-                background: 'var(--bg-surface-secondary)',
-                border: '1px solid var(--border-subtle)'
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <Laptop size={22} style={{ color: 'var(--brand-primary)' }} />
+            <div className="flex items-center justify-between p-3.5 sm:p-4 rounded-md bg-surface-secondary border border-border-subtle gap-3 flex-wrap">
+              <div className="flex items-center gap-3">
+                <Laptop className="w-5 h-5 text-brand-primary shrink-0" />
                 <div>
-                  <div style={{ fontSize: '0.875rem', fontWeight: 650, color: 'var(--color-charcoal)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div className="text-sm font-semibold text-text-primary flex items-center gap-2 flex-wrap">
                     <span>Linux Workstation • Chrome (Zen Browser)</span>
-                    <span
-                      style={{
-                        padding: '1px 6px',
-                        borderRadius: '6px',
-                        background: 'rgba(22, 163, 74, 0.12)',
-                        color: '#15803D',
-                        fontSize: '0.675rem',
-                        fontWeight: 700
-                      }}
-                    >
+                    <span className="px-1.5 py-0.5 rounded-xs bg-status-active-bg text-status-active-text text-[10px] font-bold border border-status-active-dot/20">
                       {isKa ? 'ეს მოწყობილობა' : 'This Device'}
                     </span>
                   </div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
+                  <div className="text-xs text-text-secondary mt-0.5">
                     Tbilisi, Georgia • IP: 178.134.x.x • {isKa ? 'აქტიური ახლა' : 'Active now'}
                   </div>
                 </div>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#16A34A', boxShadow: '0 0 8px #16A34A' }} />
-                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#16A34A' }}>Online</span>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <span className="w-2 h-2 rounded-full bg-status-active-dot shadow-sm" />
+                <span className="text-xs font-semibold text-status-active-text">Online</span>
               </div>
             </div>
 
             {/* Secondary Session Item */}
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '14px 16px',
-                borderRadius: '12px',
-                background: 'var(--bg-surface-secondary)',
-                border: '1px solid var(--border-subtle)'
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <Smartphone size={22} style={{ color: 'var(--color-text-secondary)' }} />
+            <div className="flex items-center justify-between p-3.5 sm:p-4 rounded-md bg-surface-secondary border border-border-subtle gap-3 flex-wrap">
+              <div className="flex items-center gap-3">
+                <Smartphone className="w-5 h-5 text-text-secondary shrink-0" />
                 <div>
-                  <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-charcoal)' }}>
+                  <div className="text-sm font-semibold text-text-primary">
                     iPhone 15 Pro • Safari Mobile
                   </div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
+                  <div className="text-xs text-text-secondary mt-0.5">
                     Tbilisi, Georgia • {isKa ? 'ბოლო აქტივობა: 2 საათის წინ' : 'Last active: 2 hours ago'}
                   </div>
                 </div>
               </div>
 
-              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)', fontWeight: 500 }}>
+              <span className="text-xs text-text-tertiary font-medium">
                 {isKa ? 'მობილური' : 'Mobile'}
               </span>
             </div>
@@ -741,25 +497,13 @@ export const ProfileView: React.FC = () => {
 
       {/* TAB 3: NOTIFICATIONS */}
       {activeTab === 'notifications' && (
-        <div style={{ maxWidth: '100%' }}>
-          <div
-            className="card"
-            style={{
-              background: 'var(--bg-surface)',
-              borderRadius: '18px',
-              border: '1px solid var(--border-subtle)',
-              padding: '26px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '20px',
-              boxShadow: '0 2px 10px rgba(0,0,0,0.03)'
-            }}
-          >
-            <div style={{ marginBottom: '4px' }}>
-              <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--color-charcoal)', margin: 0 }}>
+        <div className="w-full">
+          <div className="bg-surface rounded-lg border border-border-subtle p-6 sm:p-7 flex flex-col gap-5 shadow-sm">
+            <div>
+              <h3 className="text-base font-bold text-text-primary">
                 {isKa ? 'შეტყობინებების პარამეტრები' : 'Notification Preferences'}
               </h3>
-              <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', margin: '2px 0 0' }}>
+              <p className="text-xs text-text-secondary mt-0.5">
                 {isKa
                   ? 'მართეთ თქვენთვის სასურველი სისტემური შეხსენებები და გაფრთხილებები'
                   : 'Manage which alerts and reminders you receive from the system'}
@@ -767,77 +511,40 @@ export const ProfileView: React.FC = () => {
             </div>
 
             {/* Switch Item 1: Show Booking */}
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '16px',
-                borderRadius: '12px',
-                background: 'var(--bg-surface-secondary)',
-                border: '1px solid var(--border-subtle)'
-              }}
-            >
+            <div className="flex items-center justify-between p-4 rounded-md bg-surface-secondary border border-border-subtle gap-4">
               <div>
-                <div style={{ fontSize: '0.9rem', fontWeight: 650, color: 'var(--color-charcoal)' }}>
+                <div className="text-sm font-semibold text-text-primary">
                   {isKa ? 'შოუების დაჯავშნის შეტყობინებები' : 'Show Booking Notifications'}
                 </div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
+                <div className="text-xs text-text-secondary mt-0.5 leading-relaxed">
                   {isKa
                     ? 'მყისიერი შეტყობინება ახალი შოუს დაჯავშნის, ცვლილების ან გაუქმების დროს'
                     : 'Instant alerts when shows are booked, modified, or canceled'}
                 </div>
               </div>
 
-              {/* iOS Style Switch */}
               <button
                 type="button"
                 onClick={() => handleToggleNotification('show')}
-                style={{
-                  width: '46px',
-                  height: '26px',
-                  borderRadius: '13px',
-                  background: notifyShowBooking ? 'var(--brand-primary)' : '#CBD5E1',
-                  border: 'none',
-                  position: 'relative',
-                  cursor: 'pointer',
-                  transition: 'background 0.2s ease',
-                  flexShrink: 0
-                }}
+                className={`w-11 h-6 rounded-pill relative transition-colors duration-200 cursor-pointer outline-none shrink-0 ${
+                  notifyShowBooking ? 'bg-brand-primary' : 'bg-border-medium'
+                }`}
               >
                 <span
-                  style={{
-                    position: 'absolute',
-                    top: '3px',
-                    left: notifyShowBooking ? '23px' : '3px',
-                    width: '20px',
-                    height: '20px',
-                    borderRadius: '50%',
-                    background: '#FFFFFF',
-                    boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
-                    transition: 'left 0.2s ease'
-                  }}
+                  className={`w-4.5 h-4.5 rounded-full bg-white absolute top-0.5 shadow-sm transition-all duration-200 ${
+                    notifyShowBooking ? 'left-[22px]' : 'left-0.5'
+                  }`}
                 />
               </button>
             </div>
 
             {/* Switch Item 2: Duty Rotation */}
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '16px',
-                borderRadius: '12px',
-                background: 'var(--bg-surface-secondary)',
-                border: '1px solid var(--border-subtle)'
-              }}
-            >
+            <div className="flex items-center justify-between p-4 rounded-md bg-surface-secondary border border-border-subtle gap-4">
               <div>
-                <div style={{ fontSize: '0.9rem', fontWeight: 650, color: 'var(--color-charcoal)' }}>
+                <div className="text-sm font-semibold text-text-primary">
                   {isKa ? 'მორიგეობის როტაციის შეხსენებები' : 'Duty Rotation Reminders'}
                 </div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
+                <div className="text-xs text-text-secondary mt-0.5 leading-relaxed">
                   {isKa
                     ? 'ავტომატური შეხსენება მორიგეობის განრიგის დაწყებამდე 24 საათით ადრე'
                     : 'Automated notification 24 hours prior to scheduled duty shifts'}
@@ -847,51 +554,25 @@ export const ProfileView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => handleToggleNotification('duty')}
-                style={{
-                  width: '46px',
-                  height: '26px',
-                  borderRadius: '13px',
-                  background: notifyDutyRotation ? 'var(--brand-primary)' : '#CBD5E1',
-                  border: 'none',
-                  position: 'relative',
-                  cursor: 'pointer',
-                  transition: 'background 0.2s ease',
-                  flexShrink: 0
-                }}
+                className={`w-11 h-6 rounded-pill relative transition-colors duration-200 cursor-pointer outline-none shrink-0 ${
+                  notifyDutyRotation ? 'bg-brand-primary' : 'bg-border-medium'
+                }`}
               >
                 <span
-                  style={{
-                    position: 'absolute',
-                    top: '3px',
-                    left: notifyDutyRotation ? '23px' : '3px',
-                    width: '20px',
-                    height: '20px',
-                    borderRadius: '50%',
-                    background: '#FFFFFF',
-                    boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
-                    transition: 'left 0.2s ease'
-                  }}
+                  className={`w-4.5 h-4.5 rounded-full bg-white absolute top-0.5 shadow-sm transition-all duration-200 ${
+                    notifyDutyRotation ? 'left-[22px]' : 'left-0.5'
+                  }`}
                 />
               </button>
             </div>
 
             {/* Switch Item 3: Document Expiry */}
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '16px',
-                borderRadius: '12px',
-                background: 'var(--bg-surface-secondary)',
-                border: '1px solid var(--border-subtle)'
-              }}
-            >
+            <div className="flex items-center justify-between p-4 rounded-md bg-surface-secondary border border-border-subtle gap-4">
               <div>
-                <div style={{ fontSize: '0.9rem', fontWeight: 650, color: 'var(--color-charcoal)' }}>
+                <div className="text-sm font-semibold text-text-primary">
                   {isKa ? 'დოკუმენტების ვადის ამოწურვა' : 'Document Expiry Alerts'}
                 </div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
+                <div className="text-xs text-text-secondary mt-0.5 leading-relaxed">
                   {isKa
                     ? 'გაფრთხილება არტისტების პასპორტის, დაზღვევის ან ვიზის ვადის გასვლამდე 30 დღით ადრე'
                     : 'Warnings 30 days before performer passports, visas, or health checks expire'}
@@ -901,30 +582,14 @@ export const ProfileView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => handleToggleNotification('doc')}
-                style={{
-                  width: '46px',
-                  height: '26px',
-                  borderRadius: '13px',
-                  background: notifyDocExpiry ? 'var(--brand-primary)' : '#CBD5E1',
-                  border: 'none',
-                  position: 'relative',
-                  cursor: 'pointer',
-                  transition: 'background 0.2s ease',
-                  flexShrink: 0
-                }}
+                className={`w-11 h-6 rounded-pill relative transition-colors duration-200 cursor-pointer outline-none shrink-0 ${
+                  notifyDocExpiry ? 'bg-brand-primary' : 'bg-border-medium'
+                }`}
               >
                 <span
-                  style={{
-                    position: 'absolute',
-                    top: '3px',
-                    left: notifyDocExpiry ? '23px' : '3px',
-                    width: '20px',
-                    height: '20px',
-                    borderRadius: '50%',
-                    background: '#FFFFFF',
-                    boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
-                    transition: 'left 0.2s ease'
-                  }}
+                  className={`w-4.5 h-4.5 rounded-full bg-white absolute top-0.5 shadow-sm transition-all duration-200 ${
+                    notifyDocExpiry ? 'left-[22px]' : 'left-0.5'
+                  }`}
                 />
               </button>
             </div>
@@ -934,37 +599,27 @@ export const ProfileView: React.FC = () => {
 
       {/* TAB 4: PREFERENCES */}
       {activeTab === 'preferences' && (
-        <div style={{ maxWidth: '100%' }}>
-          <div
-            className="card"
-            style={{
-              background: 'var(--bg-surface)',
-              borderRadius: '18px',
-              border: '1px solid var(--border-subtle)',
-              padding: '26px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '24px',
-              boxShadow: '0 2px 10px rgba(0,0,0,0.03)'
-            }}
-          >
+        <div className="w-full">
+          <div className="bg-surface rounded-lg border border-border-subtle p-6 sm:p-7 flex flex-col gap-6 shadow-sm">
             <div>
-              <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--color-charcoal)', margin: 0 }}>
+              <h3 className="text-base font-bold text-text-primary">
                 {isKa ? 'სისტემური პრეფერენციები' : 'System Preferences'}
               </h3>
-              <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', margin: '2px 0 0' }}>
-                {isKa ? 'მოარგეთ ინტერფეისის ენა და ფორმატები თქვენს სამუშაო სტილს' : 'Customize UI language and regional formats'}
+              <p className="text-xs text-text-secondary mt-0.5">
+                {isKa
+                  ? 'მოარგეთ ინტერფეისის ენა და ფორმატები თქვენს სამუშაო სტილს'
+                  : 'Customize UI language and regional formats'}
               </p>
             </div>
 
             {/* Language Selection */}
-            <div>
-              <label style={labelStyle}>
-                <Globe size={14} />
+            <div className="flex flex-col gap-2">
+              <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-text-secondary">
+                <Globe className="w-3.5 h-3.5" />
                 <span>{isKa ? 'ინტერფეისის ენა' : 'Interface Language'}</span>
               </label>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '12px' }}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {/* Georgian */}
                 <button
                   type="button"
@@ -972,32 +627,24 @@ export const ProfileView: React.FC = () => {
                     setLanguage('ka');
                     toast.success('ენა შეიცვალა: ქართული');
                   }}
-                  style={{
-                    padding: '14px 16px',
-                    borderRadius: '12px',
-                    border: language === 'ka' ? '2px solid var(--brand-primary)' : '1.5px solid var(--border-subtle)',
-                    background: language === 'ka' ? 'var(--brand-primary)' : 'var(--bg-surface-secondary)',
-                    boxShadow: language === 'ka' ? '0 4px 14px var(--brand-primary-glow)' : 'none',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    textAlign: 'left',
-                    transition: 'all 0.18s ease-in-out'
-                  }}
+                  className={`p-4 rounded-md border text-left cursor-pointer flex items-center justify-between transition-all duration-150 outline-none ${
+                    language === 'ka'
+                      ? 'border-brand-primary bg-brand-primary text-text-inverse shadow-glow'
+                      : 'border-border-subtle bg-surface-secondary text-text-primary hover:border-border-medium'
+                  }`}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span style={{ fontSize: '1.25rem' }}>🇬🇪</span>
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-xl">🇬🇪</span>
                     <div>
-                      <div style={{ fontSize: '0.875rem', fontWeight: 650, color: language === 'ka' ? '#FFFFFF' : 'var(--color-charcoal)' }}>
+                      <div className="text-sm font-semibold">
                         ქართული
                       </div>
-                      <div style={{ fontSize: '0.75rem', color: language === 'ka' ? 'rgba(255, 255, 255, 0.85)' : 'var(--color-text-secondary)' }}>
+                      <div className={`text-xs ${language === 'ka' ? 'text-white/85' : 'text-text-secondary'}`}>
                         Georgian (Default)
                       </div>
                     </div>
                   </div>
-                  {language === 'ka' && <CheckCircle2 size={18} color="#FFFFFF" />}
+                  {language === 'ka' && <CheckCircle2 className="w-4.5 h-4.5 text-white" />}
                 </button>
 
                 {/* English */}
@@ -1007,32 +654,24 @@ export const ProfileView: React.FC = () => {
                     setLanguage('en');
                     toast.success('Language changed: English');
                   }}
-                  style={{
-                    padding: '14px 16px',
-                    borderRadius: '12px',
-                    border: language === 'en' ? '2px solid var(--brand-primary)' : '1.5px solid var(--border-subtle)',
-                    background: language === 'en' ? 'var(--brand-primary)' : 'var(--bg-surface-secondary)',
-                    boxShadow: language === 'en' ? '0 4px 14px var(--brand-primary-glow)' : 'none',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    textAlign: 'left',
-                    transition: 'all 0.18s ease-in-out'
-                  }}
+                  className={`p-4 rounded-md border text-left cursor-pointer flex items-center justify-between transition-all duration-150 outline-none ${
+                    language === 'en'
+                      ? 'border-brand-primary bg-brand-primary text-text-inverse shadow-glow'
+                      : 'border-border-subtle bg-surface-secondary text-text-primary hover:border-border-medium'
+                  }`}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span style={{ fontSize: '1.25rem' }}>🇬🇧</span>
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-xl">🇬🇧</span>
                     <div>
-                      <div style={{ fontSize: '0.875rem', fontWeight: 650, color: language === 'en' ? '#FFFFFF' : 'var(--color-charcoal)' }}>
+                      <div className="text-sm font-semibold">
                         English
                       </div>
-                      <div style={{ fontSize: '0.75rem', color: language === 'en' ? 'rgba(255, 255, 255, 0.85)' : 'var(--color-text-secondary)' }}>
+                      <div className={`text-xs ${language === 'en' ? 'text-white/85' : 'text-text-secondary'}`}>
                         United Kingdom / International
                       </div>
                     </div>
                   </div>
-                  {language === 'en' && <CheckCircle2 size={18} color="#FFFFFF" />}
+                  {language === 'en' && <CheckCircle2 className="w-4.5 h-4.5 text-white" />}
                 </button>
 
                 {/* Turkish */}
@@ -1042,72 +681,57 @@ export const ProfileView: React.FC = () => {
                     setLanguage('tr');
                     toast.success('Dil değiştirildi: Türkçe');
                   }}
-                  style={{
-                    padding: '14px 16px',
-                    borderRadius: '12px',
-                    border: language === 'tr' ? '2px solid var(--brand-primary)' : '1.5px solid var(--border-subtle)',
-                    background: language === 'tr' ? 'var(--brand-primary)' : 'var(--bg-surface-secondary)',
-                    boxShadow: language === 'tr' ? '0 4px 14px var(--brand-primary-glow)' : 'none',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    textAlign: 'left',
-                    transition: 'all 0.18s ease-in-out'
-                  }}
+                  className={`p-4 rounded-md border text-left cursor-pointer flex items-center justify-between transition-all duration-150 outline-none ${
+                    language === 'tr'
+                      ? 'border-brand-primary bg-brand-primary text-text-inverse shadow-glow'
+                      : 'border-border-subtle bg-surface-secondary text-text-primary hover:border-border-medium'
+                  }`}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span style={{ fontSize: '1.25rem' }}>🇹🇷</span>
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-xl">🇹🇷</span>
                     <div>
-                      <div style={{ fontSize: '0.875rem', fontWeight: 650, color: language === 'tr' ? '#FFFFFF' : 'var(--color-charcoal)' }}>
+                      <div className="text-sm font-semibold">
                         Türkçe
                       </div>
-                      <div style={{ fontSize: '0.75rem', color: language === 'tr' ? 'rgba(255, 255, 255, 0.85)' : 'var(--color-text-secondary)' }}>
+                      <div className={`text-xs ${language === 'tr' ? 'text-white/85' : 'text-text-secondary'}`}>
                         Türkiye / International
                       </div>
                     </div>
                   </div>
-                  {language === 'tr' && <CheckCircle2 size={18} color="#FFFFFF" />}
+                  {language === 'tr' && <CheckCircle2 className="w-4.5 h-4.5 text-white" />}
                 </button>
               </div>
             </div>
 
             {/* Time Format */}
-            <div>
-              <label style={labelStyle}>
-                <Clock size={14} />
+            <div className="flex flex-col gap-2">
+              <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-text-secondary">
+                <Clock className="w-3.5 h-3.5" />
                 <span>{isKa ? 'დროის ფორმატი' : 'Time Format'}</span>
               </label>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '12px' }}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <button
                   type="button"
                   onClick={() => {
                     setTimeFormat('24h');
                     toast.success(isKa ? 'არჩეულია 24-საათიანი ფორმატი' : '24-hour format selected');
                   }}
-                  style={{
-                    padding: '12px 16px',
-                    borderRadius: '10px',
-                    border: timeFormat === '24h' ? '2px solid var(--brand-primary)' : '1.5px solid var(--border-subtle)',
-                    background: timeFormat === '24h' ? 'var(--brand-primary)' : 'var(--bg-surface-secondary)',
-                    boxShadow: timeFormat === '24h' ? '0 4px 14px var(--brand-primary-glow)' : 'none',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    transition: 'all 0.18s ease-in-out'
-                  }}
+                  className={`p-3.5 rounded-md border text-left cursor-pointer flex items-center justify-between transition-all duration-150 outline-none ${
+                    timeFormat === '24h'
+                      ? 'border-brand-primary bg-brand-primary text-text-inverse shadow-glow'
+                      : 'border-border-subtle bg-surface-secondary text-text-primary hover:border-border-medium'
+                  }`}
                 >
                   <div>
-                    <div style={{ fontSize: '0.85rem', fontWeight: 650, color: timeFormat === '24h' ? '#FFFFFF' : 'var(--color-charcoal)' }}>
+                    <div className="text-sm font-semibold">
                       {isKa ? '24 საათიანი' : '24-hour'}
                     </div>
-                    <div style={{ fontSize: '0.75rem', color: timeFormat === '24h' ? 'rgba(255, 255, 255, 0.85)' : 'var(--color-text-secondary)' }}>
+                    <div className={`text-xs ${timeFormat === '24h' ? 'text-white/85' : 'text-text-secondary'}`}>
                       14:30 / 21:00
                     </div>
                   </div>
-                  {timeFormat === '24h' && <CheckCircle2 size={16} color="#FFFFFF" />}
+                  {timeFormat === '24h' && <CheckCircle2 className="w-4 h-4 text-white" />}
                 </button>
 
                 <button
@@ -1116,58 +740,43 @@ export const ProfileView: React.FC = () => {
                     setTimeFormat('12h');
                     toast.success(isKa ? 'არჩეულია 12-საათიანი (AM/PM) ფორმატი' : '12-hour format selected');
                   }}
-                  style={{
-                    padding: '12px 16px',
-                    borderRadius: '10px',
-                    border: timeFormat === '12h' ? '2px solid var(--brand-primary)' : '1.5px solid var(--border-subtle)',
-                    background: timeFormat === '12h' ? 'var(--brand-primary)' : 'var(--bg-surface-secondary)',
-                    boxShadow: timeFormat === '12h' ? '0 4px 14px var(--brand-primary-glow)' : 'none',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    transition: 'all 0.18s ease-in-out'
-                  }}
+                  className={`p-3.5 rounded-md border text-left cursor-pointer flex items-center justify-between transition-all duration-150 outline-none ${
+                    timeFormat === '12h'
+                      ? 'border-brand-primary bg-brand-primary text-text-inverse shadow-glow'
+                      : 'border-border-subtle bg-surface-secondary text-text-primary hover:border-border-medium'
+                  }`}
                 >
                   <div>
-                    <div style={{ fontSize: '0.85rem', fontWeight: 650, color: timeFormat === '12h' ? '#FFFFFF' : 'var(--color-charcoal)' }}>
+                    <div className="text-sm font-semibold">
                       {isKa ? '12 საათიანი (AM/PM)' : '12-hour (AM/PM)'}
                     </div>
-                    <div style={{ fontSize: '0.75rem', color: timeFormat === '12h' ? 'rgba(255, 255, 255, 0.85)' : 'var(--color-text-secondary)' }}>
+                    <div className={`text-xs ${timeFormat === '12h' ? 'text-white/85' : 'text-text-secondary'}`}>
                       02:30 PM / 09:00 PM
                     </div>
                   </div>
-                  {timeFormat === '12h' && <CheckCircle2 size={16} color="#FFFFFF" />}
+                  {timeFormat === '12h' && <CheckCircle2 className="w-4 h-4 text-white" />}
                 </button>
               </div>
             </div>
 
             {/* First day of week */}
-            <div>
-              <label style={labelStyle}>
-                <Sliders size={14} />
+            <div className="flex flex-col gap-2">
+              <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-text-secondary">
+                <Sliders className="w-3.5 h-3.5" />
                 <span>{isKa ? 'კვირის პირველი დღე (კალენდარში)' : 'First Day of Week'}</span>
               </label>
-              <div style={{ display: 'flex', gap: '10px' }}>
+              <div className="flex gap-2.5">
                 <button
                   type="button"
                   onClick={() => {
                     setFirstDayOfWeek('monday');
                     toast.success(isKa ? 'კვირის დასაწყისი: ორშაბათი' : 'First day set to Monday');
                   }}
-                  style={{
-                    flex: 1,
-                    padding: '10px 14px',
-                    borderRadius: '10px',
-                    border: firstDayOfWeek === 'monday' ? '2px solid var(--brand-primary)' : '1.5px solid var(--border-subtle)',
-                    background: firstDayOfWeek === 'monday' ? 'var(--brand-primary)' : 'var(--bg-surface-secondary)',
-                    color: firstDayOfWeek === 'monday' ? '#FFFFFF' : 'var(--color-charcoal)',
-                    boxShadow: firstDayOfWeek === 'monday' ? '0 4px 14px var(--brand-primary-glow)' : 'none',
-                    fontWeight: 650,
-                    fontSize: '0.825rem',
-                    cursor: 'pointer',
-                    transition: 'all 0.18s ease-in-out'
-                  }}
+                  className={`flex-1 p-3 rounded-md border text-xs font-semibold cursor-pointer transition-all duration-150 outline-none ${
+                    firstDayOfWeek === 'monday'
+                      ? 'border-brand-primary bg-brand-primary text-text-inverse shadow-glow'
+                      : 'border-border-subtle bg-surface-secondary text-text-primary hover:border-border-medium'
+                  }`}
                 >
                   {isKa ? 'ორშაბათი' : 'Monday'}
                 </button>
@@ -1178,19 +787,11 @@ export const ProfileView: React.FC = () => {
                     setFirstDayOfWeek('sunday');
                     toast.success(isKa ? 'კვირის დასაწყისი: კვირა' : 'First day set to Sunday');
                   }}
-                  style={{
-                    flex: 1,
-                    padding: '10px 14px',
-                    borderRadius: '10px',
-                    border: firstDayOfWeek === 'sunday' ? '2px solid var(--brand-primary)' : '1.5px solid var(--border-subtle)',
-                    background: firstDayOfWeek === 'sunday' ? 'var(--brand-primary)' : 'var(--bg-surface-secondary)',
-                    color: firstDayOfWeek === 'sunday' ? '#FFFFFF' : 'var(--color-charcoal)',
-                    boxShadow: firstDayOfWeek === 'sunday' ? '0 4px 14px var(--brand-primary-glow)' : 'none',
-                    fontWeight: 650,
-                    fontSize: '0.825rem',
-                    cursor: 'pointer',
-                    transition: 'all 0.18s ease-in-out'
-                  }}
+                  className={`flex-1 p-3 rounded-md border text-xs font-semibold cursor-pointer transition-all duration-150 outline-none ${
+                    firstDayOfWeek === 'sunday'
+                      ? 'border-brand-primary bg-brand-primary text-text-inverse shadow-glow'
+                      : 'border-border-subtle bg-surface-secondary text-text-primary hover:border-border-medium'
+                  }`}
                 >
                   {isKa ? 'კვირა' : 'Sunday'}
                 </button>

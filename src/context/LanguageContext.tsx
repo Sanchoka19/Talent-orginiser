@@ -1,3 +1,5 @@
+'use client';
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Language, translations, TranslationKey } from '../i18n/translations';
 
@@ -13,13 +15,16 @@ const LANGUAGE_STORAGE_KEY = 'artiste_pulse_lang_v1';
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [language, setLanguageState] = useState<Language>(() => {
+    if (typeof window === 'undefined') return 'en';
     const saved = localStorage.getItem(LANGUAGE_STORAGE_KEY);
     return saved === 'ka' || saved === 'tr' ? (saved as Language) : 'en';
   });
 
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);
-    localStorage.setItem(LANGUAGE_STORAGE_KEY, lang);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(LANGUAGE_STORAGE_KEY, lang);
+    }
   };
 
   const t = (key: TranslationKey, params?: Record<string, string | number>): string => {

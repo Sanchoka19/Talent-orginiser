@@ -1,5 +1,3 @@
-import { extractText } from 'unpdf';
-
 export interface ParseContractResult {
   date: string | null; // ISO YYYY-MM-DD
   rawSnippet?: string;
@@ -159,6 +157,7 @@ export async function extractContractExpiryDate(file: File): Promise<ParseContra
     if (fileName.endsWith('.pdf') || file.type === 'application/pdf') {
       try {
         const arrayBuffer = await file.arrayBuffer();
+        const { extractText } = await import('unpdf');
         const result = await extractText(arrayBuffer);
         if (Array.isArray(result.text)) {
           extractedText = result.text.join(' ');

@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import { ShowEvent } from '../../types/schedule';
 import { Group } from '../../types/group';
@@ -40,198 +42,175 @@ export const WeekView: React.FC<WeekViewProps> = ({
   }
 
   const now = new Date();
-  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(
+    now.getDate()
+  ).padStart(2, '0')}`;
   const localeStr = language === 'ka' ? 'ka-GE' : language === 'tr' ? 'tr-TR' : 'en-US';
 
   return (
-    <div
-      style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(7, minmax(130px, 1fr))',
-        gap: '12px',
-        minHeight: '480px',
-        overflowX: 'auto',
-        paddingBottom: '8px'
-      }}
-    >
-      {weekDays.map((dayDate, idx) => {
-        const dateStr = `${dayDate.getFullYear()}-${String(dayDate.getMonth() + 1).padStart(2, '0')}-${String(dayDate.getDate()).padStart(2, '0')}`;
-        const dayName = dayDate.toLocaleDateString(localeStr, { weekday: 'short' });
-        const dayNumber = dayDate.getDate();
-        const isToday = dateStr === todayStr;
-        const isPast = dateStr < todayStr;
+    <div className="w-full overflow-x-auto pb-2">
+      <div className="grid grid-cols-7 gap-3 min-w-[920px] min-h-[480px]">
+        {weekDays.map((dayDate, idx) => {
+          const dateStr = `${dayDate.getFullYear()}-${String(dayDate.getMonth() + 1).padStart(
+            2,
+            '0'
+          )}-${String(dayDate.getDate()).padStart(2, '0')}`;
+          const dayName = dayDate.toLocaleDateString(localeStr, { weekday: 'short' });
+          const dayNumber = dayDate.getDate();
+          const isToday = dateStr === todayStr;
+          const isPast = dateStr < todayStr;
 
-        const dayEvents = events.filter((ev) => ev.startDateTime.startsWith(dateStr));
+          const dayEvents = events.filter((ev) => ev.startDateTime.startsWith(dateStr));
 
-        return (
-          <div
-            key={idx}
-            onClick={() => onSelectDate(dateStr)}
-            style={{
-              background: isToday ? 'rgba(30, 106, 255, 0.05)' : isPast ? 'rgba(0, 0, 0, 0.015)' : 'var(--bg-surface)',
-              borderRadius: 'var(--radius-md)',
-              border: isToday ? '2px solid var(--brand-primary)' : '1px solid var(--border-subtle)',
-              padding: '12px',
-              display: 'flex',
-              flexDirection: 'column',
-              minHeight: '460px',
-              boxShadow: 'var(--shadow-sm)',
-              opacity: isPast ? 0.78 : 1,
-              transition: 'opacity 0.15s ease'
-            }}
-            onMouseEnter={(e) => {
-              if (isPast) e.currentTarget.style.opacity = '1';
-            }}
-            onMouseLeave={(e) => {
-              if (isPast) e.currentTarget.style.opacity = '0.78';
-            }}
-          >
-            {/* Column Header */}
+          return (
             <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                paddingBottom: '10px',
-                borderBottom: '1px solid var(--border-subtle)',
-                marginBottom: '12px'
-              }}
+              key={idx}
+              onClick={() => onSelectDate(dateStr)}
+              className={`rounded-md p-3 flex flex-col min-h-[460px] shadow-sm transition-all duration-150 cursor-pointer ${
+                isToday
+                  ? 'bg-brand-primary/5 border-2 border-brand-primary opacity-100'
+                  : isPast
+                  ? 'bg-canvas/40 border border-border-subtle opacity-80 hover:opacity-100'
+                  : 'bg-surface border border-border-subtle opacity-100 hover:border-border-medium'
+              }`}
             >
-              <div>
-                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-secondary)', textTransform: 'uppercase' }}>
-                  {dayName}
-                </span>
-                <div style={{ fontSize: '1.25rem', fontWeight: 700, color: isToday ? 'var(--brand-primary)' : isPast ? 'var(--color-text-tertiary)' : 'inherit' }}>
-                  {dayNumber}
+              {/* Column Header */}
+              <div className="flex items-center justify-between pb-2.5 border-b border-border-subtle mb-3">
+                <div>
+                  <span className="text-xs font-semibold text-text-secondary uppercase">
+                    {dayName}
+                  </span>
+                  <div
+                    className={`text-xl font-bold ${
+                      isToday
+                        ? 'text-brand-primary'
+                        : isPast
+                        ? 'text-text-tertiary'
+                        : 'text-text-primary'
+                    }`}
+                  >
+                    {dayNumber}
+                  </div>
                 </div>
+
+                {isToday && (
+                  <span className="text-[10px] font-bold bg-brand-primary text-text-inverse px-1.5 py-0.5 rounded-pill shadow-sm">
+                    {t('today').toUpperCase()}
+                  </span>
+                )}
+
+                {isPast && !isToday && (
+                  <span className="text-[10px] font-semibold text-text-tertiary inline-flex items-center gap-1">
+                    <Check className="w-2.5 h-2.5" strokeWidth={2.5} />
+                    <span>{language === 'ka' ? 'დასრულდა' : 'Past'}</span>
+                  </span>
+                )}
               </div>
 
-              {isToday && (
-                <span
-                  style={{
-                    fontSize: '0.675rem',
-                    fontWeight: 700,
-                    background: 'var(--brand-primary)',
-                    color: '#FFFFFF',
-                    padding: '2px 6px',
-                    borderRadius: 'var(--radius-pill)'
-                  }}
-                >
-                  {t('today').toUpperCase()}
-                </span>
-              )}
+              {/* Event Cards */}
+              <div className="flex flex-col gap-2 flex-1">
+                {dayEvents.length === 0 ? (
+                  <div className="flex-1 flex items-center justify-center text-text-tertiary text-xs italic text-center p-3">
+                    {t('no_shows_week')}
+                  </div>
+                ) : (
+                  dayEvents.map((ev) => {
+                    const group = groupMap.get(ev.groupId);
+                    const venue = venueMap.get(ev.hotelId);
+                    const startTime = new Date(ev.startDateTime).toLocaleTimeString([], {
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    });
+                    const endTime = new Date(ev.endDateTime).toLocaleTimeString([], {
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    });
 
-              {isPast && !isToday && (
-                <span
-                  style={{
-                    fontSize: '0.675rem',
-                    fontWeight: 650,
-                    color: 'var(--color-text-tertiary)',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '3px'
-                  }}
-                >
-                  <Check size={11} strokeWidth={2.5} />
-                  <span>{language === 'ka' ? 'დასრულდა' : 'Past'}</span>
-                </span>
-              )}
-            </div>
+                    const effectiveLobby =
+                      ev.lobbyTime ||
+                      (() => {
+                        const d = new Date(ev.startDateTime);
+                        const travel = venue?.travelTimeMinutes ?? 45;
+                        const totalM = (d.getHours() * 60 + d.getMinutes() - travel + 1440) % 1440;
+                        return `${String(Math.floor(totalM / 60)).padStart(2, '0')}:${String(
+                          totalM % 60
+                        ).padStart(2, '0')}`;
+                      })();
 
-            {/* Event Cards */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
-              {dayEvents.length === 0 ? (
-                <div
-                  style={{
-                    flex: 1,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: 'var(--color-text-tertiary)',
-                    fontSize: '0.75rem',
-                    fontStyle: 'italic',
-                    textAlign: 'center'
-                  }}
-                >
-                  {t('no_shows_week')}
-                </div>
-              ) : (
-                dayEvents.map((ev) => {
-                  const group = groupMap.get(ev.groupId);
-                  const venue = venueMap.get(ev.hotelId);
-                  const startTime = new Date(ev.startDateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                  const endTime = new Date(ev.endDateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    const isEventPast = isPast || new Date(ev.endDateTime).getTime() < Date.now();
 
-                  const effectiveLobby = ev.lobbyTime || (() => {
-                    const d = new Date(ev.startDateTime);
-                    const travel = venue?.travelTimeMinutes ?? 45;
-                    const totalM = (d.getHours() * 60 + d.getMinutes() - travel + 1440) % 1440;
-                    return `${String(Math.floor(totalM / 60)).padStart(2, '0')}:${String(totalM % 60).padStart(2, '0')}`;
-                  })();
+                    return (
+                      <div
+                        key={ev.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSelectEvent(ev);
+                        }}
+                        className={`p-2.5 rounded-sm border cursor-pointer transition-all duration-150 ${
+                          isEventPast
+                            ? 'bg-surface-secondary text-text-secondary border-border-medium opacity-85 hover:opacity-100'
+                            : 'bg-brand-primary text-text-inverse border-brand-primary-hover shadow-sm hover:shadow-glow hover:-translate-y-0.5 active:translate-y-0'
+                        }`}
+                      >
+                        <div className="font-bold text-xs truncate mb-1">{ev.title}</div>
 
-                  const isEventPast = isPast || new Date(ev.endDateTime).getTime() < Date.now();
-
-                  return (
-                    <div
-                      key={ev.id}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onSelectEvent(ev);
-                      }}
-                      style={{
-                        padding: '10px',
-                        borderRadius: 'var(--radius-sm)',
-                        background: isEventPast ? 'var(--bg-surface-secondary)' : 'var(--brand-primary)',
-                        color: isEventPast ? 'var(--color-text-secondary)' : '#FFFFFF',
-                        border: isEventPast ? '1px solid var(--border-medium)' : '1px solid var(--brand-primary-hover)',
-                        boxShadow: isEventPast ? 'none' : '0 2px 8px var(--brand-primary-glow)',
-                        cursor: 'pointer',
-                        opacity: isEventPast ? 0.85 : 1,
-                        transition: 'opacity 0.15s ease, transform 0.15s ease'
-                      }}
-                      onMouseEnter={(e) => {
-                        if (isEventPast) e.currentTarget.style.opacity = '1';
-                      }}
-                      onMouseLeave={(e) => {
-                        if (isEventPast) e.currentTarget.style.opacity = '0.85';
-                      }}
-                    >
-                      <div style={{ fontWeight: 700, fontSize: '0.825rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: '4px' }}>
-                        {ev.title}
-                      </div>
-
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', fontSize: '0.725rem', marginBottom: '4px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 600, color: isEventPast ? 'var(--color-text-tertiary)' : 'inherit' }}>
-                          <Bus size={12} strokeWidth={2} style={{ flexShrink: 0 }} />
-                          <span>{t('gathering_label')}: {effectiveLobby}</span>
+                        <div className="flex flex-col gap-0.5 text-xs mb-1.5">
+                          <div
+                            className={`flex items-center gap-1 font-semibold ${
+                              isEventPast ? 'text-text-tertiary' : 'text-inherit'
+                            }`}
+                          >
+                            <Bus className="w-3 h-3 shrink-0" strokeWidth={2} />
+                            <span>
+                              {t('gathering_label')}: {effectiveLobby}
+                            </span>
+                          </div>
+                          <div
+                            className={`flex items-center gap-1 ${
+                              isEventPast ? 'text-text-tertiary' : 'text-inherit'
+                            }`}
+                          >
+                            <Sparkles className="w-3 h-3 shrink-0" strokeWidth={2} />
+                            <span>
+                              {startTime} - {endTime}
+                            </span>
+                          </div>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: isEventPast ? 'var(--color-text-tertiary)' : 'inherit' }}>
-                          <Sparkles size={12} strokeWidth={2} style={{ flexShrink: 0 }} />
-                          <span>{startTime} - {endTime}</span>
+
+                        <div
+                          className={`flex items-center gap-1.5 text-xs mb-1 font-semibold ${
+                            isEventPast ? 'text-text-secondary' : 'text-inherit'
+                          }`}
+                        >
+                          <Users
+                            className={`w-3.5 h-3.5 shrink-0 ${
+                              isEventPast ? 'opacity-70' : 'opacity-100'
+                            }`}
+                          />
+                          <span className="truncate">{group?.name}</span>
+                        </div>
+
+                        <div
+                          className={`flex items-center gap-1.5 text-xs ${
+                            isEventPast ? 'text-text-tertiary' : 'text-white/85'
+                          }`}
+                        >
+                          <MapPin
+                            className={`w-3.5 h-3.5 shrink-0 ${
+                              isEventPast ? 'opacity-70' : 'opacity-100'
+                            }`}
+                          />
+                          <span className="truncate">{venue?.name}</span>
                         </div>
                       </div>
-
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', marginBottom: '4px', fontWeight: 600, color: isEventPast ? 'var(--color-text-secondary)' : 'inherit' }}>
-                        <Users size={13} style={{ opacity: isEventPast ? 0.7 : 1 }} />
-                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {group?.name}
-                        </span>
-                      </div>
-
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: isEventPast ? 'var(--color-text-tertiary)' : 'rgba(255, 255, 255, 0.85)' }}>
-                        <MapPin size={13} style={{ opacity: isEventPast ? 0.7 : 1 }} />
-                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {venue?.name}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
+                    );
+                  })
+                )}
+              </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 };

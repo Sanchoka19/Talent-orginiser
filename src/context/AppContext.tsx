@@ -1,3 +1,5 @@
+'use client';
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Talent } from '../types/talent';
 import { Group } from '../types/group';

@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import { TalentStatus, Gender } from '../../types/talent';
 import { DutyGenderRequirement } from '../../types/inventory';
@@ -10,21 +12,24 @@ interface StatusBadgeProps {
 export const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
   const { t } = useLanguage();
 
-  let className = 'badge-active';
+  let colorClasses = 'bg-status-active-bg text-status-active-text';
+  let dotClasses = 'bg-status-active-dot ring-2 ring-emerald-500/20';
   let label = t('status_active');
 
   if (status === 'Rest') {
-    className = 'badge-rest';
+    colorClasses = 'bg-status-rest-bg text-status-rest-text';
+    dotClasses = 'bg-status-rest-dot ring-2 ring-amber-500/20';
     label = t('status_rest');
   } else if (status === 'Sick/Injured') {
-    className = 'badge-sick';
+    colorClasses = 'bg-status-sick-bg text-status-sick-text';
+    dotClasses = 'bg-status-sick-dot ring-2 ring-red-500/20';
     label = t('status_sick');
   }
 
   return (
-    <span className={`badge ${className}`}>
-      <span className="badge-dot" />
-      {label}
+    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-pill text-xs font-medium tracking-wide whitespace-nowrap shrink-0 ${colorClasses}`}>
+      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotClasses}`} />
+      <span>{label}</span>
     </span>
   );
 };
@@ -36,25 +41,25 @@ interface GenderBadgeProps {
 export const GenderBadge: React.FC<GenderBadgeProps> = ({ gender }) => {
   const { t } = useLanguage();
 
-  let className = 'badge-gender-any';
+  let colorClasses = 'bg-tag-any-bg text-tag-any-text';
   let label = t('gender_any');
 
   if (gender === 'Male') {
-    className = 'badge-gender-male';
+    colorClasses = 'bg-tag-male-bg text-tag-male-text';
     label = t('gender_male');
   } else if (gender === 'Male Only') {
-    className = 'badge-gender-male';
+    colorClasses = 'bg-tag-male-bg text-tag-male-text';
     label = t('gender_male_only');
   } else if (gender === 'Female') {
-    className = 'badge-gender-female';
+    colorClasses = 'bg-tag-female-bg text-tag-female-text';
     label = t('gender_female');
   } else if (gender === 'Female Only') {
-    className = 'badge-gender-female';
+    colorClasses = 'bg-tag-female-bg text-tag-female-text';
     label = t('gender_female_only');
   }
 
   return (
-    <span className={`badge ${className}`}>
+    <span className={`inline-flex items-center px-3 py-1 rounded-pill text-xs font-medium tracking-wide whitespace-nowrap shrink-0 ${colorClasses}`}>
       {label}
     </span>
   );
@@ -75,37 +80,15 @@ export const DutyBadge: React.FC<DutyBadgeProps> = ({ name, headcount, genderReq
   else if (genderReq === 'Any') genderLabel = t('gender_any');
 
   return (
-    <span
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '6px',
-        padding: '3px 10px',
-        borderRadius: 'var(--radius-pill)',
-        fontSize: '0.75rem',
-        fontWeight: 500,
-        background: 'var(--bg-surface-tertiary)',
-        color: 'var(--color-text-primary)',
-        border: '1px solid var(--border-subtle)'
-      }}
-    >
+    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-pill text-xs font-medium bg-surface-tertiary text-text-primary border border-border-subtle">
       <span>{name}</span>
       {headcount !== undefined && (
-        <span
-          style={{
-            background: 'var(--color-charcoal)',
-            color: 'white',
-            borderRadius: '9999px',
-            padding: '1px 6px',
-            fontSize: '0.675rem',
-            fontWeight: 600
-          }}
-        >
+        <span className="bg-brand-navy text-white rounded-full px-1.5 py-0.5 text-[10px] font-semibold leading-none">
           {headcount}
         </span>
       )}
       {genderReq && genderReq !== 'Any' && (
-        <span style={{ fontSize: '0.675rem', color: 'var(--color-text-secondary)' }}>
+        <span className="text-[10px] text-text-secondary">
           ({genderLabel})
         </span>
       )}

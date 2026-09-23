@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Group } from '../../types/group';
 import { Talent } from '../../types/talent';
@@ -7,7 +9,7 @@ import { InventoryRequirementRow } from './InventoryRequirementRow';
 import { useApp } from '../../context/AppContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useToast } from '../../context/ToastContext';
-import { Plus, Search, Check, X, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react';
+import { Plus, Check, X, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react';
 
 interface GroupFormModalProps {
   isOpen: boolean;
@@ -48,7 +50,6 @@ export const GroupFormModal: React.FC<GroupFormModalProps> = ({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
 
   useEffect(() => {
     if (editingGroup) {
@@ -134,26 +135,26 @@ export const GroupFormModal: React.FC<GroupFormModalProps> = ({
 
   // Filtered talent options with quick filters and search
   const filteredTalents = useMemo(() => {
-    return talents.filter((t) => {
-      if (quickFilter === 'male' && t.gender !== 'Male') return false;
-      if (quickFilter === 'female' && t.gender !== 'Female') return false;
-      if (quickFilter === 'active' && t.status !== 'Active') return false;
+    return talents.filter((tItem) => {
+      if (quickFilter === 'male' && tItem.gender !== 'Male') return false;
+      if (quickFilter === 'female' && tItem.gender !== 'Female') return false;
+      if (quickFilter === 'active' && tItem.status !== 'Active') return false;
 
       if (!talentSearch.trim()) return true;
       const q = talentSearch.toLowerCase();
-      const fullName = `${t.firstName} ${t.lastName}`.toLowerCase();
-      const skill = t.primarySkill.toLowerCase();
+      const fullName = `${tItem.firstName} ${tItem.lastName}`.toLowerCase();
+      const skill = tItem.primarySkill.toLowerCase();
       return fullName.includes(q) || skill.includes(q);
     });
   }, [talents, quickFilter, talentSearch]);
 
   // Breakdown of selected talents
   const selectedTalents = useMemo(
-    () => talents.filter((t) => selectedTalentIds.includes(t.id)),
+    () => talents.filter((tItem) => selectedTalentIds.includes(tItem.id)),
     [talents, selectedTalentIds]
   );
-  const selectedMales = selectedTalents.filter((t) => t.gender === 'Male').length;
-  const selectedFemales = selectedTalents.filter((t) => t.gender === 'Female').length;
+  const selectedMales = selectedTalents.filter((tItem) => tItem.gender === 'Male').length;
+  const selectedFemales = selectedTalents.filter((tItem) => tItem.gender === 'Female').length;
 
   return (
     <Drawer
@@ -162,18 +163,11 @@ export const GroupFormModal: React.FC<GroupFormModalProps> = ({
       width="580px"
     >
       {/* Drawer Header */}
-      <div
-        style={{
-          padding: '24px 28px 18px 28px',
-          borderBottom: '1px solid var(--border-subtle)',
-          flexShrink: 0,
-          paddingRight: '64px'
-        }}
-      >
-        <h2 style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--color-charcoal)', margin: 0, letterSpacing: '-0.02em' }}>
+      <div className="p-6 sm:px-7 sm:py-5 border-b border-border-subtle shrink-0 pr-16">
+        <h2 className="text-xl sm:text-2xl font-extrabold text-text-primary m-0 tracking-tight">
           {editingGroup ? t('edit_group') : t('create_group')}
         </h2>
-        <p style={{ fontSize: '0.825rem', color: 'var(--color-text-secondary)', marginTop: '4px', margin: 0 }}>
+        <p className="text-xs text-text-secondary mt-1 m-0">
           {t('group_form_subtitle')}
         </p>
       </div>
@@ -181,62 +175,48 @@ export const GroupFormModal: React.FC<GroupFormModalProps> = ({
       <form
         id="group-form"
         onSubmit={handleSubmit}
-        className="thin-scrollbar"
-        style={{
-          flex: 1,
-          overflowY: 'auto',
-          padding: '24px 28px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '20px'
-        }}
+        className="flex-1 overflow-y-auto p-6 sm:px-7 flex flex-col gap-5"
       >
         {/* 1. Group Name */}
-        <div className="form-group" style={{ marginBottom: 0 }}>
-          <label className="form-label">{t('group_name')} *</label>
+        <div>
+          <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">
+            {t('group_name')} *
+          </label>
           <input
             type="text"
             required
-            className="form-input"
+            className="w-full text-sm px-3.5 py-2.5 rounded-sm border border-border-subtle bg-surface-secondary text-text-primary outline-none focus:bg-surface focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10 placeholder:text-text-tertiary transition-all duration-150"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Solaris Cirque Troupe"
-            style={{ width: '100%' }}
           />
         </div>
 
         {/* 2. Group Description */}
-        <div className="form-group" style={{ marginBottom: 0 }}>
-          <label className="form-label">{t('group_desc')}</label>
+        <div>
+          <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">
+            {t('group_desc')}
+          </label>
           <input
             type="text"
-            className="form-input"
+            className="w-full text-sm px-3.5 py-2.5 rounded-sm border border-border-subtle bg-surface-secondary text-text-primary outline-none focus:bg-surface focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10 placeholder:text-text-tertiary transition-all duration-150"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="e.g. Aerial acrobatic and contemporary dance touring ensemble"
-            style={{ width: '100%' }}
           />
         </div>
 
-        {/* 4. Talent Selection Roster (Modern Combobox / Multi-Select) */}
-        <div className="form-group" style={{ marginBottom: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-            <label className="form-label" style={{ marginBottom: 0 }}>
+        {/* 3. Talent Selection Roster (Modern Combobox / Multi-Select) */}
+        <div>
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-0">
               {t('group_members')} ({selectedTalentIds.length}: {selectedMales} {t('males')}, {selectedFemales} {t('females')})
             </label>
             {selectedTalentIds.length > 0 && (
               <button
                 type="button"
                 onClick={() => setSelectedTalentIds([])}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  fontSize: '0.75rem',
-                  color: 'var(--color-text-secondary)',
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                  textDecoration: 'underline'
-                }}
+                className="bg-transparent border-none text-xs text-text-secondary hover:text-text-primary cursor-pointer font-semibold underline"
               >
                 {t('clear_all')}
               </button>
@@ -244,46 +224,24 @@ export const GroupFormModal: React.FC<GroupFormModalProps> = ({
           </div>
 
           {/* Combobox Wrapper */}
-          <div ref={comboboxRef} style={{ position: 'relative', width: '100%' }}>
+          <div ref={comboboxRef} className="relative w-full">
             {/* Tags / Chips Input Box */}
             <div
               onClick={() => {
                 setIsDropdownOpen(true);
                 inputRef.current?.focus();
               }}
-              style={{
-                display: 'flex',
-                flexWrap: 'wrap',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '8px 12px',
-                minHeight: '44px',
-                width: '100%',
-                background: isDropdownOpen ? 'var(--bg-surface)' : 'var(--bg-surface-secondary)',
-                border: isDropdownOpen ? '1px solid var(--brand-secondary)' : '1px solid var(--border-subtle)',
-                borderRadius: 'var(--radius-sm)',
-                boxShadow: isDropdownOpen ? '0 0 0 3px rgba(0, 79, 114, 0.12)' : 'none',
-                cursor: 'text',
-                transition: 'border-color var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast)'
-              }}
+              className={`flex flex-wrap items-center gap-1.5 p-2 px-3 min-h-[44px] w-full rounded-sm border cursor-text transition-all duration-150 ${
+                isDropdownOpen
+                  ? 'bg-surface border-brand-primary ring-2 ring-brand-primary/10'
+                  : 'bg-surface-secondary border-border-subtle hover:border-border-medium'
+              }`}
             >
               {/* Selected Chips */}
               {selectedTalents.map((tItem) => (
                 <span
                   key={tItem.id}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    padding: '3px 8px',
-                    borderRadius: 'var(--radius-pill)',
-                    background: 'var(--brand-primary)',
-                    border: '1px solid var(--brand-primary-hover)',
-                    color: '#FFFFFF',
-                    fontSize: '0.785rem',
-                    fontWeight: 600,
-                    lineHeight: 1.3
-                  }}
+                  className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-pill bg-brand-primary text-white text-xs font-semibold leading-tight shadow-sm"
                 >
                   <span>
                     {tItem.firstName} {tItem.lastName ? `${tItem.lastName[0]}.` : ''} ({tItem.gender === 'Male' ? (language === 'ka' ? 'მ' : 'M') : (language === 'ka' ? 'ქ' : 'F')})
@@ -294,18 +252,7 @@ export const GroupFormModal: React.FC<GroupFormModalProps> = ({
                       e.stopPropagation();
                       setSelectedTalentIds((prev) => prev.filter((id) => id !== tItem.id));
                     }}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      padding: 0,
-                      cursor: 'pointer',
-                      color: '#FFFFFF',
-                      display: 'flex',
-                      alignItems: 'center',
-                      opacity: 0.85
-                    }}
-                    onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
-                    onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.75')}
+                    className="bg-transparent border-none p-0 cursor-pointer text-white/80 hover:text-white flex items-center transition-colors"
                     title={t('delete')}
                   >
                     <X size={12} strokeWidth={2.5} />
@@ -324,16 +271,7 @@ export const GroupFormModal: React.FC<GroupFormModalProps> = ({
                 }}
                 onFocus={() => setIsDropdownOpen(true)}
                 placeholder={selectedTalents.length === 0 ? t('select_performers_placeholder') : ''}
-                style={{
-                  flex: 1,
-                  minWidth: '140px',
-                  border: 'none',
-                  outline: 'none',
-                  background: 'transparent',
-                  fontSize: '0.825rem',
-                  color: 'var(--color-charcoal)',
-                  padding: '4px 2px'
-                }}
+                className="flex-1 min-w-[140px] border-none outline-none bg-transparent text-xs text-text-primary p-1 placeholder:text-text-tertiary"
               />
 
               {/* Dropdown Chevron Toggle */}
@@ -344,16 +282,7 @@ export const GroupFormModal: React.FC<GroupFormModalProps> = ({
                   setIsDropdownOpen(!isDropdownOpen);
                   if (!isDropdownOpen) inputRef.current?.focus();
                 }}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  padding: '2px',
-                  color: 'var(--color-text-secondary)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  marginLeft: 'auto'
-                }}
+                className="bg-transparent border-none cursor-pointer p-0.5 text-text-secondary hover:text-text-primary flex items-center ml-auto"
               >
                 {isDropdownOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
               </button>
@@ -361,26 +290,10 @@ export const GroupFormModal: React.FC<GroupFormModalProps> = ({
 
             {/* Dropdown Menu */}
             {isDropdownOpen && (
-              <div
-                style={{
-                  position: 'absolute',
-                  top: 'calc(100% + 6px)',
-                  left: 0,
-                  right: 0,
-                  zIndex: 100,
-                  background: 'var(--bg-surface)',
-                  borderRadius: 'var(--radius-md)',
-                  border: '1px solid var(--border-subtle)',
-                  boxShadow: 'var(--shadow-lg)',
-                  padding: '10px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '8px'
-                }}
-              >
+              <div className="absolute top-[calc(100%+6px)] left-0 right-0 z-50 bg-surface rounded-md border border-border-subtle shadow-xl p-2.5 flex flex-col gap-2">
                 {/* Quick Filters */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex items-center gap-1">
                     {(['all', 'male', 'female', 'active'] as const).map((filterKey) => {
                       const labels: Record<string, string> = {
                         all: t('filter_all'),
@@ -394,18 +307,11 @@ export const GroupFormModal: React.FC<GroupFormModalProps> = ({
                           key={filterKey}
                           type="button"
                           onClick={() => setQuickFilter(filterKey)}
-                          style={{
-                            padding: '3px 10px',
-                            borderRadius: 'var(--radius-pill)',
-                            border: '1px solid',
-                            borderColor: isActive ? 'var(--color-charcoal)' : 'var(--border-subtle)',
-                            background: isActive ? 'var(--color-charcoal)' : 'var(--bg-surface-secondary)',
-                            color: isActive ? '#FFFFFF' : 'var(--color-text-secondary)',
-                            fontSize: '0.725rem',
-                            fontWeight: 600,
-                            cursor: 'pointer',
-                            transition: 'all var(--transition-fast)'
-                          }}
+                          className={`px-2.5 py-0.5 rounded-pill text-xs font-semibold cursor-pointer transition-all duration-150 border ${
+                            isActive
+                              ? 'border-text-primary bg-text-primary text-white'
+                              : 'border-border-subtle bg-surface-secondary text-text-secondary hover:bg-surface-tertiary'
+                          }`}
                         >
                           {labels[filterKey]}
                         </button>
@@ -413,35 +319,22 @@ export const GroupFormModal: React.FC<GroupFormModalProps> = ({
                     })}
                   </div>
 
-                  <span style={{ fontSize: '0.725rem', color: 'var(--color-text-secondary)' }}>
+                  <span className="text-xs text-text-secondary">
                     {filteredTalents.length} {language === 'ka' ? 'შემსრულებელი' : 'performers'}
                   </span>
                 </div>
 
                 {/* Inactive Performer Alert Banner */}
                 {inactiveNotice && (
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '6px 10px',
-                      borderRadius: '6px',
-                      background: 'rgba(239, 68, 68, 0.08)',
-                      border: '1px solid rgba(239, 68, 68, 0.25)',
-                      color: '#DC2626',
-                      fontSize: '0.75rem',
-                      fontWeight: 600
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <AlertTriangle size={13} style={{ flexShrink: 0 }} />
+                  <div className="flex items-center justify-between p-1.5 px-2.5 rounded bg-danger/10 border border-danger/25 text-danger text-xs font-semibold">
+                    <div className="flex items-center gap-1.5">
+                      <AlertTriangle size={13} className="shrink-0" />
                       <span>{inactiveNotice}</span>
                     </div>
                     <button
                       type="button"
                       onClick={() => setInactiveNotice(null)}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#DC2626', padding: 0 }}
+                      className="bg-transparent border-none cursor-pointer text-danger p-0 hover:opacity-80"
                     >
                       <X size={12} />
                     </button>
@@ -449,19 +342,9 @@ export const GroupFormModal: React.FC<GroupFormModalProps> = ({
                 )}
 
                 {/* Scrollable Single-Line List of Performers */}
-                <div
-                  className="thin-scrollbar"
-                  style={{
-                    maxHeight: '220px',
-                    overflowY: 'auto',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '2px',
-                    paddingRight: '4px'
-                  }}
-                >
+                <div className="max-h-[220px] overflow-y-auto flex flex-col gap-0.5 pr-1">
                   {filteredTalents.length === 0 ? (
-                    <div style={{ padding: '16px', textAlign: 'center', fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
+                    <div className="p-4 text-center text-xs text-text-secondary">
                       {language === 'ka' ? 'ტალანტები ვერ მოიძებნა' : 'No talents found'}
                     </div>
                   ) : (
@@ -469,8 +352,12 @@ export const GroupFormModal: React.FC<GroupFormModalProps> = ({
                       const isSelected = selectedTalentIds.includes(tItem.id);
                       const isInactive = tItem.status !== 'Active';
 
-                      const statusColor =
-                        tItem.status === 'Active' ? '#16A34A' : tItem.status === 'Rest' ? '#EAB308' : '#EF4444';
+                      const statusBgColor =
+                        tItem.status === 'Active'
+                          ? 'bg-emerald-500'
+                          : tItem.status === 'Rest'
+                          ? 'bg-amber-500'
+                          : 'bg-danger';
 
                       return (
                         <div
@@ -485,43 +372,23 @@ export const GroupFormModal: React.FC<GroupFormModalProps> = ({
                             setInactiveNotice(null);
                             toggleTalentSelection(tItem.id);
                           }}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            padding: '6px 10px',
-                            borderRadius: '6px',
-                            background: isSelected ? 'rgba(255, 108, 65, 0.15)' : 'transparent',
-                            cursor: isInactive ? 'not-allowed' : 'pointer',
-                            opacity: isInactive ? 0.55 : 1,
-                            transition: 'background var(--transition-fast)',
-                            userSelect: 'none'
-                          }}
-                          onMouseEnter={(e) => {
-                            if (!isSelected) e.currentTarget.style.background = 'var(--bg-surface-secondary)';
-                          }}
-                          onMouseLeave={(e) => {
-                            if (!isSelected) e.currentTarget.style.background = 'transparent';
-                          }}
+                          className={`flex items-center justify-between p-1.5 px-2.5 rounded-sm select-none transition-colors duration-150 ${
+                            isInactive ? 'cursor-not-allowed opacity-55' : 'cursor-pointer'
+                          } ${
+                            isSelected
+                              ? 'bg-brand-primary/10'
+                              : 'hover:bg-surface-secondary'
+                          }`}
                         >
                           {/* Left: Checkbox + Small Avatar + Name & Details */}
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                          <div className="flex items-center gap-2 min-w-0">
                             {/* Checkbox */}
                             <div
-                              style={{
-                                width: '16px',
-                                height: '16px',
-                                borderRadius: '4px',
-                                border: isSelected
-                                  ? '1.5px solid var(--color-charcoal)'
-                                  : '1.5px solid var(--border-medium)',
-                                background: isSelected ? 'var(--color-charcoal)' : '#FFFFFF',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                color: '#FFFFFF',
-                                flexShrink: 0
-                              }}
+                              className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${
+                                isSelected
+                                  ? 'border-brand-primary bg-brand-primary text-white'
+                                  : 'border-border-medium bg-surface text-transparent'
+                              }`}
                             >
                               {isSelected && <Check size={11} strokeWidth={3} />}
                             </div>
@@ -531,48 +398,20 @@ export const GroupFormModal: React.FC<GroupFormModalProps> = ({
                               <img
                                 src={tItem.avatarUrl}
                                 alt={tItem.firstName}
-                                style={{
-                                  width: '24px',
-                                  height: '24px',
-                                  borderRadius: '50%',
-                                  objectFit: 'cover',
-                                  flexShrink: 0
-                                }}
+                                className="w-6 h-6 rounded-full object-cover shrink-0"
                               />
                             ) : (
-                              <div
-                                style={{
-                                  width: '24px',
-                                  height: '24px',
-                                  borderRadius: '50%',
-                                  background: 'var(--bg-surface-secondary)',
-                                  border: '1px solid var(--border-subtle)',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  fontSize: '0.65rem',
-                                  fontWeight: 700,
-                                  color: 'var(--color-charcoal)',
-                                  flexShrink: 0
-                                }}
-                              >
+                              <div className="w-6 h-6 rounded-full bg-surface-secondary border border-border-subtle flex items-center justify-center text-[10px] font-bold text-text-primary shrink-0">
                                 {tItem.firstName[0]}{tItem.lastName[0]}
                               </div>
                             )}
 
                             {/* Name, Skill, Gender, Height */}
-                            <div
-                              style={{
-                                fontSize: '0.8rem',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap'
-                              }}
-                            >
-                              <strong style={{ color: 'var(--color-charcoal)' }}>
+                            <div className="text-xs truncate">
+                              <strong className="text-text-primary font-semibold">
                                 {tItem.firstName} {tItem.lastName}
                               </strong>
-                              <span style={{ color: 'var(--color-text-secondary)', marginLeft: '6px', fontSize: '0.75rem' }}>
+                              <span className="text-text-secondary ml-1.5 text-[11px]">
                                 — {tItem.primarySkill} | {tItem.gender === 'Male' ? (language === 'ka' ? 'კაცი' : 'Male') : (language === 'ka' ? 'ქალი' : 'Female')} • {tItem.heightCm} {language === 'ka' ? 'სმ' : 'cm'}
                               </span>
                             </div>
@@ -580,27 +419,11 @@ export const GroupFormModal: React.FC<GroupFormModalProps> = ({
 
                           {/* Right: Status Indicator Dot */}
                           <div
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '5px',
-                              fontSize: '0.7rem',
-                              fontWeight: 600,
-                              color: 'var(--color-text-secondary)',
-                              flexShrink: 0
-                            }}
+                            className="flex items-center gap-1.5 text-[11px] font-semibold text-text-secondary shrink-0"
                             title={tItem.status}
                           >
-                            <span
-                              style={{
-                                width: '7px',
-                                height: '7px',
-                                borderRadius: '50%',
-                                background: statusColor,
-                                flexShrink: 0
-                              }}
-                            />
-                            <span style={{ display: isInactive ? 'inline' : 'none' }}>{tItem.status}</span>
+                            <span className={`w-2 h-2 rounded-full ${statusBgColor} shrink-0`} />
+                            {isInactive && <span>{tItem.status}</span>}
                           </div>
                         </div>
                       );
@@ -613,16 +436,16 @@ export const GroupFormModal: React.FC<GroupFormModalProps> = ({
         </div>
 
         {/* Separator between Group Members and Inventory Requirements */}
-        <div style={{ borderTop: '1px solid var(--border-subtle)', margin: '4px 0' }} />
+        <div className="border-t border-border-subtle my-1" />
 
         {/* 4. Group Inventory Requirements */}
-        <div className="form-group" style={{ marginBottom: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px', marginBottom: '8px' }}>
+        <div>
+          <div className="flex items-start justify-between gap-3 mb-2">
             <div>
-              <label className="form-label" style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-charcoal)', marginBottom: '2px', display: 'block' }}>
+              <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-0.5">
                 {t('inventory_reqs_and_rules')}
               </label>
-              <p style={{ fontSize: '0.775rem', color: 'var(--color-text-secondary)', margin: 0 }}>
+              <p className="text-xs text-text-secondary m-0">
                 {t('inventory_reqs_sub')}
               </p>
             </div>
@@ -630,23 +453,15 @@ export const GroupFormModal: React.FC<GroupFormModalProps> = ({
             <button
               type="button"
               onClick={handleAddRequirement}
-              className="btn btn-secondary"
-              style={{ fontSize: '0.775rem', padding: '6px 12px', flexShrink: 0 }}
+              className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-pill text-xs font-medium border border-border-subtle bg-surface-secondary text-text-primary hover:bg-surface-tertiary hover:border-border-medium transition-all duration-150 cursor-pointer shrink-0"
             >
               <Plus size={14} /> {t('add_item_req')}
             </button>
           </div>
 
-          <div
-            style={{
-              background: 'var(--bg-surface-secondary)',
-              padding: '12px',
-              borderRadius: 'var(--radius-sm)',
-              border: '1px solid var(--border-subtle)'
-            }}
-          >
+          <div className="bg-surface-secondary p-3 rounded-md border border-border-subtle">
             {inventoryRequirements.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '16px', fontSize: '0.825rem', color: 'var(--color-text-secondary)' }}>
+              <div className="text-center p-4 text-xs text-text-secondary">
                 {t('no_inventory_reqs')}
               </div>
             ) : (
@@ -664,13 +479,14 @@ export const GroupFormModal: React.FC<GroupFormModalProps> = ({
 
         {/* 5. Rotation Cycle - Only visible when inventory requirements exist */}
         {inventoryRequirements.length > 0 && (
-          <div className="form-group" style={{ marginBottom: 0 }}>
-            <label className="form-label">{t('duty_rotation_cycle')} *</label>
+          <div>
+            <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">
+              {t('duty_rotation_cycle')} *
+            </label>
             <select
-              className="form-select"
+              className="w-full text-sm px-3.5 py-2.5 rounded-sm border border-border-subtle bg-surface-secondary text-text-primary outline-none focus:bg-surface focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10 transition-all duration-150 cursor-pointer"
               value={rotationCycleWeeks}
               onChange={(e) => setRotationCycleWeeks(Number(e.target.value))}
-              style={{ width: '100%' }}
             >
               <option value={1}>{t('period_1_week')}</option>
               <option value={2}>{t('period_2_weeks')}</option>
@@ -682,22 +498,19 @@ export const GroupFormModal: React.FC<GroupFormModalProps> = ({
       </form>
 
       {/* Drawer Sticky Footer */}
-      <div
-        style={{
-          padding: '16px 28px',
-          borderTop: '1px solid var(--border-subtle)',
-          background: 'var(--bg-surface)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'flex-end',
-          gap: '12px',
-          flexShrink: 0
-        }}
-      >
-        <button type="button" onClick={onClose} className="btn btn-secondary">
+      <div className="p-4 sm:px-7 border-t border-border-subtle bg-surface flex items-center justify-end gap-3 shrink-0">
+        <button
+          type="button"
+          onClick={onClose}
+          className="inline-flex items-center justify-center px-4 py-2 rounded-pill text-sm font-medium border border-border-subtle bg-surface-secondary text-text-primary hover:bg-surface-tertiary hover:border-border-medium transition-all duration-150 cursor-pointer"
+        >
           {t('cancel')}
         </button>
-        <button type="submit" form="group-form" className="btn btn-primary" style={{ minWidth: '130px' }}>
+        <button
+          type="submit"
+          form="group-form"
+          className="inline-flex items-center justify-center px-5 py-2 rounded-pill text-sm font-medium bg-brand-primary text-white shadow-glow hover:bg-brand-primary-hover hover:-translate-y-0.5 active:translate-y-0 transition-all duration-150 cursor-pointer min-w-[130px]"
+        >
           {editingGroup ? t('save_changes') : t('create_group')}
         </button>
       </div>

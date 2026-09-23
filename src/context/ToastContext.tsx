@@ -1,3 +1,5 @@
+'use client';
+
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { CheckCircle2, AlertCircle, AlertTriangle, Info, X } from 'lucide-react';
 
@@ -53,18 +55,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       {children}
 
       {/* Top-Right Floating Toast Stack */}
-      <div
-        style={{
-          position: 'fixed',
-          top: '24px',
-          right: '28px',
-          zIndex: 100000,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '10px',
-          pointerEvents: 'none'
-        }}
-      >
+      <div className="fixed top-6 right-7 z-[100000] flex flex-col gap-2.5 pointer-events-none">
         {toasts.map((item) => {
           const isSuccess = item.type === 'success';
           const isError = item.type === 'error';
@@ -80,78 +71,35 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             <Info size={18} strokeWidth={2.2} />
           );
 
-          const badgeBg = isSuccess
-            ? 'rgba(22, 163, 74, 0.12)'
+          const badgeStyles = isSuccess
+            ? 'bg-status-active-bg text-status-active-text'
             : isError
-            ? 'rgba(239, 68, 68, 0.12)'
+            ? 'bg-danger-light text-danger'
             : isWarning
-            ? 'rgba(245, 158, 11, 0.14)'
-            : 'rgba(2, 132, 199, 0.12)';
+            ? 'bg-status-rest-bg text-status-rest-text'
+            : 'bg-brand-primary-light text-brand-primary';
 
-          const badgeColor = isSuccess
-            ? '#16A34A'
+          const borderStyles = isSuccess
+            ? 'border-emerald-500/30'
             : isError
-            ? '#DC2626'
+            ? 'border-danger/30'
             : isWarning
-            ? '#D97706'
-            : '#0284C7';
-
-          const borderColor = isSuccess
-            ? 'rgba(22, 163, 74, 0.25)'
-            : isError
-            ? 'rgba(239, 68, 68, 0.25)'
-            : isWarning
-            ? 'rgba(245, 158, 11, 0.28)'
-            : 'rgba(2, 132, 199, 0.25)';
+            ? 'border-amber-500/30'
+            : 'border-brand-primary/30';
 
           return (
             <div
               key={item.id}
-              style={{
-                pointerEvents: 'auto',
-                minWidth: '320px',
-                maxWidth: '440px',
-                borderRadius: '14px',
-                background: 'rgba(255, 255, 255, 0.98)',
-                backdropFilter: 'blur(12px)',
-                WebkitBackdropFilter: 'blur(12px)',
-                border: `1px solid ${borderColor}`,
-                boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.12), 0 4px 10px -2px rgba(0, 0, 0, 0.05)',
-                padding: '12px 16px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: '12px',
-                animation: 'toastPopIn 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
-                transition: 'all 0.2s ease'
-              }}
+              className={`pointer-events-auto min-w-[320px] max-w-[440px] rounded-md bg-white/95 backdrop-blur-md border ${borderStyles} shadow-lg px-4 py-3 flex items-center justify-between gap-3 transition-all duration-200 animate-[toastPopIn_0.25s_cubic-bezier(0.16,1,0.3,1)]`}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+              <div className="flex items-center gap-2.5 min-w-0">
                 <div
-                  style={{
-                    width: '32px',
-                    height: '32px',
-                    borderRadius: '10px',
-                    background: badgeBg,
-                    color: badgeColor,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0
-                  }}
+                  className={`w-8 h-8 rounded-sm ${badgeStyles} flex items-center justify-center shrink-0`}
                 >
                   {icon}
                 </div>
 
-                <span
-                  style={{
-                    fontSize: '0.875rem',
-                    fontWeight: 600,
-                    color: 'var(--color-charcoal)',
-                    lineHeight: 1.4,
-                    letterSpacing: '-0.01em'
-                  }}
-                >
+                <span className="text-sm font-semibold text-text-primary leading-snug tracking-tight">
                   {item.message}
                 </span>
               </div>
@@ -159,27 +107,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               <button
                 type="button"
                 onClick={() => removeToast(item.id)}
-                style={{
-                  border: 'none',
-                  background: 'transparent',
-                  color: 'var(--color-text-secondary)',
-                  cursor: 'pointer',
-                  padding: '4px',
-                  borderRadius: '6px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                  transition: 'background 0.12s, color 0.12s'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'rgba(0,0,0,0.06)';
-                  e.currentTarget.style.color = 'var(--color-charcoal)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'transparent';
-                  e.currentTarget.style.color = 'var(--color-text-secondary)';
-                }}
+                className="p-1 rounded-xs text-text-secondary hover:text-text-primary hover:bg-black/5 flex items-center justify-center shrink-0 transition-colors"
               >
                 <X size={14} />
               </button>

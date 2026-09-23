@@ -1,9 +1,11 @@
+'use client';
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { Modal } from '../common/Modal';
 import { useApp } from '../../context/AppContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useToast } from '../../context/ToastContext';
-import { AlertTriangle, Calendar, Clock, Repeat, Check, Bus, Sparkles } from 'lucide-react';
+import { AlertTriangle, Calendar, Clock, Repeat, Check, Bus } from 'lucide-react';
 import { toLocalDateStr, todayLocalStr } from '../../utils/dateUtils';
 
 interface ScheduleModalProps {
@@ -109,7 +111,6 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
       }
     }
   }, [startDate]);
-
 
   // Toggle day selection
   const handleToggleDay = (dayId: number) => {
@@ -279,37 +280,36 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
       subtitle={t('schedule_modal_sub')}
       maxWidth="640px"
       footer={
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', flexWrap: 'wrap', gap: '12px' }}>
+        <div className="flex items-center justify-between w-full flex-wrap gap-3">
           {/* Status info on left */}
-          <div style={{ fontSize: '0.8rem', minHeight: '20px', display: 'flex', alignItems: 'center' }}>
+          <div className="text-xs min-h-[20px] flex items-center">
             {hasBlockingConflict ? (
-              <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#DC2626', fontWeight: 500 }}>
-                <AlertTriangle size={14} color="#DC2626" />
+              <span className="flex items-center gap-1.5 text-danger font-medium">
+                <AlertTriangle className="w-3.5 h-3.5 text-danger" />
                 {t('booking_blocked_hint')}
               </span>
             ) : isRecurring && occurrences.length > 0 ? (
-              <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--color-text-secondary)', fontWeight: 500 }}>
-                <Calendar size={14} color="var(--color-charcoal)" />
+              <span className="flex items-center gap-1.5 text-text-secondary font-medium">
+                <Calendar className="w-3.5 h-3.5 text-text-primary" />
                 {t('total_shows_preview', { count: occurrences.length })}
               </span>
             ) : null}
           </div>
 
           {/* Action buttons on right */}
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-            <button type="button" onClick={onClose} className="btn btn-secondary">
+          <div className="flex gap-2.5 items-center">
+            <button
+              type="button"
+              onClick={onClose}
+              className="inline-flex items-center justify-center px-4 py-2 rounded-pill text-sm font-medium border border-border-subtle bg-surface-secondary text-text-primary hover:bg-surface-tertiary hover:border-border-medium transition-all duration-150 cursor-pointer outline-none"
+            >
               {t('cancel')}
             </button>
             <button
               type="submit"
               form="schedule-form"
-              className="btn btn-primary"
               disabled={hasBlockingConflict || occurrences.length === 0}
-              style={{
-                opacity: hasBlockingConflict || occurrences.length === 0 ? 0.45 : 1,
-                cursor: hasBlockingConflict || occurrences.length === 0 ? 'not-allowed' : 'pointer',
-                transition: 'all var(--transition-fast)'
-              }}
+              className="inline-flex items-center justify-center gap-2 px-5 py-2 rounded-pill text-sm font-medium bg-brand-primary text-text-inverse shadow-glow hover:bg-brand-primary-hover hover:-translate-y-0.5 active:translate-y-0 transition-all duration-150 cursor-pointer outline-none disabled:opacity-45 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:shadow-none"
               title={hasBlockingConflict ? t('booking_blocked_hint') : undefined}
             >
               {t('btn_book_show')}
@@ -318,13 +318,13 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
         </div>
       }
     >
-      <form id="schedule-form" onSubmit={handleSubmit} style={{ overflowX: 'hidden' }}>
+      <form id="schedule-form" onSubmit={handleSubmit} className="overflow-x-hidden flex flex-col gap-3.5">
         {/* Group & Venue in one 2-column row */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
-          <div className="form-group" style={{ marginBottom: 0, minWidth: 0 }}>
-            <label className="form-label">{t('performing_group')} *</label>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          <div className="flex flex-col gap-1.5 min-w-0">
+            <label className="text-xs font-semibold text-text-secondary">{t('performing_group')} *</label>
             <select
-              className="form-select"
+              className="w-full text-sm px-3.5 py-2.5 rounded-sm border border-border-subtle bg-surface-secondary text-text-primary outline-none transition-all duration-150 focus:bg-surface focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10 cursor-pointer"
               value={groupId}
               onChange={(e) => setGroupId(e.target.value)}
               required
@@ -337,10 +337,10 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
             </select>
           </div>
 
-          <div className="form-group" style={{ marginBottom: 0, minWidth: 0 }}>
-            <label className="form-label">{t('hotel_venue')} *</label>
+          <div className="flex flex-col gap-1.5 min-w-0">
+            <label className="text-xs font-semibold text-text-secondary">{t('hotel_venue')} *</label>
             <select
-              className="form-select"
+              className="w-full text-sm px-3.5 py-2.5 rounded-sm border border-border-subtle bg-surface-secondary text-text-primary outline-none transition-all duration-150 focus:bg-surface focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10 cursor-pointer"
               value={hotelId}
               onChange={(e) => setHotelId(e.target.value)}
               required
@@ -355,107 +355,85 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
         </div>
 
         {/* Date and Gathering Time Row */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
-          <div className="form-group" style={{ marginBottom: 0, minWidth: 0 }}>
-            <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Calendar size={14} strokeWidth={2} style={{ flexShrink: 0, color: 'var(--color-text-secondary)' }} />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          <div className="flex flex-col gap-1.5 min-w-0">
+            <label className="text-xs font-semibold text-text-secondary flex items-center gap-1.5">
+              <Calendar className="w-3.5 h-3.5 shrink-0 text-text-secondary" strokeWidth={2} />
               <span>{t('show_date')} *</span>
             </label>
             <input
               type="date"
               required
-              className="form-input"
+              className="w-full text-sm px-3.5 py-2.5 rounded-sm border border-border-subtle bg-surface-secondary text-text-primary outline-none transition-all duration-150 focus:bg-surface focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10"
               value={startDate}
               min={todayStr}
               onChange={(e) => setStartDate(e.target.value)}
-              style={{ width: '100%' }}
             />
           </div>
 
-          <div className="form-group" style={{ marginBottom: 0, minWidth: 0 }}>
-            <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Bus size={14} strokeWidth={2} style={{ flexShrink: 0, color: 'var(--color-text-secondary)' }} />
+          <div className="flex flex-col gap-1.5 min-w-0">
+            <label className="text-xs font-semibold text-text-secondary flex items-center gap-1.5">
+              <Bus className="w-3.5 h-3.5 shrink-0 text-text-secondary" strokeWidth={2} />
               <span>{t('lobby_gathering_time')}</span>
             </label>
             <input
               type="time"
               required
-              className="form-input"
+              className="w-full text-sm px-3.5 py-2.5 rounded-sm border border-border-subtle bg-surface-secondary text-text-primary outline-none transition-all duration-150 focus:bg-surface focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10"
               value={lobbyTime}
               onChange={(e) => setLobbyTime(e.target.value)}
               title={t('lobby_gathering_time')}
-              style={{ width: '100%' }}
             />
           </div>
         </div>
 
         {/* Show Start & End Time Row */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '16px' }}>
-          <div className="form-group" style={{ marginBottom: 0, minWidth: 0 }}>
-            <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Clock size={14} strokeWidth={2} style={{ flexShrink: 0, color: 'var(--color-text-secondary)' }} />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          <div className="flex flex-col gap-1.5 min-w-0">
+            <label className="text-xs font-semibold text-text-secondary flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5 shrink-0 text-text-secondary" strokeWidth={2} />
               <span>{t('start_time')} *</span>
             </label>
             <input
               type="time"
               required
-              className="form-input"
+              className="w-full text-sm px-3.5 py-2.5 rounded-sm border border-border-subtle bg-surface-secondary text-text-primary outline-none transition-all duration-150 focus:bg-surface focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10"
               value={startTime}
               onChange={(e) => setStartTime(e.target.value)}
-              style={{ width: '100%' }}
             />
           </div>
 
-          <div className="form-group" style={{ marginBottom: 0, minWidth: 0 }}>
-            <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Clock size={14} strokeWidth={2} style={{ flexShrink: 0, color: 'var(--color-text-secondary)' }} />
+          <div className="flex flex-col gap-1.5 min-w-0">
+            <label className="text-xs font-semibold text-text-secondary flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5 shrink-0 text-text-secondary" strokeWidth={2} />
               <span>{t('end_time')} *</span>
             </label>
             <input
               type="time"
               required
-              className="form-input"
+              className="w-full text-sm px-3.5 py-2.5 rounded-sm border border-border-subtle bg-surface-secondary text-text-primary outline-none transition-all duration-150 focus:bg-surface focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10"
               value={endTime}
               onChange={(e) => setEndTime(e.target.value)}
-              style={{ width: '100%' }}
             />
           </div>
         </div>
 
         {/* Recurrence Schedule Builder Container */}
-        <div
-          style={{
-            marginBottom: '16px',
-            padding: '16px',
-            borderRadius: '16px',
-            background: 'var(--bg-surface-secondary)',
-            border: '1px solid var(--border-subtle)',
-            transition: 'all var(--transition-fast)'
-          }}
-        >
+        <div className="p-4 rounded-md bg-surface-secondary border border-border-subtle transition-all duration-150">
           {/* iOS-Style Toggle Switch Header */}
           <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              cursor: 'pointer',
-              userSelect: 'none'
-            }}
+            className="flex items-center justify-between cursor-pointer select-none"
             onClick={() => setIsRecurring((prev) => !prev)}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div className="flex items-center gap-2">
               <Repeat
-                size={16}
-                color={isRecurring ? 'var(--color-charcoal)' : 'var(--color-text-secondary)'}
+                className={`w-4 h-4 ${isRecurring ? 'text-text-primary' : 'text-text-secondary'}`}
                 strokeWidth={isRecurring ? 2.2 : 2}
               />
               <span
-                style={{
-                  fontSize: '0.875rem',
-                  fontWeight: 600,
-                  color: isRecurring ? 'var(--color-charcoal)' : 'var(--color-text-primary)'
-                }}
+                className={`text-sm font-semibold ${
+                  isRecurring ? 'text-text-primary' : 'text-text-secondary'
+                }`}
               >
                 {t('recurring_show')}
               </span>
@@ -463,60 +441,27 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
 
             {/* iOS Toggle Switch */}
             <div
-              style={{
-                width: '44px',
-                height: '24px',
-                borderRadius: 'var(--radius-pill)',
-                background: isRecurring ? 'var(--color-charcoal)' : 'var(--border-medium)',
-                position: 'relative',
-                transition: 'background 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
-              }}
+              className={`w-11 h-6 rounded-pill relative transition-colors duration-200 ${
+                isRecurring ? 'bg-brand-navy' : 'bg-border-medium'
+              }`}
             >
               <div
-                style={{
-                  width: '18px',
-                  height: '18px',
-                  borderRadius: '50%',
-                  background: '#FFFFFF',
-                  position: 'absolute',
-                  top: '3px',
-                  left: isRecurring ? '23px' : '3px',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-                  transition: 'left 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
-                }}
+                className={`w-4.5 h-4.5 rounded-full bg-white absolute top-[3px] shadow-sm transition-all duration-200 ${
+                  isRecurring ? 'left-[23px]' : 'left-[3px]'
+                }`}
               />
             </div>
           </div>
 
           {/* Recurrence Options Panel */}
           {isRecurring && (
-            <div
-              style={{
-                marginTop: '16px',
-                paddingTop: '14px',
-                borderTop: '1px solid var(--border-subtle)',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '14px',
-                animation: 'fadeIn 0.2s ease-out'
-              }}
-            >
+            <div className="mt-4 pt-3.5 border-t border-border-subtle flex flex-col gap-3.5">
               {/* Day Picker */}
               <div>
-                <label
-                  style={{
-                    display: 'block',
-                    fontSize: '0.775rem',
-                    fontWeight: 600,
-                    color: 'var(--color-text-secondary)',
-                    marginBottom: '8px',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.04em'
-                  }}
-                >
+                <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-2">
                   {t('days_of_week')}
                 </label>
-                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                <div className="flex gap-1.5 flex-wrap">
                   {DAYS.map((d) => {
                     const isSelected = selectedDays.includes(d.id);
                     return (
@@ -524,27 +469,13 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
                         key={d.id}
                         type="button"
                         onClick={() => handleToggleDay(d.id)}
-                        style={{
-                          flex: '1 1 0',
-                          minWidth: '40px',
-                          padding: '8px 6px',
-                          borderRadius: 'var(--radius-pill)',
-                          border: isSelected
-                            ? '1px solid var(--color-charcoal)'
-                            : '1px solid var(--border-subtle)',
-                          background: isSelected ? 'var(--color-charcoal)' : 'var(--bg-surface)',
-                          color: isSelected ? '#FFFFFF' : 'var(--color-text-secondary)',
-                          fontSize: '0.8rem',
-                          fontWeight: isSelected ? 600 : 500,
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '4px',
-                          transition: 'all var(--transition-fast)'
-                        }}
+                        className={`flex-1 min-w-[40px] py-2 px-1.5 rounded-pill text-xs font-semibold cursor-pointer flex items-center justify-center gap-1 transition-all duration-150 outline-none ${
+                          isSelected
+                            ? 'border border-brand-navy bg-brand-navy text-text-inverse'
+                            : 'border border-border-subtle bg-surface text-text-secondary hover:border-border-medium'
+                        }`}
                       >
-                        {isSelected && <Check size={12} strokeWidth={3} />}
+                        {isSelected && <Check className="w-3 h-3" strokeWidth={3} />}
                         <span>{language === 'ka' ? d.labelKa : d.labelEn}</span>
                       </button>
                     );
@@ -554,34 +485,21 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
 
               {/* Recurrence End Date & Quick Presets */}
               <div>
-                <label
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    fontSize: '0.775rem',
-                    fontWeight: 600,
-                    color: 'var(--color-text-secondary)',
-                    marginBottom: '8px',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.04em'
-                  }}
-                >
-                  <Calendar size={13} style={{ color: 'var(--color-text-secondary)' }} />
+                <label className="flex items-center gap-1.5 text-xs font-semibold text-text-secondary uppercase tracking-wider mb-2">
+                  <Calendar className="w-3.5 h-3.5 text-text-secondary" />
                   <span>{t('repeat_until')}</span>
                 </label>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '10px', alignItems: 'center' }}>
+                <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2.5 items-center">
                   <input
                     type="date"
                     required={isRecurring}
                     min={startDate}
-                    className="form-input"
+                    className="w-full text-sm px-3.5 py-2.5 rounded-sm border border-border-subtle bg-surface text-text-primary outline-none transition-all duration-150 focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10"
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
-                    style={{ width: '100%' }}
                   />
                   {/* Quick Preset Buttons */}
-                  <div style={{ display: 'flex', gap: '6px' }}>
+                  <div className="flex gap-1.5">
                     {[
                       { label: language === 'ka' ? '2 კვ' : '2 wks', weeks: 2 },
                       { label: language === 'ka' ? '4 კვ' : '4 wks', weeks: 4 },
@@ -595,25 +513,7 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
                           base.setDate(base.getDate() + preset.weeks * 7);
                           setEndDate(toLocalDateStr(base));
                         }}
-                        style={{
-                          padding: '6px 10px',
-                          fontSize: '0.75rem',
-                          fontWeight: 600,
-                          borderRadius: 'var(--radius-pill)',
-                          border: '1px solid var(--border-subtle)',
-                          background: 'var(--bg-surface)',
-                          color: 'var(--color-text-secondary)',
-                          cursor: 'pointer',
-                          transition: 'all var(--transition-fast)'
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.background = 'var(--bg-surface-secondary)';
-                          e.currentTarget.style.color = 'var(--color-charcoal)';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.background = 'var(--bg-surface)';
-                          e.currentTarget.style.color = 'var(--color-text-secondary)';
-                        }}
+                        className="px-2.5 py-1.5 text-xs font-semibold rounded-pill border border-border-subtle bg-surface text-text-secondary hover:bg-surface-tertiary hover:text-text-primary hover:border-border-medium transition-all duration-150 cursor-pointer outline-none"
                       >
                         +{preset.label}
                       </button>
@@ -621,23 +521,10 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
                   </div>
                 </div>
               </div>
+
               {liveSummaryText && (
-                <div
-                  style={{
-                    padding: '10px 14px',
-                    borderRadius: '12px',
-                    background: '#EEF3FF',
-                    border: '1px solid rgba(30, 106, 255, 0.25)',
-                    color: '#1E4DB7',
-                    fontSize: '0.8rem',
-                    fontWeight: 500,
-                    lineHeight: 1.4,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px'
-                  }}
-                >
-                  <Repeat size={14} style={{ flexShrink: 0, color: '#1E6AFF' }} />
+                <div className="p-2.5 sm:p-3 rounded-md bg-tag-male-bg border border-tag-male-text/20 text-tag-male-text text-xs font-medium leading-relaxed flex items-center gap-2">
+                  <Repeat className="w-3.5 h-3.5 shrink-0 text-brand-primary" />
                   <span>{liveSummaryText}</span>
                 </div>
               )}
@@ -646,11 +533,11 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
         </div>
 
         {/* Show Notes */}
-        <div className="form-group" style={{ marginBottom: '14px' }}>
-          <label className="form-label">{t('show_notes')}</label>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-semibold text-text-secondary">{t('show_notes')}</label>
           <textarea
             rows={2}
-            className="form-textarea"
+            className="w-full text-sm px-3.5 py-2.5 rounded-sm border border-border-subtle bg-surface-secondary text-text-primary outline-none transition-all duration-150 focus:bg-surface focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10 resize-none placeholder:text-text-tertiary"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="VIP attendance, technical requirements, sound check timing..."
@@ -659,27 +546,13 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
 
         {/* Compact & Refined Conflict Alert Card */}
         {hasBlockingConflict && (
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'flex-start',
-              gap: '10px',
-              padding: '12px 14px',
-              borderRadius: '14px',
-              background: 'rgba(239, 68, 68, 0.06)',
-              border: '1px solid rgba(239, 68, 68, 0.22)',
-              color: '#991B1B',
-              fontSize: '0.825rem',
-              lineHeight: 1.4,
-              marginBottom: '10px'
-            }}
-          >
-            <AlertTriangle size={16} color="#DC2626" style={{ flexShrink: 0, marginTop: '2px' }} />
+          <div className="flex items-start gap-2.5 p-3 sm:p-3.5 rounded-md bg-danger-light border border-danger-border text-danger text-xs leading-relaxed">
+            <AlertTriangle className="w-4 h-4 text-danger shrink-0 mt-0.5" />
             <div>
-              <div style={{ fontWeight: 600, color: '#B91C1C', marginBottom: '2px' }}>
+              <div className="font-semibold text-danger mb-0.5">
                 {t('conflict_compact_title')}
               </div>
-              <div style={{ color: '#7F1D1D' }}>
+              <div className="text-danger/90">
                 {conflictReport.blocking.length === 1 ? (
                   <span>
                     {language === 'ka'
@@ -700,37 +573,14 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
 
         {/* Warning Conflicts */}
         {conflictReport.warnings.length > 0 && !hasBlockingConflict && (
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'flex-start',
-              gap: '10px',
-              padding: '10px 14px',
-              borderRadius: '14px',
-              background: '#FFFBEB',
-              border: '1px solid #FCD34D',
-              color: '#92400E',
-              fontSize: '0.825rem',
-              lineHeight: 1.4,
-              marginBottom: '10px'
-            }}
-          >
-            <AlertTriangle size={15} color="#D97706" style={{ flexShrink: 0, marginTop: '2px' }} />
+          <div className="flex items-start gap-2.5 p-2.5 sm:p-3 rounded-md bg-status-rest-bg border border-status-rest-dot/30 text-status-rest-text text-xs leading-relaxed">
+            <AlertTriangle className="w-4 h-4 text-status-rest-dot shrink-0 mt-0.5" />
             <div>{conflictReport.warnings[0].reason}</div>
           </div>
         )}
 
         {submitError && (
-          <div
-            style={{
-              padding: '8px 12px',
-              borderRadius: '10px',
-              background: '#FEE2E2',
-              color: '#991B1B',
-              fontSize: '0.8rem',
-              marginTop: '8px'
-            }}
-          >
+          <div className="p-2.5 rounded-sm bg-danger-light border border-danger-border text-danger text-xs">
             {submitError}
           </div>
         )}

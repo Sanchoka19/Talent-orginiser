@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import { ShowEvent } from '../../types/schedule';
 import { Group } from '../../types/group';
@@ -5,7 +7,6 @@ import { HotelVenue } from '../../types/venue';
 import { useLanguage } from '../../context/LanguageContext';
 import {
   Calendar,
-  Clock,
   MapPin,
   Users,
   Sparkles,
@@ -64,121 +65,46 @@ export const YearView: React.FC<YearViewProps> = ({
   });
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div className="flex flex-col gap-6">
       {/* Top Year Metrics Banner */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-          gap: '16px'
-        }}
-      >
-        <div
-          style={{
-            background: 'var(--bg-surface)',
-            border: '1px solid var(--border-subtle)',
-            borderRadius: 'var(--radius-md)',
-            padding: '16px 20px',
-            boxShadow: 'var(--shadow-sm)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '14px'
-          }}
-        >
-          <div
-            style={{
-              width: '44px',
-              height: '44px',
-              borderRadius: 'var(--radius-md)',
-              background: 'var(--brand-primary)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#FFFFFF',
-              flexShrink: 0
-            }}
-          >
-            <Calendar size={22} />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="bg-surface border border-border-subtle rounded-md p-4 sm:p-5 shadow-sm flex items-center gap-3.5">
+          <div className="w-11 h-11 rounded-md bg-brand-primary flex items-center justify-center text-text-inverse shrink-0 shadow-sm">
+            <Calendar className="w-5 h-5" />
           </div>
           <div>
-            <div style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--color-charcoal)' }}>
+            <div className="text-2xl font-bold text-text-primary">
               {yearEvents.length}
             </div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
+            <div className="text-xs text-text-secondary mt-0.5">
               {t('total_shows_year')} ({year})
             </div>
           </div>
         </div>
 
-        <div
-          style={{
-            background: 'var(--bg-surface)',
-            border: '1px solid var(--border-subtle)',
-            borderRadius: 'var(--radius-md)',
-            padding: '16px 20px',
-            boxShadow: 'var(--shadow-sm)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '14px'
-          }}
-        >
-          <div
-            style={{
-              width: '44px',
-              height: '44px',
-              borderRadius: 'var(--radius-md)',
-              background: 'var(--bg-surface-secondary)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'var(--color-charcoal)',
-              flexShrink: 0
-            }}
-          >
-            <Users size={22} />
+        <div className="bg-surface border border-border-subtle rounded-md p-4 sm:p-5 shadow-sm flex items-center gap-3.5">
+          <div className="w-11 h-11 rounded-md bg-surface-secondary flex items-center justify-center text-text-primary shrink-0 border border-border-subtle">
+            <Users className="w-5 h-5" />
           </div>
           <div>
-            <div style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--color-charcoal)' }}>
+            <div className="text-2xl font-bold text-text-primary">
               {uniqueGroupIds.size}
             </div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
+            <div className="text-xs text-text-secondary mt-0.5">
               {t('performing_groups_count')}
             </div>
           </div>
         </div>
 
-        <div
-          style={{
-            background: 'var(--bg-surface)',
-            border: '1px solid var(--border-subtle)',
-            borderRadius: 'var(--radius-md)',
-            padding: '16px 20px',
-            boxShadow: 'var(--shadow-sm)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '14px'
-          }}
-        >
-          <div
-            style={{
-              width: '44px',
-              height: '44px',
-              borderRadius: 'var(--radius-md)',
-              background: 'var(--bg-surface-secondary)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'var(--color-charcoal)',
-              flexShrink: 0
-            }}
-          >
-            <Building2 size={22} />
+        <div className="bg-surface border border-border-subtle rounded-md p-4 sm:p-5 shadow-sm flex items-center gap-3.5">
+          <div className="w-11 h-11 rounded-md bg-surface-secondary flex items-center justify-center text-text-primary shrink-0 border border-border-subtle">
+            <Building2 className="w-5 h-5" />
           </div>
           <div>
-            <div style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--color-charcoal)' }}>
+            <div className="text-2xl font-bold text-text-primary">
               {uniqueVenueIds.size}
             </div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
+            <div className="text-xs text-text-secondary mt-0.5">
               {t('active_venues_booked')}
             </div>
           </div>
@@ -186,98 +112,68 @@ export const YearView: React.FC<YearViewProps> = ({
       </div>
 
       {/* 12 Months Cards Grid */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
-          gap: '18px'
-        }}
-      >
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4.5">
         {months.map((m) => {
           const hasShows = m.events.length > 0;
           return (
             <div
               key={m.index}
-              style={{
-                background: 'var(--bg-surface)',
-                borderRadius: 'var(--radius-md)',
-                border: hasShows ? '1.5px solid var(--brand-primary)' : '1px solid var(--border-subtle)',
-                boxShadow: hasShows ? '0 4px 14px var(--brand-primary-glow)' : 'var(--shadow-sm)',
-                display: 'flex',
-                flexDirection: 'column',
-                overflow: 'hidden',
-                transition: 'transform 0.15s ease'
-              }}
+              className={`bg-surface rounded-md border flex flex-col overflow-hidden transition-all duration-150 ${
+                hasShows
+                  ? 'border-brand-primary shadow-sm hover:shadow-glow'
+                  : 'border-border-subtle shadow-sm'
+              }`}
             >
               {/* Month Card Header */}
               <div
                 onClick={() => onSelectMonth && onSelectMonth(m.index)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '12px 16px',
-                  background: hasShows ? 'var(--brand-primary)' : 'var(--bg-surface-secondary)',
-                  borderBottom: '1px solid var(--border-subtle)',
-                  cursor: onSelectMonth ? 'pointer' : 'default'
-                }}
+                className={`flex items-center justify-between px-4 py-3 border-b border-border-subtle select-none transition-colors duration-150 ${
+                  hasShows
+                    ? 'bg-brand-primary text-text-inverse'
+                    : 'bg-surface-secondary text-text-primary'
+                } ${onSelectMonth ? 'cursor-pointer hover:opacity-95' : 'cursor-default'}`}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span
-                    style={{
-                      fontSize: '0.95rem',
-                      fontWeight: 700,
-                      color: hasShows ? '#FFFFFF' : 'var(--color-charcoal)',
-                      textTransform: 'capitalize'
-                    }}
-                  >
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold capitalize">
                     {m.name}
                   </span>
-                  <span style={{ fontSize: '0.75rem', opacity: 0.85, color: hasShows ? '#FFFFFF' : 'var(--color-charcoal)' }}>
+                  <span
+                    className={`text-xs font-medium ${
+                      hasShows ? 'text-text-inverse opacity-85' : 'text-text-secondary'
+                    }`}
+                  >
                     {year}
                   </span>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <div className="flex items-center gap-1.5">
                   <span
-                    style={{
-                      fontSize: '0.725rem',
-                      fontWeight: 700,
-                      background: hasShows ? 'rgba(0, 0, 0, 0.25)' : 'var(--border-subtle)',
-                      color: hasShows ? '#FFFFFF' : 'var(--color-text-secondary)',
-                      padding: '2px 8px',
-                      borderRadius: 'var(--radius-pill)'
-                    }}
+                    className={`text-[11px] font-bold px-2 py-0.5 rounded-pill ${
+                      hasShows
+                        ? 'bg-black/25 text-text-inverse'
+                        : 'bg-border-subtle text-text-secondary'
+                    }`}
                   >
                     {m.events.length} {m.events.length === 1 ? t('show') : t('shows')}
                   </span>
                   {onSelectMonth && (
-                    <ChevronRight size={14} color={hasShows ? '#FFFFFF' : 'var(--color-charcoal)'} />
+                    <ChevronRight
+                      className={`w-3.5 h-3.5 ${
+                        hasShows ? 'text-text-inverse' : 'text-text-secondary'
+                      }`}
+                    />
                   )}
                 </div>
               </div>
 
               {/* Month Shows Content */}
               <div
-                style={{
-                  padding: '12px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '8px',
-                  minHeight: '140px',
-                  justifyContent: hasShows ? 'flex-start' : 'center'
-                }}
+                className={`p-3 flex flex-col gap-2 min-h-[140px] ${
+                  hasShows ? 'justify-start' : 'justify-center'
+                }`}
               >
                 {!hasShows ? (
-                  <div
-                    style={{
-                      textAlign: 'center',
-                      color: 'var(--color-text-tertiary)',
-                      fontSize: '0.775rem',
-                      fontStyle: 'italic',
-                      padding: '20px 0'
-                    }}
-                  >
+                  <div className="text-center text-text-tertiary text-xs italic py-5">
                     {t('no_shows_in_month')}
                   </div>
                 ) : (
@@ -294,119 +190,57 @@ export const YearView: React.FC<YearViewProps> = ({
                       minute: '2-digit'
                     });
 
-                    const effectiveLobby = ev.lobbyTime || (() => {
-                      const travel = venue?.travelTimeMinutes ?? 45;
-                      const totalM = (dateObj.getHours() * 60 + dateObj.getMinutes() - travel + 1440) % 1440;
-                      return `${String(Math.floor(totalM / 60)).padStart(2, '0')}:${String(totalM % 60).padStart(2, '0')}`;
-                    })();
+                    const effectiveLobby =
+                      ev.lobbyTime ||
+                      (() => {
+                        const travel = venue?.travelTimeMinutes ?? 45;
+                        const totalM =
+                          (dateObj.getHours() * 60 + dateObj.getMinutes() - travel + 1440) % 1440;
+                        return `${String(Math.floor(totalM / 60)).padStart(2, '0')}:${String(
+                          totalM % 60
+                        ).padStart(2, '0')}`;
+                      })();
 
                     return (
                       <div
                         key={ev.id}
                         onClick={() => onSelectEvent(ev)}
-                        style={{
-                          background: 'var(--bg-surface-secondary)',
-                          borderRadius: 'var(--radius-sm)',
-                          border: '1px solid var(--border-subtle)',
-                          padding: '10px 12px',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '4px',
-                          transition: 'all 0.15s ease'
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.borderColor = 'var(--brand-primary)';
-                          e.currentTarget.style.background = 'var(--brand-primary-light)';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.borderColor = 'var(--border-subtle)';
-                          e.currentTarget.style.background = 'var(--bg-surface-secondary)';
-                        }}
+                        className="bg-surface-secondary rounded-sm border border-border-subtle p-2.5 sm:p-3 cursor-pointer flex flex-col gap-1 transition-all duration-150 hover:border-brand-primary hover:bg-brand-primary/5"
                       >
                         {/* Day & Time Header */}
-                        <div
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            fontSize: '0.75rem',
-                            fontWeight: 700,
-                            color: 'var(--color-charcoal)',
-                            flexWrap: 'wrap',
-                            gap: '4px'
-                          }}
-                        >
-                          <span style={{ textTransform: 'capitalize', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                            <Calendar size={12} strokeWidth={2} style={{ flexShrink: 0 }} />
+                        <div className="flex items-center justify-between text-xs font-bold text-text-primary flex-wrap gap-1">
+                          <span className="capitalize inline-flex items-center gap-1">
+                            <Calendar className="w-3 h-3 shrink-0" strokeWidth={2} />
                             <span>{dayFormatted}</span>
                           </span>
-                          <span style={{ fontSize: '0.7rem', color: 'var(--color-charcoal)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
-                              <Bus size={11} strokeWidth={2} style={{ flexShrink: 0 }} />
+                          <span className="text-[11px] text-text-primary font-semibold inline-flex items-center gap-1.5">
+                            <span className="inline-flex items-center gap-0.5">
+                              <Bus className="w-3 h-3 shrink-0" strokeWidth={2} />
                               <span>{effectiveLobby}</span>
                             </span>
                             <span>•</span>
-                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
-                              <Sparkles size={11} strokeWidth={2} style={{ flexShrink: 0 }} />
+                            <span className="inline-flex items-center gap-0.5">
+                              <Sparkles className="w-3 h-3 shrink-0" strokeWidth={2} />
                               <span>{timeFormatted}</span>
                             </span>
                           </span>
                         </div>
 
                         {/* Title */}
-                        <div
-                          style={{
-                            fontSize: '0.825rem',
-                            fontWeight: 600,
-                            color: 'var(--color-charcoal)',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap'
-                          }}
-                        >
+                        <div className="text-xs font-semibold text-text-primary truncate">
                           {ev.title}
                         </div>
 
                         {/* Group Name & Hotel Venue */}
-                        <div
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            fontSize: '0.725rem',
-                            marginTop: '2px',
-                            flexWrap: 'wrap'
-                          }}
-                        >
-                          <span
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '3px',
-                              color: '#FFFFFF',
-                              fontWeight: 600,
-                              background: 'var(--brand-primary)',
-                              padding: '1px 6px',
-                              borderRadius: 'var(--radius-pill)'
-                            }}
-                          >
-                            <Users size={11} />
+                        <div className="flex items-center gap-2 text-xs mt-0.5 flex-wrap">
+                          <span className="inline-flex items-center gap-1 text-text-inverse font-semibold bg-brand-primary px-1.5 py-0.5 rounded-pill text-[10px] shadow-sm">
+                            <Users className="w-2.5 h-2.5" />
                             <span>{group?.name}</span>
                           </span>
 
-                          <span
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '3px',
-                              color: 'var(--color-text-secondary)'
-                            }}
-                          >
-                            <MapPin size={11} />
-                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '140px' }}>
-                              {venue?.name}
-                            </span>
+                          <span className="inline-flex items-center gap-1 text-text-secondary text-[11px]">
+                            <MapPin className="w-2.5 h-2.5" />
+                            <span className="truncate max-w-[140px]">{venue?.name}</span>
                           </span>
                         </div>
                       </div>
@@ -420,50 +254,25 @@ export const YearView: React.FC<YearViewProps> = ({
       </div>
 
       {/* Yearly Shows Detailed Timeline */}
-      <div
-        style={{
-          background: 'var(--bg-surface)',
-          borderRadius: 'var(--radius-lg)',
-          border: '1px solid var(--border-subtle)',
-          padding: '24px',
-          boxShadow: 'var(--shadow-sm)',
-          marginTop: '8px'
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: '16px',
-            paddingBottom: '12px',
-            borderBottom: '1px solid var(--border-subtle)'
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Calendar size={18} color="var(--color-charcoal)" />
-            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-charcoal)' }}>
+      <div className="bg-surface rounded-lg border border-border-subtle p-5 sm:p-6 shadow-sm">
+        <div className="flex items-center justify-between mb-4 pb-3 border-b border-border-subtle flex-wrap gap-2">
+          <div className="flex items-center gap-2 text-text-primary">
+            <Calendar className="w-4.5 h-4.5 text-text-primary" />
+            <h3 className="text-base font-bold text-text-primary">
               {t('yearly_schedule')} ({year})
             </h3>
           </div>
-          <span style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
+          <span className="text-xs text-text-secondary">
             {yearEvents.length} {yearEvents.length === 1 ? t('show') : t('shows')}
           </span>
         </div>
 
         {yearEvents.length === 0 ? (
-          <div
-            style={{
-              padding: '40px 20px',
-              textAlign: 'center',
-              color: 'var(--color-text-secondary)',
-              fontSize: '0.85rem'
-            }}
-          >
+          <div className="py-10 px-5 text-center text-text-secondary text-sm">
             {t('no_shows_in_year')}
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div className="flex flex-col gap-2.5">
             {yearEvents
               .sort((a, b) => new Date(a.startDateTime).getTime() - new Date(b.startDateTime).getTime())
               .map((ev) => {
@@ -478,103 +287,78 @@ export const YearView: React.FC<YearViewProps> = ({
                   day: 'numeric',
                   year: 'numeric'
                 });
-                const timeStr = `${start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+                const timeStr = `${start.toLocaleTimeString([], {
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })} - ${end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
 
-                const effectiveLobby = ev.lobbyTime || (() => {
-                  const travel = venue?.travelTimeMinutes ?? 45;
-                  const totalM = (start.getHours() * 60 + start.getMinutes() - travel + 1440) % 1440;
-                  return `${String(Math.floor(totalM / 60)).padStart(2, '0')}:${String(totalM % 60).padStart(2, '0')}`;
-                })();
+                const effectiveLobby =
+                  ev.lobbyTime ||
+                  (() => {
+                    const travel = venue?.travelTimeMinutes ?? 45;
+                    const totalM =
+                      (start.getHours() * 60 + start.getMinutes() - travel + 1440) % 1440;
+                    return `${String(Math.floor(totalM / 60)).padStart(2, '0')}:${String(
+                      totalM % 60
+                    ).padStart(2, '0')}`;
+                  })();
 
                 return (
                   <div
                     key={ev.id}
                     onClick={() => onSelectEvent(ev)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '14px 18px',
-                      borderRadius: 'var(--radius-md)',
-                      background: 'var(--bg-surface-secondary)',
-                      border: '1px solid var(--border-subtle)',
-                      cursor: 'pointer',
-                      transition: 'all 0.15s ease',
-                      flexWrap: 'wrap',
-                      gap: '12px'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.borderColor = 'var(--brand-primary)';
-                      e.currentTarget.style.background = 'var(--brand-primary-light)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.borderColor = 'var(--border-subtle)';
-                      e.currentTarget.style.background = 'var(--bg-surface-secondary)';
-                    }}
+                    className="flex items-center justify-between p-3.5 sm:p-4 rounded-md bg-surface-secondary border border-border-subtle cursor-pointer transition-all duration-150 hover:border-brand-primary hover:bg-brand-primary/5 flex-wrap gap-3"
                   >
                     {/* Date & Time */}
-                    <div style={{ minWidth: '180px' }}>
-                      <div style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--color-charcoal)' }}>
-                        {dateStr}
+                    <div className="min-w-[180px]">
+                      <div className="font-bold text-sm text-text-primary">{dateStr}</div>
+                      <div className="text-xs text-text-primary font-semibold flex items-center gap-1.5 mt-0.5">
+                        <Bus className="w-3 h-3 shrink-0" strokeWidth={2} />
+                        <span>
+                          {t('gathering_label')}: {effectiveLobby}
+                        </span>
                       </div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--color-charcoal)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '5px', marginTop: '2px' }}>
-                        <Bus size={12} strokeWidth={2} style={{ flexShrink: 0 }} />
-                        <span>{t('gathering_label')}: {effectiveLobby}</span>
-                      </div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', display: 'flex', alignItems: 'center', gap: '5px', marginTop: '1px' }}>
-                        <Sparkles size={12} strokeWidth={2} style={{ flexShrink: 0 }} />
+                      <div className="text-xs text-text-secondary flex items-center gap-1.5 mt-0.5">
+                        <Sparkles className="w-3 h-3 shrink-0" strokeWidth={2} />
                         <span>{timeStr}</span>
                       </div>
                     </div>
 
                     {/* Show Title */}
-                    <div style={{ flex: 1, minWidth: '180px' }}>
-                      <div style={{ fontWeight: 600, fontSize: '0.925rem', color: 'var(--color-charcoal)' }}>
-                        {ev.title}
-                      </div>
+                    <div className="flex-1 min-w-[180px]">
+                      <div className="font-semibold text-sm text-text-primary">{ev.title}</div>
                     </div>
 
                     {/* Group Badge */}
-                    <div style={{ minWidth: '140px' }}>
-                      <div style={{ fontSize: '0.7rem', color: 'var(--color-text-secondary)', marginBottom: '2px' }}>
+                    <div className="min-w-[140px]">
+                      <div className="text-[11px] text-text-secondary mb-0.5">
                         {t('group_label')}:
                       </div>
-                      <span
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '5px',
-                          fontSize: '0.8rem',
-                          fontWeight: 600,
-                          background: 'var(--brand-primary)',
-                          color: '#FFFFFF',
-                          padding: '3px 10px',
-                          borderRadius: 'var(--radius-pill)',
-                          border: '1px solid var(--brand-primary-hover)'
-                        }}
-                      >
-                        <Users size={12} />
+                      <span className="inline-flex items-center gap-1 text-xs font-semibold bg-brand-primary text-text-inverse px-2.5 py-1 rounded-pill shadow-sm">
+                        <Users className="w-3 h-3" />
                         <span>{group?.name}</span>
                       </span>
                     </div>
 
                     {/* Hotel Venue */}
-                    <div style={{ minWidth: '180px' }}>
-                      <div style={{ fontSize: '0.7rem', color: 'var(--color-text-secondary)', marginBottom: '2px' }}>
+                    <div className="min-w-[180px]">
+                      <div className="text-[11px] text-text-secondary mb-0.5">
                         {t('hotel_label')}:
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.825rem', fontWeight: 500, color: 'var(--color-charcoal)' }}>
-                        <MapPin size={13} color="var(--color-text-secondary)" />
+                      <div className="flex items-center gap-1.5 text-xs font-medium text-text-primary">
+                        <MapPin className="w-3 h-3 text-text-secondary shrink-0" />
                         <span>{venue?.name}</span>
                       </div>
-                      <div style={{ fontSize: '0.725rem', color: 'var(--color-text-tertiary)', paddingLeft: '18px' }}>
-                        {venue?.roomOrBallroom}
-                      </div>
+                      {venue?.roomOrBallroom && (
+                        <div className="text-xs text-text-tertiary pl-4">
+                          {venue.roomOrBallroom}
+                        </div>
+                      )}
                     </div>
 
                     {/* Action Arrow */}
                     <div>
-                      <ChevronRight size={18} color="var(--color-text-secondary)" />
+                      <ChevronRight className="w-4.5 h-4.5 text-text-secondary" />
                     </div>
                   </div>
                 );

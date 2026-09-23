@@ -1,4 +1,7 @@
+'use client';
+
 import React, { useState, useCallback } from 'react';
+import dynamic from 'next/dynamic';
 import {
   Users,
   ShieldCheck,
@@ -14,12 +17,20 @@ import {
   Clock
 } from 'lucide-react';
 import { SystemUser, UserRoleId } from '../../types/user';
-import { CreateUserModal } from './CreateUserModal';
-import { CreateRoleModal } from './CreateRoleModal';
-import { RoleDefinition, PERMISSION_LABELS_KA, PERMISSION_LABELS_EN, ROLE_TEMPLATES } from '../../types/role';
+import { RoleDefinition, PERMISSION_LABELS_KA, PERMISSION_LABELS_EN } from '../../types/role';
 import { useLanguage } from '../../context/LanguageContext';
 import { useConfirm } from '../../context/ConfirmContext';
 import { useToast } from '../../context/ToastContext';
+
+const CreateUserModal = dynamic(
+  () => import('./CreateUserModal').then((mod) => mod.CreateUserModal),
+  { ssr: false }
+);
+
+const CreateRoleModal = dynamic(
+  () => import('./CreateRoleModal').then((mod) => mod.CreateRoleModal),
+  { ssr: false }
+);
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -54,14 +65,6 @@ const ROLE_LABEL: Record<string, string> = {
   stage_manager: 'Stage Manager'
 };
 
-const ROLE_BADGE_COLOR: Record<string, string> = {
-  management: '#0891B2',
-  operations: '#16A34A',
-  admin: '#7C3AED',
-  director: '#0891B2',
-  stage_manager: '#16A34A'
-};
-
 const INITIAL_USERS: SystemUser[] = [
   {
     id: 'u-seed-1',
@@ -92,17 +95,14 @@ export const RolesAndPermissions: React.FC = () => {
   const [editingRoleFor, setEditingRoleFor] = useState<string | null>(null);
 
   // ── Role display helpers ───────────────────────────────────────────────────
-  const getRoleLabel = useCallback((roleId: string) => {
-    const found = roles.find((r) => r.id === roleId);
-    if (found) return found.title;
-    return ROLE_LABEL[roleId as UserRoleId] || roleId;
-  }, [roles]);
-
-  const getRoleBadgeColor = useCallback((roleId: string) => {
-    const found = roles.find((r) => r.id === roleId);
-    if (found) return found.badgeColor;
-    return ROLE_BADGE_COLOR[roleId as UserRoleId] || 'var(--brand-primary)';
-  }, [roles]);
+  const getRoleLabel = useCallback(
+    (roleId: string) => {
+      const found = roles.find((r) => r.id === roleId);
+      if (found) return found.title;
+      return ROLE_LABEL[roleId as UserRoleId] || roleId;
+    },
+    [roles]
+  );
 
   // ── Role actions ───────────────────────────────────────────────────────────
   const handleRoleCreated = useCallback((newRole: RoleDefinition) => {
@@ -110,101 +110,112 @@ export const RolesAndPermissions: React.FC = () => {
   }, []);
 
   const handleRoleUpdated = useCallback((updatedRole: RoleDefinition) => {
-    setRoles((p) => p.map((r) => r.id === updatedRole.id ? updatedRole : r));
+    setRoles((p) => p.map((r) => (r.id === updatedRole.id ? updatedRole : r)));
     setEditingRole(null);
   }, []);
 
-  const handleDeleteRole = useCallback((role: RoleDefinition) => {
-    const isSystemRole =
-      role.id === 'admin' ||
-      role.id === 'operations' ||
-      role.id === 'management' ||
-      (role as any).isSystem;
+  const handleDeleteRole = useCallback(
+    (role: RoleDefinition) => {
+      const isSystemRole =
+        role.id === 'admin' ||
+        role.id === 'operations' ||
+        role.id === 'management' ||
+        (role as any).isSystem;
 
-    if (isSystemRole) {
-      toast.error(isKa ? 'სისტემური როლის წაშლა შეუძლებელია' : 'System role cannot be deleted');
-      return;
-    }
-
-    confirm({
-      title: isKa ? 'როლის წაშლა' : 'Delete Role',
-      message: isKa
-        ? `ნამდვილად გსურთ როლის „${role.title}“ წაშლა?`
-        : `Are you sure you want to delete role "${role.title}"?`,
-      itemName: role.title,
-      confirmLabel: isKa ? 'წაშლა' : 'Delete',
-      variant: 'danger',
-      onConfirm: () => {
-        setRoles((p) => p.filter((r) => r.id !== role.id));
-        toast.success(isKa ? 'როლი წარმატებით წაიშალა' : 'Role deleted successfully');
+      if (isSystemRole) {
+        toast.error(isKa ? 'სისტემური როლის წაშლა შეუძლებელია' : 'System role cannot be deleted');
+        return;
       }
-    });
-  }, [confirm, toast, isKa]);
+
+      confirm({
+        title: isKa ? 'როლის წაშლა' : 'Delete Role',
+        message: isKa
+          ? `ნამდვილად გსურთ როლის „${role.title}“ წაშლა?`
+          : `Are you sure you want to delete role "${role.title}"?`,
+        itemName: role.title,
+        confirmLabel: isKa ? 'წაშლა' : 'Delete',
+        variant: 'danger',
+        onConfirm: () => {
+          setRoles((p) => p.filter((r) => r.id !== role.id));
+          toast.success(isKa ? 'როლი წარმატებით წაიშალა' : 'Role deleted successfully');
+        }
+      });
+    },
+    [confirm, toast, isKa]
+  );
 
   // ── User actions ───────────────────────────────────────────────────────────
-  const handleUserCreated = useCallback((user: SystemUser) => {
-    setUsers((p) => [user, ...p]);
-    toast.success(isKa ? `თანამშრომელი „${user.fullName}“ წარმატებით დაემატა` : `Staff member "${user.fullName}" added successfully`);
-  }, [toast, isKa]);
+  const handleUserCreated = useCallback(
+    (user: SystemUser) => {
+      setUsers((p) => [user, ...p]);
+      toast.success(
+        isKa
+          ? `თანამშრომელი „${user.fullName}“ წარმატებით დაემატა`
+          : `Staff member "${user.fullName}" added successfully`
+      );
+    },
+    [toast, isKa]
+  );
 
-  const handleDeleteUser = useCallback((id: string) => {
-    const user = users.find((u) => u.id === id);
-    if (!user) return;
-    setOpenMenuId(null);
-    confirm({
-      title: isKa ? 'თანამშრომლის წაშლა' : 'Delete Staff Member',
-      message: isKa
-        ? `ნამდვილად გსურთ ${user.fullName}-ს ანგარიშის წაშლა? თანამშრომელი დაკარგავს წვდომას სისტემაზე.`
-        : `Are you sure you want to remove ${user.fullName}? They will lose access to the system.`,
-      itemName: `${user.fullName} (${user.email})`,
-      confirmLabel: isKa ? 'წაშლა' : 'Delete',
-      variant: 'danger',
-      onConfirm: () => {
-        setUsers((p) => p.filter((u) => u.id !== id));
-        toast.success(isKa ? `თანამშრომელი „${user.fullName}“ წაიშალა` : `Staff member "${user.fullName}" removed`);
+  const handleDeleteUser = useCallback(
+    (id: string) => {
+      const user = users.find((u) => u.id === id);
+      if (!user) return;
+      setOpenMenuId(null);
+      confirm({
+        title: isKa ? 'თანამშრომლის წაშლა' : 'Delete Staff Member',
+        message: isKa
+          ? `ნამდვილად გსურთ ${user.fullName}-ს ანგარიშის წაშლა? თანამშრომელი დაკარგავს წვდომას სისტემაზე.`
+          : `Are you sure you want to remove ${user.fullName}? They will lose access to the system.`,
+        itemName: `${user.fullName} (${user.email})`,
+        confirmLabel: isKa ? 'წაშლა' : 'Delete',
+        variant: 'danger',
+        onConfirm: () => {
+          setUsers((p) => p.filter((u) => u.id !== id));
+          toast.success(
+            isKa
+              ? `თანამშრომელი „${user.fullName}“ წაიშალა`
+              : `Staff member "${user.fullName}" removed`
+          );
+        }
+      });
+    },
+    [users, toast, confirm, isKa]
+  );
+
+  const handleRoleChange = useCallback(
+    (userId: string, newRole: UserRoleId) => {
+      setUsers((p) => (p.map((u) => (u.id === userId ? { ...u, role: newRole } : u))));
+      setEditingRoleFor(null);
+      setOpenMenuId(null);
+      toast.success(isKa ? `როლი განახლდა: ${ROLE_LABEL[newRole]}` : `Role updated: ${ROLE_LABEL[newRole]}`);
+    },
+    [toast, isKa]
+  );
+
+  const handleResetPassword = useCallback(
+    (userId: string) => {
+      const user = users.find((u) => u.id === userId);
+      setOpenMenuId(null);
+      if (user) {
+        toast.success(
+          isKa
+            ? `პაროლის განახლების ბმული გაიგზავნა ${user.email}-ზე`
+            : `Password reset link sent to ${user.email}`
+        );
       }
-    });
-  }, [users, toast, confirm, isKa]);
-
-  const handleRoleChange = useCallback((userId: string, newRole: UserRoleId) => {
-    setUsers((p) => p.map((u) => u.id === userId ? { ...u, role: newRole } : u));
-    setEditingRoleFor(null);
-    setOpenMenuId(null);
-    toast.success(isKa ? `როლი განახლდა: ${ROLE_LABEL[newRole]}` : `Role updated: ${ROLE_LABEL[newRole]}`);
-  }, [toast, isKa]);
-
-  const handleResetPassword = useCallback((userId: string) => {
-    const user = users.find((u) => u.id === userId);
-    setOpenMenuId(null);
-    if (user) toast.success(isKa ? `პაროლის განახლების ბმული გაიგზავნა ${user.email}-ზე` : `Password reset link sent to ${user.email}`);
-  }, [users, toast, isKa]);
-
-  // ── Shared styles ──────────────────────────────────────────────────────────
-  const tabBtn = (active: boolean): React.CSSProperties => ({
-    padding: '8px 20px',
-    borderRadius: '8px',
-    border: 'none',
-    outline: 'none',
-    fontSize: '0.875rem',
-    fontWeight: active ? 650 : 500,
-    cursor: 'pointer',
-    background: active ? 'var(--brand-primary)' : 'transparent',
-    color: active ? '#fff' : 'var(--color-text-secondary)',
-    boxShadow: active ? '0 4px 14px var(--brand-primary-glow)' : 'none',
-    transition: 'all 0.18s',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '7px'
-  });
+    },
+    [users, toast, isKa]
+  );
 
   return (
-    <div className="w-full" style={{ width: '100%' }}>
+    <div className="w-full flex flex-col">
       {/* Page header */}
-      <div style={{ marginBottom: '24px' }}>
-        <h1 className="page-title" style={{ marginBottom: '6px' }}>
+      <div className="mb-6">
+        <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-text-primary mb-1.5">
           {isKa ? 'როლები და წვდომები' : 'Roles & Permissions'}
         </h1>
-        <p style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)' }}>
+        <p className="text-sm text-text-secondary">
           {isKa
             ? 'სისტემური მომხმარებლების მართვა, როლების განაწილება და უსაფრთხოების წვდომის დონეები'
             : 'System user management, role assignments, and security permission levels'}
@@ -212,59 +223,51 @@ export const RolesAndPermissions: React.FC = () => {
       </div>
 
       {/* Tab bar + CTA */}
-      <div
-        className="w-full flex items-center justify-between mb-6"
-        style={{
-          width: '100%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: '24px',
-          gap: '16px'
-        }}
-      >
+      <div className="w-full flex items-center justify-between mb-6 flex-wrap gap-4">
         {/* Segmented tabs */}
-        <div
-          className="flex items-center gap-3"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '12px',
-            padding: '4px',
-            borderRadius: '12px',
-            background: 'var(--bg-surface-secondary)',
-            border: '1px solid var(--border-subtle)'
-          }}
-        >
+        <div className="inline-flex items-center gap-1.5 p-1 rounded-md bg-surface-secondary border border-border-subtle">
           <button
             id="tab-roles"
+            type="button"
             onClick={() => setActiveTab('roles')}
-            style={tabBtn(activeTab === 'roles')}
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-sm text-sm font-semibold transition-all duration-150 outline-none cursor-pointer ${
+              activeTab === 'roles'
+                ? 'bg-brand-primary text-text-inverse shadow-glow'
+                : 'bg-transparent text-text-secondary hover:text-text-primary'
+            }`}
           >
-            <ShieldCheck size={15} />
-            {isKa ? 'როლები და უფლებები' : 'Roles & Permissions'}
-            <span style={{
-              fontSize: '0.7rem', fontWeight: 700,
-              background: activeTab === 'roles' ? 'rgba(255,255,255,0.25)' : 'var(--brand-primary)',
-              color: '#fff',
-              borderRadius: '20px', padding: '1px 7px'
-            }}>
+            <ShieldCheck className="w-4 h-4" />
+            <span>{isKa ? 'როლები და უფლებები' : 'Roles & Permissions'}</span>
+            <span
+              className={`text-[11px] font-bold rounded-pill px-1.5 py-0.5 ${
+                activeTab === 'roles'
+                  ? 'bg-white/25 text-text-inverse'
+                  : 'bg-brand-primary text-text-inverse'
+              }`}
+            >
               {roles.length}
             </span>
           </button>
+
           <button
             id="tab-users"
+            type="button"
             onClick={() => setActiveTab('users')}
-            style={tabBtn(activeTab === 'users')}
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-sm text-sm font-semibold transition-all duration-150 outline-none cursor-pointer ${
+              activeTab === 'users'
+                ? 'bg-brand-primary text-text-inverse shadow-glow'
+                : 'bg-transparent text-text-secondary hover:text-text-primary'
+            }`}
           >
-            <Users size={15} />
-            {isKa ? 'თანამშრომლები' : 'Staff'}
-            <span style={{
-              fontSize: '0.7rem', fontWeight: 700,
-              background: activeTab === 'users' ? 'rgba(255,255,255,0.25)' : 'var(--brand-primary)',
-              color: '#fff',
-              borderRadius: '20px', padding: '1px 7px'
-            }}>
+            <Users className="w-4 h-4" />
+            <span>{isKa ? 'თანამშრომლები' : 'Staff'}</span>
+            <span
+              className={`text-[11px] font-bold rounded-pill px-1.5 py-0.5 ${
+                activeTab === 'users'
+                  ? 'bg-white/25 text-text-inverse'
+                  : 'bg-brand-primary text-text-inverse'
+              }`}
+            >
               {users.length}
             </span>
           </button>
@@ -273,6 +276,7 @@ export const RolesAndPermissions: React.FC = () => {
         {/* CTA button */}
         <button
           id={activeTab === 'roles' ? 'btn-add-role' : 'btn-add-user'}
+          type="button"
           onClick={() => {
             if (activeTab === 'roles') {
               setIsCreateRoleModalOpen(true);
@@ -280,192 +284,141 @@ export const RolesAndPermissions: React.FC = () => {
               setIsCreateModalOpen(true);
             }
           }}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '10px 20px',
-            borderRadius: '10px',
-            border: 'none',
-            background: 'var(--brand-primary)',
-            color: '#fff',
-            fontSize: '0.875rem',
-            fontWeight: 650,
-            cursor: 'pointer',
-            boxShadow: '0 4px 14px var(--brand-primary-glow)',
-            transition: 'all 0.15s',
-            flexShrink: 0
-          }}
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-pill text-sm font-semibold text-text-inverse bg-brand-primary shadow-glow hover:bg-brand-primary-hover hover:-translate-y-0.5 active:translate-y-0 transition-all duration-150 cursor-pointer outline-none shrink-0"
         >
-          <Plus size={16} />
-          {activeTab === 'roles'
-            ? (isKa ? 'ახალი როლის შექმნა' : 'Create Role')
-            : (isKa ? 'თანამშრომლის დამატება' : 'Add Staff')}
+          <Plus className="w-4 h-4" />
+          <span>
+            {activeTab === 'roles'
+              ? isKa
+                ? 'ახალი როლის შექმნა'
+                : 'Create Role'
+              : isKa
+              ? 'თანამშრომლის დამატება'
+              : 'Add Staff'}
+          </span>
         </button>
       </div>
 
       {/* ── Users Tab ─────────────────────────────────────────────────────── */}
       {activeTab === 'users' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <div className="flex flex-col gap-3">
           {users.map((user) => (
             <div
               key={user.id}
-              className="card"
-              style={{
-                background: 'var(--bg-surface)',
-                border: '1px solid var(--border-subtle)',
-                boxShadow: 'var(--shadow-sm)',
-                padding: '16px 20px',
-                borderRadius: '14px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '16px',
-                flexWrap: 'wrap',
-                position: 'relative',
-                transition: 'all var(--transition-fast)'
-              }}
+              className="bg-surface border border-border-subtle shadow-sm p-4 sm:p-5 rounded-md flex items-center gap-4 flex-wrap relative transition-all duration-150"
             >
               {/* Avatar */}
-              <div style={{ position: 'relative', flexShrink: 0 }}>
+              <div className="relative shrink-0">
                 {user.avatarUrl ? (
                   <img
                     src={user.avatarUrl}
                     alt={user.fullName}
-                    style={{ width: '46px', height: '46px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--border-subtle)' }}
+                    className="w-11 h-11 rounded-full object-cover border-2 border-border-subtle"
                   />
                 ) : (
-                  <div style={{
-                    width: '46px', height: '46px', borderRadius: '50%',
-                    background: 'rgba(30,106,255,0.12)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: 'var(--brand-primary)', fontWeight: 700, fontSize: '1.1rem'
-                  }}>
+                  <div className="w-11 h-11 rounded-full bg-brand-primary/10 flex items-center justify-center text-brand-primary font-bold text-lg">
                     {user.fullName.charAt(0)}
                   </div>
                 )}
                 {/* Online dot */}
                 {user.status === 'active' && (
-                  <span style={{
-                    position: 'absolute', bottom: '1px', right: '1px',
-                    width: '11px', height: '11px', borderRadius: '50%',
-                    background: '#16A34A',
-                    border: '2px solid var(--bg-surface)',
-                    boxShadow: '0 0 5px rgba(22,163,74,0.6)'
-                  }} />
+                  <span className="absolute bottom-0.5 right-0.5 w-3 h-3 rounded-full bg-status-active-dot border-2 border-surface shadow-sm" />
                 )}
               </div>
 
               {/* Name + email */}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: '0.95rem', fontWeight: 650, color: 'var(--color-charcoal)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-semibold text-text-primary truncate">
                   {user.fullName}
                 </div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', display: 'flex', alignItems: 'center', gap: '5px', marginTop: '2px' }}>
-                  <Mail size={12} />
-                  {user.email}
+                <div className="text-xs text-text-secondary flex items-center gap-1.5 mt-0.5">
+                  <Mail className="w-3 h-3 text-text-secondary" />
+                  <span>{user.email}</span>
                 </div>
               </div>
 
               {/* Role badge */}
               {editingRoleFor === user.id ? (
-                <div style={{ position: 'relative' }}>
+                <div className="relative">
                   <select
                     autoFocus
                     value={user.role}
                     onChange={(e) => handleRoleChange(user.id, e.target.value as UserRoleId)}
                     onBlur={() => setEditingRoleFor(null)}
-                    style={{
-                      padding: '5px 10px', borderRadius: '8px',
-                      border: '2px solid var(--brand-primary)',
-                      background: 'var(--bg-surface)',
-                      color: 'var(--color-charcoal)',
-                      fontSize: '0.8rem', fontWeight: 600,
-                      cursor: 'pointer', outline: 'none'
-                    }}
+                    className="px-2.5 py-1.5 rounded-xs border-2 border-brand-primary bg-surface text-text-primary text-xs font-semibold cursor-pointer outline-none"
                   >
                     {roles.length > 0 ? (
                       roles.map((r) => (
-                        <option key={r.id} value={r.id}>{r.title}</option>
+                        <option key={r.id} value={r.id}>
+                          {r.title}
+                        </option>
                       ))
                     ) : (
                       ROLES_LIST.map((r) => (
-                        <option key={r.id} value={r.id}>{r.title}</option>
+                        <option key={r.id} value={r.id}>
+                          {r.title}
+                        </option>
                       ))
                     )}
                   </select>
                 </div>
               ) : (
-                <span
-                  style={{
-                    padding: '4px 11px', borderRadius: '20px',
-                    fontSize: '0.75rem', fontWeight: 650,
-                    background: `${getRoleBadgeColor(user.role)}18`,
-                    color: getRoleBadgeColor(user.role),
-                    border: `1px solid ${getRoleBadgeColor(user.role)}30`,
-                    whiteSpace: 'nowrap'
-                  }}
-                >
+                <span className="px-3 py-1 rounded-pill text-xs font-semibold whitespace-nowrap border border-border-subtle bg-surface-secondary text-text-primary">
                   {getRoleLabel(user.role)}
                 </span>
               )}
 
               {/* Status badge */}
-              <span style={{
-                display: 'inline-flex', alignItems: 'center', gap: '5px',
-                padding: '4px 10px', borderRadius: '20px',
-                fontSize: '0.75rem', fontWeight: 600,
-                background: user.status === 'active' ? 'rgba(22,163,74,0.08)' : 'rgba(234,179,8,0.1)',
-                color: user.status === 'active' ? '#15803D' : '#A16207',
-                border: `1px solid ${user.status === 'active' ? 'rgba(22,163,74,0.25)' : 'rgba(234,179,8,0.3)'}`,
-                whiteSpace: 'nowrap'
-              }}>
-                {user.status === 'active'
-                  ? <><UserCheck size={12} /> აქტიური</>
-                  : <><Clock size={12} /> მოწვევა გაგზავნილია</>}
+              <span
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-pill text-xs font-semibold whitespace-nowrap ${
+                  user.status === 'active'
+                    ? 'bg-status-active-bg text-status-active-text border border-status-active-dot/30'
+                    : 'bg-status-rest-bg text-status-rest-text border border-status-rest-dot/30'
+                }`}
+              >
+                {user.status === 'active' ? (
+                  <>
+                    <UserCheck className="w-3 h-3" />
+                    <span>{isKa ? 'აქტიური' : 'Active'}</span>
+                  </>
+                ) : (
+                  <>
+                    <Clock className="w-3 h-3" />
+                    <span>{isKa ? 'მოწვევა გაგზავნილია' : 'Invited'}</span>
+                  </>
+                )}
               </span>
 
               {/* Actions menu */}
-              <div style={{ position: 'relative' }}>
+              <div className="relative">
                 <button
+                  type="button"
                   onClick={() => setOpenMenuId(openMenuId === user.id ? null : user.id)}
-                  style={{
-                    background: 'var(--bg-surface-secondary)',
-                    border: '1px solid var(--border-subtle)',
-                    borderRadius: '8px', padding: '6px 8px',
-                    cursor: 'pointer', color: 'var(--color-text-secondary)',
-                    display: 'flex', alignItems: 'center', transition: 'all 0.15s'
-                  }}
-                  title="მოქმედებები"
+                  className="p-1.5 rounded-xs bg-surface-secondary border border-border-subtle text-text-secondary hover:text-text-primary hover:bg-surface-tertiary transition-all duration-150 cursor-pointer"
+                  title="Actions"
                 >
-                  <MoreVertical size={15} />
+                  <MoreVertical className="w-4 h-4" />
                 </button>
 
                 {openMenuId === user.id && (
-                  <div
-                    style={{
-                      position: 'absolute', right: 0, top: '36px', zIndex: 200,
-                      background: 'var(--bg-surface)',
-                      border: '1px solid var(--border-subtle)',
-                      borderRadius: '12px',
-                      boxShadow: '0 8px 28px rgba(0,0,0,0.14)',
-                      minWidth: '200px',
-                      overflow: 'hidden'
-                    }}
-                  >
+                  <div className="absolute right-0 top-10 z-[200] bg-surface border border-border-subtle rounded-md shadow-lg min-w-[200px] overflow-hidden">
                     <MenuAction
-                      icon={<Edit3 size={14} />}
-                      label="როლის შეცვლა"
-                      onClick={() => { setEditingRoleFor(user.id); setOpenMenuId(null); }}
+                      icon={<Edit3 className="w-3.5 h-3.5" />}
+                      label={isKa ? 'როლის შეცვლა' : 'Change Role'}
+                      onClick={() => {
+                        setEditingRoleFor(user.id);
+                        setOpenMenuId(null);
+                      }}
                     />
                     <MenuAction
-                      icon={<Key size={14} />}
-                      label="პაროლის განახლება"
+                      icon={<Key className="w-3.5 h-3.5" />}
+                      label={isKa ? 'პაროლის განახლება' : 'Reset Password'}
                       onClick={() => handleResetPassword(user.id)}
                     />
-                    <div style={{ height: '1px', background: 'var(--border-subtle)', margin: '4px 0' }} />
+                    <div className="h-px bg-border-subtle my-1" />
                     <MenuAction
-                      icon={<Trash2 size={14} />}
-                      label="ანგარიშის წაშლა"
+                      icon={<Trash2 className="w-3.5 h-3.5" />}
+                      label={isKa ? 'ანგარიშის წაშლა' : 'Delete Account'}
                       danger
                       onClick={() => handleDeleteUser(user.id)}
                     />
@@ -476,15 +429,14 @@ export const RolesAndPermissions: React.FC = () => {
           ))}
 
           {users.length === 0 && (
-            <div style={{
-              textAlign: 'center', padding: '60px 20px',
-              color: 'var(--color-text-secondary)',
-              background: 'var(--bg-surface-secondary)',
-              borderRadius: '16px', border: '1.5px dashed var(--border-subtle)'
-            }}>
-              <Users size={40} style={{ opacity: 0.3, marginBottom: '12px' }} />
-              <div style={{ fontWeight: 600, marginBottom: '6px' }}>თანამშრომლები არ არიან</div>
-              <div style={{ fontSize: '0.85rem' }}>დაამატეთ პირველი თანამშრომელი</div>
+            <div className="text-center py-16 px-5 text-text-secondary bg-surface-secondary rounded-lg border-2 border-dashed border-border-subtle flex flex-col items-center">
+              <Users className="w-10 h-10 opacity-30 mb-3" />
+              <div className="font-semibold text-text-primary mb-1">
+                {isKa ? 'თანამშრომლები არ არიან' : 'No staff members'}
+              </div>
+              <div className="text-xs text-text-secondary">
+                {isKa ? 'დაამატეთ პირველი თანამშრომელი' : 'Add your first staff member'}
+              </div>
             </div>
           )}
         </div>
@@ -492,52 +444,19 @@ export const RolesAndPermissions: React.FC = () => {
 
       {/* ── Roles Tab ─────────────────────────────────────────────────────── */}
       {activeTab === 'roles' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div className="flex flex-col gap-5">
           {/* 1. Role Levels Info Banner */}
-          <div
-            style={{
-              padding: '12px',
-              borderRadius: '16px',
-              border: '1px solid var(--border-subtle)',
-              background: 'var(--bg-surface-secondary)',
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-              gap: '12px'
-            }}
-          >
+          <div className="p-3 rounded-lg border border-border-subtle bg-surface-secondary grid grid-cols-1 sm:grid-cols-2 gap-3">
             {/* Management Column */}
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: '12px',
-                background: 'var(--bg-surface)',
-                border: '1px solid var(--border-subtle)',
-                borderRadius: '12px',
-                padding: '14px 16px',
-                boxShadow: 'var(--shadow-sm)'
-              }}
-            >
-              <div
-                style={{
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '10px',
-                  background: 'rgba(8, 145, 178, 0.12)',
-                  color: '#0891B2',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0
-                }}
-              >
-                <ShieldCheck size={18} />
+            <div className="flex items-start gap-3 bg-surface border border-border-subtle rounded-md p-3.5 sm:p-4 shadow-sm">
+              <div className="w-9 h-9 rounded-sm bg-category-management/10 text-category-management flex items-center justify-center shrink-0">
+                <ShieldCheck className="w-4.5 h-4.5" />
               </div>
               <div>
-                <div style={{ fontSize: '0.875rem', fontWeight: 650, color: 'var(--color-charcoal)', marginBottom: '3px' }}>
+                <div className="text-sm font-semibold text-text-primary mb-0.5">
                   {isKa ? 'მენეჯმენტი' : 'Management'}
                 </div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', lineHeight: 1.45 }}>
+                <div className="text-xs text-text-secondary leading-relaxed">
                   {isKa
                     ? 'ეს დონე მოიცავს შოუების დაგეგმვას, ტალანტების მართვასა და როტაციების კონტროლს.'
                     : 'This level covers show planning, talent roster management, and schedule rotation controls.'}
@@ -546,38 +465,15 @@ export const RolesAndPermissions: React.FC = () => {
             </div>
 
             {/* Operations Column */}
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: '12px',
-                background: 'var(--bg-surface)',
-                border: '1px solid var(--border-subtle)',
-                borderRadius: '12px',
-                padding: '14px 16px',
-                boxShadow: 'var(--shadow-sm)'
-              }}
-            >
-              <div
-                style={{
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '10px',
-                  background: 'rgba(22, 163, 74, 0.12)',
-                  color: '#16A34A',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0
-                }}
-              >
-                <ShieldCheck size={18} />
+            <div className="flex items-start gap-3 bg-surface border border-border-subtle rounded-md p-3.5 sm:p-4 shadow-sm">
+              <div className="w-9 h-9 rounded-sm bg-category-operations/10 text-category-operations flex items-center justify-center shrink-0">
+                <ShieldCheck className="w-4.5 h-4.5" />
               </div>
               <div>
-                <div style={{ fontSize: '0.875rem', fontWeight: 650, color: 'var(--color-charcoal)', marginBottom: '3px' }}>
+                <div className="text-sm font-semibold text-text-primary mb-0.5">
                   {isKa ? 'საოპერაციო ან საველე მართვა' : 'Operations / Field Management'}
                 </div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', lineHeight: 1.45 }}>
+                <div className="text-xs text-text-secondary leading-relaxed">
                   {isKa
                     ? 'ეს დონე ეთმობა ყოველდღიურ საველე პროცესებს: განრიგის შესრულებას, დასწრებასა და ინვენტარს.'
                     : 'This level is dedicated to daily field processes: schedule execution, attendance, and inventory.'}
@@ -588,176 +484,109 @@ export const RolesAndPermissions: React.FC = () => {
 
           {/* 2. Central Empty State or Created Roles List */}
           {roles.length === 0 ? (
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                textAlign: 'center',
-                padding: '64px 24px',
-                borderRadius: '16px',
-                border: '1.5px dashed var(--border-medium)',
-                background: 'var(--bg-surface)'
-              }}
-            >
-              <ShieldPlus
-                className="w-12 h-12 text-stone-400 stroke-1"
-                size={48}
-                strokeWidth={1}
-                style={{ color: 'var(--color-text-tertiary)', marginBottom: '14px' }}
-              />
-              <div
-                style={{
-                  fontSize: '1.05rem',
-                  fontWeight: 650,
-                  color: 'var(--color-charcoal)',
-                  marginBottom: '6px'
-                }}
-              >
+            <div className="flex flex-col items-center justify-center text-center p-12 sm:p-16 rounded-lg border-2 border-dashed border-border-medium bg-surface">
+              <ShieldPlus className="w-12 h-12 text-text-tertiary mb-3.5 stroke-1" />
+              <div className="text-base font-semibold text-text-primary mb-1.5">
                 {isKa ? 'როლები ჯერ არ არის შექმნილი' : 'No roles created yet'}
               </div>
-              <p
-                style={{
-                  fontSize: '0.85rem',
-                  color: 'var(--color-text-secondary)',
-                  maxWidth: '460px',
-                  lineHeight: 1.45,
-                  marginBottom: '20px'
-                }}
-              >
+              <p className="text-xs sm:text-sm text-text-secondary max-w-[460px] leading-relaxed mb-5">
                 {isKa
                   ? 'შექმენით თქვენს გუნდზე მორგებული როლი და განსაზღვრეთ შესაბამისი უფლებამოსილებები.'
                   : 'Create a custom role for your team and configure its system permissions.'}
               </p>
               <button
+                type="button"
                 onClick={() => setIsCreateRoleModalOpen(true)}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '10px 22px',
-                  borderRadius: '10px',
-                  border: 'none',
-                  background: 'var(--brand-primary)',
-                  color: '#fff',
-                  fontSize: '0.875rem',
-                  fontWeight: 650,
-                  cursor: 'pointer',
-                  boxShadow: '0 4px 14px var(--brand-primary-glow)',
-                  transition: 'all 0.15s'
-                }}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-pill text-sm font-semibold text-text-inverse bg-brand-primary shadow-glow hover:bg-brand-primary-hover transition-all duration-150 cursor-pointer outline-none"
               >
-                <Plus size={16} />
+                <Plus className="w-4 h-4" />
                 <span>{isKa ? 'პირველი როლის შექმნა' : 'Create First Role'}</span>
               </button>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div className="flex flex-col gap-3.5">
               {roles.map((role) => {
                 const memberCount = users.filter((u) => u.role === role.id).length;
                 return (
                   <div
                     key={role.id}
-                    className="card"
-                    style={{
-                      background: 'var(--bg-surface)',
-                      border: '1px solid var(--border-subtle)',
-                      boxShadow: 'var(--shadow-sm)',
-                      padding: '20px 24px',
-                      borderRadius: '14px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '14px',
-                      transition: 'all var(--transition-fast)'
-                    }}
+                    className="bg-surface border border-border-subtle shadow-sm p-5 sm:p-6 rounded-md flex flex-col gap-3.5 transition-all duration-150"
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                        <div style={{
-                          width: '42px', height: '42px', borderRadius: '11px',
-                          background: `${role.badgeColor}14`,
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          color: role.badgeColor
-                        }}>
-                          <ShieldCheck size={20} />
+                    <div className="flex items-center justify-between flex-wrap gap-2.5">
+                      <div className="flex items-center gap-3.5">
+                        <div className="w-10 h-10 rounded-sm bg-category-management/10 text-category-management flex items-center justify-center shrink-0">
+                          <ShieldCheck className="w-5 h-5" />
                         </div>
                         <div>
-                          <div style={{ fontSize: '1rem', fontWeight: 650, color: 'var(--color-charcoal)' }}>
+                          <div className="text-base font-semibold text-text-primary">
                             {role.title}
                           </div>
-                          <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
+                          <div className="text-xs text-text-secondary mt-0.5">
                             {role.desc}
                           </div>
                         </div>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{
-                          display: 'inline-flex', alignItems: 'center', gap: '5px',
-                          fontSize: '0.775rem', fontWeight: 600,
-                          color: 'var(--color-text-secondary)',
-                          padding: '3px 10px', borderRadius: '20px',
-                          background: 'var(--bg-surface-secondary)',
-                          border: '1px solid var(--border-subtle)'
-                        }}>
-                          <Users size={12} />
-                          {memberCount} {isKa ? 'წევრი' : (memberCount === 1 ? 'member' : 'members')}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-text-secondary px-2.5 py-1 rounded-pill bg-surface-secondary border border-border-subtle">
+                          <Users className="w-3 h-3" />
+                          <span>
+                            {memberCount} {isKa ? 'წევრი' : memberCount === 1 ? 'member' : 'members'}
+                          </span>
                         </span>
-                        <span style={{
-                          padding: '4px 11px', borderRadius: 'var(--radius-pill)',
-                          fontSize: '0.75rem', fontWeight: 650,
-                          background: `${role.badgeColor}14`,
-                          color: role.badgeColor,
-                          border: `1px solid ${role.badgeColor}30`
-                        }}>
-                          {role.badge === 'Operations' || role.badge === 'ოპერაციული' || role.badge === 'საოპერაციო ან საველე მართვა'
-                            ? (isKa ? 'საოპერაციო ან საველე მართვა' : 'Operations')
+                        <span className="px-2.5 py-1 rounded-pill text-xs font-semibold bg-surface-secondary border border-border-subtle text-text-primary">
+                          {role.badge === 'Operations' ||
+                          role.badge === 'ოპერაციული' ||
+                          role.badge === 'საოპერაციო ან საველე მართვა'
+                            ? isKa
+                              ? 'საოპერაციო ან საველე მართვა'
+                              : 'Operations'
                             : role.badge === 'Management' || role.badge === 'მენეჯმენტი'
-                            ? (isKa ? 'მენეჯმენტი' : 'Management')
+                            ? isKa
+                              ? 'მენეჯმენტი'
+                              : 'Management'
                             : role.badge === 'Custom' || role.badge === 'მორგებული'
-                            ? (isKa ? 'მორგებული' : 'Custom')
+                            ? isKa
+                              ? 'მორგებული'
+                              : 'Custom'
                             : role.badge}
                         </span>
 
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginLeft: '6px' }}>
+                        <div className="flex items-center gap-1.5 ml-1.5">
                           <button
                             type="button"
                             onClick={() => {
                               setEditingRole(role);
                               setIsCreateRoleModalOpen(true);
                             }}
-                            className="btn btn-secondary btn-icon"
-                            style={{ width: '30px', height: '30px', borderRadius: '8px' }}
+                            className="w-7.5 h-7.5 rounded-xs border border-border-subtle bg-surface-secondary text-text-secondary hover:text-text-primary hover:border-border-medium flex items-center justify-center cursor-pointer transition-all duration-150"
                             title={isKa ? 'როლის რედაქტირება' : 'Edit Role'}
                           >
-                            <Edit3 size={13} />
+                            <Edit3 className="w-3.5 h-3.5" />
                           </button>
                           <button
                             type="button"
                             onClick={() => handleDeleteRole(role)}
-                            className="btn btn-secondary btn-icon"
-                            style={{ width: '30px', height: '30px', borderRadius: '8px', color: '#EF4444' }}
+                            className="w-7.5 h-7.5 rounded-xs border border-border-subtle bg-surface-secondary text-danger hover:bg-danger-light hover:border-danger-border flex items-center justify-center cursor-pointer transition-all duration-150"
                             title={isKa ? 'როლის წაშლა' : 'Delete Role'}
                           >
-                            <Trash2 size={13} />
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </div>
                     </div>
 
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', paddingTop: '12px', borderTop: '1px solid var(--border-subtle)' }}>
+                    <div className="flex flex-wrap gap-2 pt-3 border-t border-border-subtle">
                       {role.permissions.map((perm, idx) => {
-                        const localizedLabel = (isKa ? PERMISSION_LABELS_KA : PERMISSION_LABELS_EN)[perm] || perm;
+                        const localizedLabel = (isKa ? PERMISSION_LABELS_KA : PERMISSION_LABELS_EN)[
+                          perm
+                        ] || perm;
                         return (
-                          <span key={idx} style={{
-                            display: 'inline-flex', alignItems: 'center', gap: '5px',
-                            fontSize: '0.775rem', padding: '4px 10px', borderRadius: 'var(--radius-sm)',
-                            background: 'var(--bg-surface-secondary)',
-                            color: 'var(--color-charcoal)',
-                            border: '1px solid var(--border-subtle)'
-                          }}>
-                            <CheckCircle2 size={13} color="#16A34A" />
-                            {localizedLabel}
+                          <span
+                            key={idx}
+                            className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-xs bg-surface-secondary text-text-primary border border-border-subtle"
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5 text-status-active-dot shrink-0" />
+                            <span>{localizedLabel}</span>
                           </span>
                         );
                       })}
@@ -773,7 +602,7 @@ export const RolesAndPermissions: React.FC = () => {
       {/* Backdrop closer for dropdown */}
       {openMenuId && (
         <div
-          style={{ position: 'fixed', inset: 0, zIndex: 100 }}
+          className="fixed inset-0 z-[100]"
           onClick={() => setOpenMenuId(null)}
         />
       )}
@@ -801,13 +630,6 @@ export const RolesAndPermissions: React.FC = () => {
         onUpdated={handleRoleUpdated}
         editingRole={editingRole}
       />
-
-      <style>{`
-        @keyframes slideInRight {
-          from { opacity: 0; transform: translateX(40px) scale(0.95); }
-          to   { opacity: 1; transform: translateX(0) scale(1); }
-        }
-      `}</style>
     </div>
   );
 };
@@ -821,22 +643,13 @@ const MenuAction: React.FC<{
   onClick: () => void;
 }> = ({ icon, label, danger, onClick }) => (
   <button
+    type="button"
     onClick={onClick}
-    style={{
-      display: 'flex', alignItems: 'center', gap: '10px',
-      width: '100%', padding: '9px 14px',
-      border: 'none', background: 'transparent',
-      cursor: 'pointer', fontSize: '0.85rem', fontWeight: 500,
-      color: danger ? '#EF4444' : 'var(--color-charcoal)',
-      transition: 'background 0.12s',
-      textAlign: 'left'
-    }}
-    onMouseEnter={(e) => {
-      e.currentTarget.style.background = danger ? 'rgba(239,68,68,0.07)' : 'var(--bg-surface-secondary)';
-    }}
-    onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+    className={`flex items-center gap-2.5 w-full px-3.5 py-2.5 text-xs font-medium text-left cursor-pointer transition-colors duration-150 outline-none ${
+      danger ? 'text-danger hover:bg-danger-light' : 'text-text-primary hover:bg-surface-secondary'
+    }`}
   >
     {icon}
-    {label}
+    <span>{label}</span>
   </button>
 );

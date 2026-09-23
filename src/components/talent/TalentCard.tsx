@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import { Talent } from '../../types/talent';
 import { StatusBadge, GenderBadge } from '../common/Badge';
@@ -28,112 +30,62 @@ export const TalentCard: React.FC<TalentCardProps> = ({
     return (
       <div
         onClick={() => onSelect(talent)}
-        style={{
-          background: isSelected ? 'var(--brand-primary)' : 'var(--bg-surface)',
-          color: isSelected ? '#FFFFFF' : 'inherit',
-          borderRadius: 'var(--radius-lg)',
-          border: isSelected ? '1px solid var(--brand-primary-hover)' : '1px solid var(--border-subtle)',
-          boxShadow: isSelected ? '0 8px 24px var(--brand-primary-glow)' : 'var(--shadow-sm)',
-          padding: '20px',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          textAlign: 'center',
-          cursor: 'pointer',
-          position: 'relative',
-          transition: 'all var(--transition-fast)'
-        }}
-        className="talent-grid-card"
-        onMouseEnter={(e) => {
-          if (!isSelected) {
-            e.currentTarget.style.transform = 'translateY(-2px)';
-            e.currentTarget.style.boxShadow = 'var(--shadow-md)';
-          }
-        }}
-        onMouseLeave={(e) => {
-          if (!isSelected) {
-            e.currentTarget.style.transform = 'translateY(0)';
-            e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
-          }
-        }}
+        className={`group relative rounded-lg p-5 flex flex-col items-center text-center cursor-pointer transition-all duration-150 ${
+          isSelected
+            ? 'bg-brand-primary text-white border border-brand-primary-hover shadow-glow'
+            : 'bg-surface text-text-primary border border-border-subtle shadow-sm hover:shadow-md hover:border-border-medium hover:-translate-y-0.5'
+        }`}
       >
         {/* Top Badges */}
-        <div
-          style={{
-            width: '100%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: '16px'
-          }}
-        >
+        <div className="w-full flex items-center justify-between mb-4">
           <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-              fontSize: '0.75rem',
-              color: isSelected ? 'rgba(255, 255, 255, 0.9)' : 'var(--color-text-secondary)'
-            }}
+            className={`flex items-center gap-1 text-xs ${
+              isSelected ? 'text-white/90' : 'text-text-secondary'
+            }`}
           >
             <FileText size={13} />
-            <span>{talent.documents.length} {t('docs_count')}</span>
+            <span>
+              {talent.documents.length} {t('docs_count')}
+            </span>
           </div>
 
           <StatusBadge status={talent.status} />
         </div>
 
         {/* Center Avatar */}
-        <div style={{ position: 'relative', marginBottom: '14px' }}>
+        <div className="relative mb-3.5">
           <img
             src={avatarSrc}
             alt={`${talent.firstName} ${talent.lastName}`}
-            style={{
-              width: '68px',
-              height: '68px',
-              borderRadius: '50%',
-              objectFit: 'cover',
-              border: isSelected ? '3px solid #FFFFFF' : '3px solid var(--border-subtle)',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.08)'
-            }}
+            className={`w-16 h-16 rounded-full object-cover shadow-sm ${
+              isSelected ? 'border-2 border-white' : 'border-2 border-border-subtle'
+            }`}
           />
         </div>
 
         {/* Name & Specialty */}
-        <div style={{ fontWeight: 700, fontSize: '1.05rem', marginBottom: '4px' }}>
+        <div className="font-bold text-base mb-1 truncate max-w-full">
           {talent.firstName} {talent.lastName}
         </div>
         <div
-          style={{
-            fontSize: '0.8rem',
-            color: isSelected ? 'rgba(255, 255, 255, 0.85)' : 'var(--color-text-secondary)',
-            marginBottom: '16px',
-            lineHeight: 1.3
-          }}
+          className={`text-xs mb-4 leading-snug line-clamp-2 max-w-full ${
+            isSelected ? 'text-white/85' : 'text-text-secondary'
+          }`}
         >
           {talent.primarySkill}
         </div>
 
         {/* Bottom Specs: Gender & Height */}
         <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            marginTop: 'auto',
-            paddingTop: '12px',
-            borderTop: isSelected ? '1px solid rgba(255, 255, 255, 0.25)' : '1px solid var(--border-subtle)',
-            width: '100%',
-            justifyContent: 'center'
-          }}
+          className={`flex items-center justify-center gap-2 mt-auto pt-3 w-full border-t ${
+            isSelected ? 'border-white/25' : 'border-border-subtle'
+          }`}
         >
           <GenderBadge gender={talent.gender} />
           <span
-            style={{
-              fontSize: '0.8rem',
-              fontWeight: 600,
-              color: isSelected ? 'rgba(255, 255, 255, 0.9)' : 'var(--color-text-secondary)'
-            }}
+            className={`text-xs font-semibold ${
+              isSelected ? 'text-white/90' : 'text-text-secondary'
+            }`}
           >
             {talent.heightCm} cm{talent.weightKg ? ` • ${talent.weightKg} kg` : ''}
           </span>
@@ -146,58 +98,32 @@ export const TalentCard: React.FC<TalentCardProps> = ({
   return (
     <div
       onClick={() => onSelect(talent)}
-      style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(4, 1fr)',
-        alignItems: 'center',
-        padding: '14px 20px',
-        borderRadius: 'var(--radius-md)',
-        background: isSelected ? 'var(--brand-primary)' : 'var(--bg-surface)',
-        color: isSelected ? '#FFFFFF' : 'inherit',
-        border: isSelected ? '1px solid var(--brand-primary-hover)' : '1px solid var(--border-subtle)',
-        boxShadow: isSelected ? '0 4px 16px var(--brand-primary-glow)' : 'var(--shadow-sm)',
-        cursor: 'pointer',
-        transition: 'all var(--transition-fast)',
-        boxSizing: 'border-box'
-      }}
-      className="talent-row-card"
+      className={`grid grid-cols-4 items-center px-5 py-3.5 rounded-md cursor-pointer transition-all duration-150 ${
+        isSelected
+          ? 'bg-brand-primary text-white border border-brand-primary-hover shadow-glow'
+          : 'bg-surface text-text-primary border border-border-subtle shadow-sm hover:shadow-md hover:border-border-medium hover:-translate-y-0.5'
+      }`}
     >
       {/* Col 1: Avatar & Name + Specialty */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: 0, paddingRight: '12px' }}>
+      <div className="flex items-center gap-3.5 min-w-0 pr-3">
         <img
           src={avatarSrc}
           alt={`${talent.firstName} ${talent.lastName}`}
-          style={{
-            width: '42px',
-            height: '42px',
-            borderRadius: '50%',
-            objectFit: 'cover',
-            border: isSelected ? '2px solid #FFFFFF' : '2px solid var(--border-subtle)',
-            flexShrink: 0
-          }}
+          className={`w-10 h-10 rounded-full object-cover shrink-0 ${
+            isSelected ? 'border-2 border-white' : 'border-2 border-border-subtle'
+          }`}
         />
-        <div style={{ minWidth: 0, overflow: 'hidden' }}>
+        <div className="min-w-0 overflow-hidden">
           <div
-            style={{
-              fontWeight: 600,
-              fontSize: '0.925rem',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap'
-            }}
+            className="font-semibold text-sm truncate"
             title={`${talent.firstName} ${talent.lastName}`}
           >
             {talent.firstName} {talent.lastName}
           </div>
           <div
-            style={{
-              fontSize: '0.785rem',
-              color: isSelected ? 'rgba(255, 255, 255, 0.85)' : 'var(--color-text-secondary)',
-              marginTop: '1px',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap'
-            }}
+            className={`text-xs truncate mt-0.5 ${
+              isSelected ? 'text-white/85' : 'text-text-secondary'
+            }`}
             title={talent.primarySkill}
           >
             {talent.primarySkill}
@@ -206,19 +132,14 @@ export const TalentCard: React.FC<TalentCardProps> = ({
       </div>
 
       {/* Col 2: Gender & Height & Weight */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, paddingRight: '10px' }}>
-        <div style={{ flexShrink: 0 }}>
+      <div className="flex items-center gap-2.5 min-w-0 pr-2.5">
+        <div className="shrink-0">
           <GenderBadge gender={talent.gender} />
         </div>
         <span
-          style={{
-            fontSize: '0.8rem',
-            color: isSelected ? 'rgba(255, 255, 255, 0.85)' : 'var(--color-text-secondary)',
-            fontWeight: 500,
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis'
-          }}
+          className={`text-xs font-medium truncate ${
+            isSelected ? 'text-white/85' : 'text-text-secondary'
+          }`}
         >
           {talent.heightCm} cm{talent.weightKg ? ` • ${talent.weightKg} kg` : ''}
         </span>
@@ -226,24 +147,19 @@ export const TalentCard: React.FC<TalentCardProps> = ({
 
       {/* Col 3: Documents Indicator */}
       <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          fontSize: '0.775rem',
-          color: isSelected ? 'rgba(255, 255, 255, 0.9)' : 'var(--color-text-secondary)',
-          whiteSpace: 'nowrap',
-          minWidth: 0,
-          paddingRight: '10px'
-        }}
+        className={`flex items-center gap-1.5 text-xs truncate pr-2.5 ${
+          isSelected ? 'text-white/90' : 'text-text-secondary'
+        }`}
         title={`${talent.documents.length} verified documents on file`}
       >
-        <FileText size={14} style={{ flexShrink: 0 }} />
-        <span style={{ fontWeight: 500 }}>{talent.documents.length} {t('docs_count')}</span>
+        <FileText size={14} className="shrink-0" />
+        <span className="font-medium">
+          {talent.documents.length} {t('docs_count')}
+        </span>
       </div>
 
       {/* Col 4: Status Badge */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', flexShrink: 0, minWidth: 0 }}>
+      <div className="flex items-center justify-end shrink-0 min-w-0">
         <StatusBadge status={talent.status} />
       </div>
     </div>

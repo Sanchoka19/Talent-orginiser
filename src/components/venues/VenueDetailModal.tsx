@@ -1,8 +1,12 @@
+'use client';
+
 import React from 'react';
 import { HotelVenue } from '../../types/venue';
 import { Modal } from '../common/Modal';
 import { useLanguage } from '../../context/LanguageContext';
 import { useApp } from '../../context/AppContext';
+import { useConfirm } from '../../context/ConfirmContext';
+import { useToast } from '../../context/ToastContext';
 import {
   Building,
   MapPin,
@@ -25,9 +29,6 @@ interface VenueDetailModalProps {
   onEdit: (venue: HotelVenue) => void;
   onDelete: (venueId: string) => void;
 }
-
-import { useConfirm } from '../../context/ConfirmContext';
-import { useToast } from '../../context/ToastContext';
 
 export const VenueDetailModal: React.FC<VenueDetailModalProps> = ({
   isOpen,
@@ -87,22 +88,29 @@ export const VenueDetailModal: React.FC<VenueDetailModalProps> = ({
       subtitle={`${venue.address}, ${venue.city}${venue.country ? `, ${venue.country}` : ''}`}
       maxWidth="620px"
       footer={
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+        <div className="flex items-center justify-between w-full">
           <button
             type="button"
             onClick={handleDelete}
-            className="btn btn-secondary"
-            style={{ color: '#EF4444' }}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-pill text-sm font-medium border border-border-subtle bg-surface-secondary text-danger hover:bg-danger-light hover:border-danger-border transition-all duration-150 cursor-pointer outline-none"
           >
             <Trash2 size={15} />
             <span>{t('delete')}</span>
           </button>
 
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button type="button" onClick={onClose} className="btn btn-secondary">
+          <div className="flex items-center gap-2.5">
+            <button
+              type="button"
+              onClick={onClose}
+              className="inline-flex items-center justify-center px-4 py-2 rounded-pill text-sm font-medium border border-border-subtle bg-surface-secondary text-text-primary hover:bg-surface-tertiary hover:border-border-medium transition-all duration-150 cursor-pointer outline-none"
+            >
               {t('close')}
             </button>
-            <button type="button" onClick={handleOpenEdit} className="btn btn-primary">
+            <button
+              type="button"
+              onClick={handleOpenEdit}
+              className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-pill text-sm font-medium bg-brand-primary text-white shadow-glow hover:bg-brand-primary-hover hover:-translate-y-0.5 active:translate-y-0 transition-all duration-150 cursor-pointer outline-none"
+            >
               <Edit2 size={15} />
               <span>{t('edit_venue')}</span>
             </button>
@@ -110,156 +118,88 @@ export const VenueDetailModal: React.FC<VenueDetailModalProps> = ({
         </div>
       }
     >
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      <div className="flex flex-col gap-5">
         {/* Top 3 Stat Cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
           {/* Stat 1: Scheduled Shows */}
-          <div
-            style={{
-              padding: '14px',
-              borderRadius: 'var(--radius-md)',
-              background: 'var(--bg-surface-secondary)',
-              border: '1px solid var(--border-subtle)',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              minHeight: '94px'
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: 'var(--color-text-secondary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
-              <Calendar size={14} color="var(--color-charcoal)" style={{ flexShrink: 0 }} />
-              <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <div className="p-3.5 rounded-md bg-surface-secondary border border-border-subtle flex flex-col justify-between min-h-[94px]">
+            <div className="flex items-center gap-1.5 text-xs text-text-secondary font-semibold uppercase tracking-wider">
+              <Calendar size={14} className="text-text-primary shrink-0" />
+              <span className="truncate">
                 {language === 'ka' ? 'დაგეგმილი შოუები' : 'Scheduled Shows'}
               </span>
             </div>
-            <div style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--color-charcoal)', marginTop: '4px', lineHeight: 1.2 }}>
+            <div className="text-2xl font-extrabold text-text-primary mt-1 leading-tight">
               {activeShowsCount}
             </div>
-            <div style={{ fontSize: '0.725rem', color: 'var(--color-text-secondary)', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {activeShowsCount > 0 ? (language === 'ka' ? 'აქტიური რეპერტუარი' : 'Active repertoire') : (language === 'ka' ? 'შოუები არ არის' : 'No shows currently')}
+            <div className="text-xs text-text-secondary mt-0.5 truncate">
+              {activeShowsCount > 0
+                ? (language === 'ka' ? 'აქტიური რეპერტუარი' : 'Active repertoire')
+                : (language === 'ka' ? 'შოუები არ არის' : 'No shows currently')}
             </div>
           </div>
 
           {/* Stat 2: Transit / Travel Time */}
-          <div
-            style={{
-              padding: '14px',
-              borderRadius: 'var(--radius-md)',
-              background: 'var(--bg-surface-secondary)',
-              border: '1px solid var(--border-subtle)',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              minHeight: '94px'
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: 'var(--color-text-secondary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
-              <Bus size={14} color="var(--color-charcoal)" style={{ flexShrink: 0 }} />
-              <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <div className="p-3.5 rounded-md bg-surface-secondary border border-border-subtle flex flex-col justify-between min-h-[94px]">
+            <div className="flex items-center gap-1.5 text-xs text-text-secondary font-semibold uppercase tracking-wider">
+              <Bus size={14} className="text-text-primary shrink-0" />
+              <span className="truncate">
                 {language === 'ka' ? 'სამგზავრო დრო' : 'Transit Time'}
               </span>
             </div>
-            <div style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--color-charcoal)', marginTop: '4px', lineHeight: 1.2 }}>
+            <div className="text-2xl font-extrabold text-text-primary mt-1 leading-tight">
               {venue.travelTimeMinutes ? `${venue.travelTimeMinutes} ${t('minutes_short')}` : '—'}
             </div>
-            <div style={{ fontSize: '0.725rem', color: 'var(--color-text-secondary)', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <div className="text-xs text-text-secondary mt-0.5 truncate">
               {language === 'ka' ? 'ბაზიდან / ცენტრიდან' : 'From base hub'}
             </div>
           </div>
 
           {/* Stat 3: Venue Status */}
-          <div
-            style={{
-              padding: '14px',
-              borderRadius: 'var(--radius-md)',
-              background: 'var(--bg-surface-secondary)',
-              border: '1px solid var(--border-subtle)',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              minHeight: '94px'
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: 'var(--color-text-secondary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
-              <ShieldCheck size={14} color={activeShowsCount > 0 ? '#16A34A' : '#64748B'} style={{ flexShrink: 0 }} />
-              <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <div className="p-3.5 rounded-md bg-surface-secondary border border-border-subtle flex flex-col justify-between min-h-[94px]">
+            <div className="flex items-center gap-1.5 text-xs text-text-secondary font-semibold uppercase tracking-wider">
+              <ShieldCheck
+                size={14}
+                className={`shrink-0 ${activeShowsCount > 0 ? 'text-status-active-dot' : 'text-text-secondary'}`}
+              />
+              <span className="truncate">
                 {language === 'ka' ? 'სტატუსი' : 'Status'}
               </span>
             </div>
             <div
-              style={{
-                fontSize: '1.15rem',
-                fontWeight: 800,
-                color: activeShowsCount > 0 ? 'var(--brand-primary)' : '#16A34A',
-                marginTop: '4px',
-                lineHeight: 1.2,
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis'
-              }}
+              className={`text-lg font-extrabold mt-1 leading-tight truncate ${
+                activeShowsCount > 0 ? 'text-brand-primary' : 'text-status-active-text'
+              }`}
             >
               {activeShowsCount > 0 ? t('active_venue') : t('available_venue')}
             </div>
-            <div style={{ fontSize: '0.725rem', color: 'var(--color-text-secondary)', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {activeShowsCount > 0 ? (language === 'ka' ? 'დაკავებული ლოკაცია' : 'Booked destination') : (language === 'ka' ? 'თავისუფალია' : 'Ready to book')}
+            <div className="text-xs text-text-secondary mt-0.5 truncate">
+              {activeShowsCount > 0
+                ? (language === 'ka' ? 'დაკავებული ლოკაცია' : 'Booked destination')
+                : (language === 'ka' ? 'თავისუფალია' : 'Ready to book')}
             </div>
           </div>
         </div>
 
         {/* Primary Contact & Hall Details Card */}
-        <div
-          style={{
-            background: 'var(--bg-surface-secondary)',
-            borderRadius: '12px',
-            border: '1px solid var(--border-subtle)',
-            padding: '16px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '12px'
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div
-                style={{
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: '50%',
-                  background: 'var(--brand-primary-light)',
-                  color: 'var(--brand-primary)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0
-                }}
-              >
+        <div className="bg-surface-secondary rounded-sm border border-border-subtle p-4 flex flex-col gap-3">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-8 h-8 rounded-full bg-brand-primary-light text-brand-primary flex items-center justify-center shrink-0">
                 <User size={16} />
               </div>
-              <div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              <div className="min-w-0">
+                <div className="text-xs text-text-secondary font-semibold uppercase tracking-wider">
                   {t('primary_contact')}
                 </div>
-                <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--color-charcoal)' }}>
+                <div className="text-sm font-bold text-text-primary truncate">
                   {venue.contactName || (language === 'ka' ? 'მითითებული არ არის' : 'Not specified')}
                 </div>
               </div>
             </div>
 
             {venue.roomOrBallroom && (
-              <span
-                style={{
-                  fontSize: '0.775rem',
-                  padding: '3px 10px',
-                  borderRadius: 'var(--radius-pill)',
-                  background: 'var(--bg-surface)',
-                  border: '1px solid var(--border-subtle)',
-                  color: 'var(--color-charcoal)',
-                  fontWeight: 600,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '5px'
-                }}
-              >
+              <span className="text-xs px-2.5 py-0.5 rounded-pill bg-surface border border-border-subtle text-text-primary font-semibold inline-flex items-center gap-1.5">
                 <Building size={12} />
                 <span>{venue.roomOrBallroom}</span>
               </span>
@@ -267,24 +207,17 @@ export const VenueDetailModal: React.FC<VenueDetailModalProps> = ({
           </div>
 
           {/* Contact Details (Phone & Email) */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', paddingTop: '8px', borderTop: '1px solid var(--border-subtle)', fontSize: '0.825rem' }}>
+          <div className="flex flex-wrap gap-3.5 pt-2 border-t border-border-subtle text-xs">
             {venue.contactPhone ? (
               <a
                 href={`tel:${venue.contactPhone}`}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  color: 'var(--color-charcoal)',
-                  textDecoration: 'none',
-                  fontWeight: 500
-                }}
+                className="inline-flex items-center gap-1.5 text-text-primary hover:text-brand-primary font-medium transition-colors duration-150"
               >
-                <Phone size={14} style={{ color: 'var(--brand-primary)' }} />
+                <Phone size={14} className="text-brand-primary" />
                 <span>{venue.contactPhone}</span>
               </a>
             ) : (
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--color-text-secondary)' }}>
+              <span className="inline-flex items-center gap-1.5 text-text-secondary">
                 <Phone size={14} />
                 <span>{language === 'ka' ? 'ტელეფონი არ არის' : 'No phone'}</span>
               </span>
@@ -293,20 +226,13 @@ export const VenueDetailModal: React.FC<VenueDetailModalProps> = ({
             {venue.contactEmail ? (
               <a
                 href={`mailto:${venue.contactEmail}`}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  color: 'var(--color-charcoal)',
-                  textDecoration: 'none',
-                  fontWeight: 500
-                }}
+                className="inline-flex items-center gap-1.5 text-text-primary hover:text-brand-primary font-medium transition-colors duration-150 truncate"
               >
-                <Mail size={14} style={{ color: 'var(--brand-primary)' }} />
-                <span>{venue.contactEmail}</span>
+                <Mail size={14} className="text-brand-primary shrink-0" />
+                <span className="truncate">{venue.contactEmail}</span>
               </a>
             ) : (
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--color-text-secondary)' }}>
+              <span className="inline-flex items-center gap-1.5 text-text-secondary">
                 <Mail size={14} />
                 <span>{language === 'ka' ? 'ელ-ფოსტა არ არის' : 'No email'}</span>
               </span>
@@ -315,39 +241,20 @@ export const VenueDetailModal: React.FC<VenueDetailModalProps> = ({
         </div>
 
         {/* Location Banner */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
-            padding: '12px 14px',
-            borderRadius: '10px',
-            background: 'var(--bg-surface-secondary)',
-            border: '1px solid var(--border-subtle)',
-            fontSize: '0.825rem',
-            color: 'var(--color-charcoal)'
-          }}
-        >
-          <MapPin size={16} color="var(--brand-primary)" style={{ flexShrink: 0 }} />
+        <div className="flex items-center gap-2.5 p-3 rounded-sm bg-surface-secondary border border-border-subtle text-xs text-text-primary">
+          <MapPin size={16} className="text-brand-primary shrink-0" />
           <span>
-            <strong>{language === 'ka' ? 'მისამართი:' : 'Address:'}</strong> {venue.address}, {venue.city}, {venue.country}
+            <strong className="font-semibold">{language === 'ka' ? 'მისამართი:' : 'Address:'}</strong> {venue.address}, {venue.city}, {venue.country}
           </span>
         </div>
 
         {/* Stage Specs & Notes (if any) */}
         {venue.notes && (
-          <div
-            style={{
-              padding: '14px',
-              borderRadius: '10px',
-              background: 'var(--bg-surface-secondary)',
-              border: '1px solid var(--border-subtle)'
-            }}
-          >
-            <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '6px' }}>
+          <div className="p-3.5 rounded-sm bg-surface-secondary border border-border-subtle">
+            <div className="text-xs text-text-secondary font-semibold uppercase tracking-wider mb-1.5">
               {language === 'ka' ? 'სცენის სპეციფიკაცია / შენიშვნები' : 'Stage Specifications & Notes'}
             </div>
-            <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--color-charcoal)', fontStyle: 'italic', lineHeight: 1.5 }}>
+            <p className="m-0 text-xs text-text-primary italic leading-relaxed">
               "{venue.notes}"
             </p>
           </div>
@@ -355,31 +262,19 @@ export const VenueDetailModal: React.FC<VenueDetailModalProps> = ({
 
         {/* Scheduled Shows Section */}
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-            <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-charcoal)', margin: 0, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          <div className="flex items-center justify-between mb-2.5">
+            <h4 className="text-sm font-bold text-text-primary m-0 uppercase tracking-wider">
               {language === 'ka' ? 'დაგეგმილი შოუები' : 'Scheduled Shows'} ({venueShows.length})
             </h4>
-            <span style={{ fontSize: '0.775rem', color: 'var(--color-text-secondary)' }}>
+            <span className="text-xs text-text-secondary">
               {activeShowsCount} {language === 'ka' ? 'აქტიური' : 'active'}
             </span>
           </div>
 
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '8px',
-              borderRadius: 'var(--radius-md)',
-              border: '1px solid var(--border-subtle)',
-              background: 'var(--bg-surface-secondary)',
-              padding: '10px',
-              maxHeight: '260px',
-              overflowY: 'auto'
-            }}
-          >
+          <div className="flex flex-col gap-2 rounded-md border border-border-subtle bg-surface-secondary p-2.5 max-h-[260px] overflow-y-auto thin-scrollbar">
             {venueShows.length === 0 ? (
-              <div style={{ padding: '24px 16px', textAlign: 'center', fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
-                <Calendar size={28} style={{ opacity: 0.35, marginBottom: '8px', marginInline: 'auto' }} />
+              <div className="py-6 px-4 text-center text-xs text-text-secondary">
+                <Calendar size={28} className="opacity-35 mb-2 mx-auto" />
                 <div>{language === 'ka' ? 'ამ ლოკაციაზე შოუები ჯერ არ არის დაგეგმილი' : 'No shows currently scheduled at this venue'}</div>
               </div>
             ) : (
@@ -398,35 +293,26 @@ export const VenueDetailModal: React.FC<VenueDetailModalProps> = ({
                 return (
                   <div
                     key={show.id}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '10px 14px',
-                      background: 'var(--bg-surface)',
-                      borderRadius: 'var(--radius-sm)',
-                      border: '1px solid var(--border-subtle)',
-                      gap: '12px'
-                    }}
+                    className="flex items-center justify-between p-2.5 px-3.5 bg-surface rounded-sm border border-border-subtle gap-3"
                   >
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-charcoal)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <div className="min-w-0">
+                      <div className="text-sm font-semibold text-text-primary truncate">
                         {show.title}
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.775rem', color: 'var(--color-text-secondary)', marginTop: '2px', flexWrap: 'wrap' }}>
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                      <div className="flex items-center gap-2 text-xs text-text-secondary mt-0.5 flex-wrap">
+                        <span className="inline-flex items-center gap-1">
                           <Calendar size={12} />
                           <span>{dateLabel}</span>
                         </span>
                         <span>•</span>
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        <span className="inline-flex items-center gap-1">
                           <Clock size={12} />
                           <span>{startTime} - {endTime}</span>
                         </span>
                         {group && (
                           <>
                             <span>•</span>
-                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: 'var(--brand-primary)', fontWeight: 600 }}>
+                            <span className="inline-flex items-center gap-1 text-brand-primary font-semibold">
                               <Users size={12} />
                               <span>{group.name}</span>
                             </span>
@@ -436,25 +322,13 @@ export const VenueDetailModal: React.FC<VenueDetailModalProps> = ({
                     </div>
 
                     <span
-                      style={{
-                        fontSize: '0.725rem',
-                        padding: '3px 8px',
-                        borderRadius: 'var(--radius-pill)',
-                        background:
-                          show.status === 'Scheduled'
-                            ? 'rgba(22, 163, 74, 0.1)'
-                            : show.status === 'Completed'
-                            ? 'var(--bg-surface-secondary)'
-                            : 'rgba(239, 68, 68, 0.1)',
-                        color:
-                          show.status === 'Scheduled'
-                            ? '#16A34A'
-                            : show.status === 'Completed'
-                            ? 'var(--color-text-secondary)'
-                            : '#EF4444',
-                        fontWeight: 600,
-                        flexShrink: 0
-                      }}
+                      className={`text-xs px-2 py-0.5 rounded-pill font-semibold shrink-0 ${
+                        show.status === 'Scheduled'
+                          ? 'bg-status-active-bg text-status-active-text'
+                          : show.status === 'Completed'
+                          ? 'bg-surface-secondary text-text-secondary'
+                          : 'bg-status-sick-bg text-status-sick-text'
+                      }`}
                     >
                       {show.status === 'Scheduled'
                         ? (language === 'ka' ? 'დაგეგმილი' : 'Scheduled')

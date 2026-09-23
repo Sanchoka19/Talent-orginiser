@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState } from 'react';
 import { ShowEvent } from '../../types/schedule';
 import { DutyAssignment } from '../../types/duty';
@@ -107,15 +109,19 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
         subtitle={t('event_detail_sub')}
         maxWidth="680px"
         footer={
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', flexWrap: 'wrap', gap: '10px' }}>
+          <div className="flex items-center justify-between w-full flex-wrap gap-2.5">
             {isPast ? (
               /* Read-only footer for past events */
               <>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
-                  <LockKeyhole size={13} />
+                <div className="flex items-center gap-1.5 text-xs text-text-secondary">
+                  <LockKeyhole className="w-3.5 h-3.5" />
                   <span>{isKa ? 'გასული შოუ — რედაქტირება შეუძლებელია' : 'Past show — read only'}</span>
                 </div>
-                <button onClick={onClose} className="btn btn-primary">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="inline-flex items-center justify-center px-5 py-2 rounded-pill text-sm font-medium bg-brand-primary text-text-inverse shadow-glow hover:bg-brand-primary-hover hover:-translate-y-0.5 active:translate-y-0 transition-all duration-150 cursor-pointer outline-none"
+                >
                   {t('close')}
                 </button>
               </>
@@ -123,21 +129,26 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
               /* Normal footer for upcoming events */
               <>
                 <button
+                  type="button"
                   onClick={handleDelete}
-                  className="btn btn-secondary"
-                  style={{ color: '#EF4444' }}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-pill text-sm font-medium border border-border-subtle bg-surface text-danger hover:bg-danger-light hover:border-danger-border transition-all duration-150 cursor-pointer outline-none"
                 >
-                  <Trash2 size={15} /> {t('cancel_show')}
+                  <Trash2 className="w-3.5 h-3.5" /> {t('cancel_show')}
                 </button>
-                <div style={{ display: 'flex', gap: '8px' }}>
+                <div className="flex items-center gap-2">
                   <button
+                    type="button"
                     onClick={handleRegenerate}
-                    className="btn btn-secondary"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-pill text-sm font-medium border border-border-subtle bg-surface-secondary text-text-primary hover:bg-surface-tertiary hover:border-border-medium transition-all duration-150 cursor-pointer outline-none"
                     title="Re-run fair random rotation"
                   >
-                    <RotateCw size={14} /> {t('regenerate_fair_duties')}
+                    <RotateCw className="w-3.5 h-3.5" /> {t('regenerate_fair_duties')}
                   </button>
-                  <button onClick={onClose} className="btn btn-primary">
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="inline-flex items-center justify-center px-5 py-2 rounded-pill text-sm font-medium bg-brand-primary text-text-inverse shadow-glow hover:bg-brand-primary-hover hover:-translate-y-0.5 active:translate-y-0 transition-all duration-150 cursor-pointer outline-none"
+                  >
                     {t('close')}
                   </button>
                 </div>
@@ -148,24 +159,10 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
       >
         {/* Completed banner for past events */}
         {isPast && (
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px',
-              padding: '10px 16px',
-              borderRadius: '12px',
-              background: 'rgba(34,197,94,0.08)',
-              border: '1px solid rgba(34,197,94,0.25)',
-              color: '#15803d',
-              fontSize: '0.875rem',
-              fontWeight: 600,
-              marginBottom: '16px'
-            }}
-          >
-            <CheckCircle2 size={18} style={{ flexShrink: 0, color: '#16a34a' }} />
+          <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-md bg-status-active-bg border border-status-active-dot/30 text-status-active-text text-sm font-semibold mb-4">
+            <CheckCircle2 className="w-4.5 h-4.5 shrink-0 text-status-active-dot" />
             <span>{isKa ? 'შოუ დასრულებულია' : 'Show Completed'}</span>
-            <span style={{ marginLeft: 'auto', fontSize: '0.775rem', fontWeight: 500, color: '#166534', opacity: 0.8 }}>
+            <span className="ml-auto text-xs font-medium opacity-80">
               {endDate.toLocaleDateString(localeStr, { day: 'numeric', month: 'short', year: 'numeric' })}
             </span>
           </div>
@@ -173,70 +170,71 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
 
         {/* Logistics Summary Card */}
         <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
-            gap: '16px',
-            background: isPast ? 'rgba(0,0,0,0.02)' : 'var(--bg-surface-secondary)',
-            borderRadius: 'var(--radius-md)',
-            padding: '16px',
-            border: '1px solid var(--border-subtle)',
-            marginBottom: '24px',
-            opacity: isPast ? 0.85 : 1
-          }}
+          className={`grid grid-cols-1 sm:grid-cols-2 gap-4 rounded-md p-4 border border-border-subtle mb-6 ${
+            isPast ? 'bg-surface-secondary/50 opacity-85' : 'bg-surface-secondary'
+          }`}
         >
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', color: 'var(--color-charcoal)', fontWeight: 600 }}>
-              <Users size={16} />
+            <div className="flex items-center gap-2 mb-2 text-text-primary font-semibold">
+              <Users className="w-4 h-4 text-text-primary" />
               <span>{group?.name || t('all_groups')}</span>
             </div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
+            <div className="text-xs text-text-secondary">
               {group?.memberTalentIds.length || 0} {t('members')} • {group?.rotationCycleWeeks || 1}w {t('duty_cycle')}
             </div>
           </div>
 
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', color: 'var(--color-charcoal)', fontWeight: 600 }}>
-              <MapPin size={16} />
+            <div className="flex items-center gap-2 mb-2 text-text-primary font-semibold">
+              <MapPin className="w-4 h-4 text-text-primary" />
               <span>{venue?.name || t('all_venues')}</span>
             </div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
+            <div className="text-xs text-text-secondary">
               {venue?.roomOrBallroom ? `${venue.roomOrBallroom} • ` : ''}
               {venue?.address}, {venue?.city}
             </div>
           </div>
 
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-charcoal)', fontWeight: 600 }}>
-              <Calendar size={16} />
-              <span>{startDate.toLocaleDateString(localeStr, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</span>
+            <div className="flex items-center gap-2 text-text-primary font-semibold text-sm">
+              <Calendar className="w-4 h-4 text-text-primary" />
+              <span>
+                {startDate.toLocaleDateString(localeStr, {
+                  weekday: 'short',
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric'
+                })}
+              </span>
             </div>
           </div>
 
           {/* Times: Lobby / Gathering & Show */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: 'var(--color-charcoal)', fontWeight: 600 }}>
-              <Bus size={15} strokeWidth={2} style={{ flexShrink: 0 }} />
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center gap-1.5 text-xs sm:text-sm text-text-primary font-semibold flex-wrap">
+              <Bus className="w-3.5 h-3.5 shrink-0" strokeWidth={2} />
               <span>{t('gathering_label')}:</span>
-              <span style={{ color: 'var(--color-charcoal)', fontWeight: 700 }}>
+              <span className="font-bold text-text-primary">
                 {event.lobbyTime ||
                   (() => {
                     const startH = startDate.getHours();
                     const startM = startDate.getMinutes();
                     const travel = venue?.travelTimeMinutes ?? 45;
                     const totalM = (startH * 60 + startM - travel + 1440) % 1440;
-                    return `${String(Math.floor(totalM / 60)).padStart(2, '0')}:${String(totalM % 60).padStart(2, '0')}`;
+                    return `${String(Math.floor(totalM / 60)).padStart(2, '0')}:${String(
+                      totalM % 60
+                    ).padStart(2, '0')}`;
                   })()}
               </span>
               {venue?.travelTimeMinutes && (
-                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', fontWeight: 500 }}>
+                <span className="text-xs text-text-secondary font-medium">
                   ({venue.travelTimeMinutes} {t('minutes_short')})
                 </span>
               )}
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: 'var(--color-charcoal)', fontWeight: 600 }}>
-              <Sparkles size={15} strokeWidth={2} style={{ flexShrink: 0 }} />
+            <div className="flex items-center gap-1.5 text-xs sm:text-sm text-text-primary font-semibold flex-wrap">
+              <Sparkles className="w-3.5 h-3.5 shrink-0" strokeWidth={2} />
               <span>{t('show_time_label')}:</span>
               <span>
                 {startDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} -{' '}
@@ -248,131 +246,92 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
 
         {/* Assigned Inventory Duty Personnel Section */}
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+          <div className="flex items-center justify-between mb-3.5">
             <div>
-              <h4 style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--color-charcoal)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Sparkles size={16} color="var(--brand-primary)" />
+              <h4 className="text-sm font-semibold text-text-primary flex items-center gap-1.5">
+                <Sparkles className="w-4 h-4 text-brand-primary" />
                 {t('assigned_inventory_crew')}
               </h4>
-              <p style={{ fontSize: '0.785rem', color: 'var(--color-text-secondary)' }}>
+              <p className="text-xs text-text-secondary mt-0.5">
                 {t('assigned_inventory_crew_sub')}
               </p>
             </div>
           </div>
 
           {event.dutyAssignments.length === 0 ? (
-            <div
-              style={{
-                textAlign: 'center',
-                padding: '24px',
-                background: 'var(--bg-surface-secondary)',
-                borderRadius: 'var(--radius-sm)',
-                border: '1px dashed var(--border-medium)',
-                color: 'var(--color-text-secondary)',
-                fontSize: '0.85rem'
-              }}
-            >
-              <AlertCircle size={20} style={{ marginBottom: '6px', opacity: 0.6 }} />
+            <div className="text-center p-6 bg-surface-secondary rounded-sm border border-dashed border-border-medium text-text-secondary text-sm">
+              <AlertCircle className="w-5 h-5 mx-auto mb-1.5 opacity-60" />
               <p>{t('no_inventory_reqs')}</p>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div className="flex flex-col gap-3">
               {event.dutyAssignments.map((duty) => (
                 <div
                   key={duty.requirementId}
-                  style={{
-                    border: '1px solid var(--border-subtle)',
-                    borderRadius: 'var(--radius-md)',
-                    padding: '14px 16px',
-                    background: 'var(--bg-surface)'
-                  }}
+                  className="border border-border-subtle rounded-md p-3.5 sm:p-4 bg-surface"
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <strong style={{ fontSize: '0.9rem', color: 'var(--color-charcoal)' }}>
+                  <div className="flex items-center justify-between mb-2.5 flex-wrap gap-2">
+                    <div className="flex items-center gap-2">
+                      <strong className="text-sm font-semibold text-text-primary">
                         {duty.itemName}
                       </strong>
-                      <span
-                        style={{
-                          fontSize: '0.725rem',
-                          background: 'var(--bg-surface-secondary)',
-                          padding: '2px 8px',
-                          borderRadius: 'var(--radius-pill)',
-                          color: 'var(--color-text-secondary)',
-                          border: '1px solid var(--border-subtle)'
-                        }}
-                      >
+                      <span className="text-[11px] bg-surface-secondary px-2 py-0.5 rounded-pill text-text-secondary border border-border-subtle">
                         {duty.requiredHeadcount} ({duty.assignedGender})
                       </span>
                     </div>
                   </div>
 
                   {/* Assigned Talents List */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div className="flex flex-col gap-2">
                     {duty.assignedTalentIds.map((talentId) => {
                       const talent = talents.find((t) => t.id === talentId);
-                      const isOverridden = duty.manualOverrides && Object.values(duty.manualOverrides).includes(talentId);
+                      const isOverridden =
+                        duty.manualOverrides && Object.values(duty.manualOverrides).includes(talentId);
 
                       if (!talent) return null;
 
                       return (
                         <div
                           key={talentId}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            padding: '8px 12px',
-                            borderRadius: 'var(--radius-sm)',
-                            background: 'var(--bg-surface-secondary)',
-                            border: '1px solid var(--border-subtle)'
-                          }}
+                          className="flex items-center justify-between p-2 sm:p-2.5 rounded-sm bg-surface-secondary border border-border-subtle gap-2 flex-wrap sm:flex-nowrap"
                         >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <div className="flex items-center gap-2.5">
                             <img
                               src={
                                 talent.avatarUrl ||
                                 `https://api.dicebear.com/7.x/avataaars/svg?seed=${talent.firstName}`
                               }
                               alt={talent.firstName}
-                              style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }}
+                              className="w-8 h-8 rounded-full object-cover shrink-0 border border-border-subtle"
                             />
                             <div>
-                              <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>
-                                {talent.firstName} {talent.lastName}
+                              <div className="font-semibold text-sm text-text-primary flex items-center gap-1.5 flex-wrap">
+                                <span>
+                                  {talent.firstName} {talent.lastName}
+                                </span>
                                 {isOverridden && (
-                                  <span
-                                    style={{
-                                      fontSize: '0.675rem',
-                                      marginLeft: '6px',
-                                      padding: '1px 6px',
-                                      background: '#FEF3C7',
-                                      color: '#92400E',
-                                      borderRadius: 'var(--radius-pill)',
-                                      fontWeight: 600
-                                    }}
-                                  >
+                                  <span className="text-[10px] px-1.5 py-0.5 bg-status-rest-bg text-status-rest-text rounded-pill font-semibold border border-status-rest-dot/20">
                                     {t('admin_override_badge')}
                                   </span>
                                 )}
                               </div>
-                              <div style={{ fontSize: '0.725rem', color: 'var(--color-text-secondary)' }}>
+                              <div className="text-xs text-text-secondary">
                                 {talent.primarySkill}
                               </div>
                             </div>
                           </div>
 
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <div className="flex items-center gap-2.5 shrink-0">
                             <GenderBadge gender={talent.gender} />
                             {/* Hide swap button for past events */}
                             {!isPast && (
                               <button
+                                type="button"
                                 onClick={() => setSwapTarget({ duty, talentId })}
-                                className="btn btn-secondary"
-                                style={{ fontSize: '0.75rem', padding: '4px 10px' }}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-pill text-xs font-medium border border-border-subtle bg-surface text-text-primary hover:bg-surface-tertiary hover:border-border-medium transition-all duration-150 cursor-pointer"
                                 title="Manually reassign this shift"
                               >
-                                <ArrowRightLeft size={12} /> {t('swap_duty')}
+                                <ArrowRightLeft className="w-3 h-3" /> {t('swap_duty')}
                               </button>
                             )}
                           </div>
@@ -381,7 +340,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                     })}
 
                     {duty.assignedTalentIds.length === 0 && (
-                      <div style={{ fontSize: '0.8rem', color: '#DC2626', fontStyle: 'italic', padding: '6px 0' }}>
+                      <div className="text-xs text-danger italic py-1.5">
                         {t('insufficient_performers')}
                       </div>
                     )}

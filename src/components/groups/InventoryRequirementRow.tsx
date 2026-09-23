@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import { InventoryRequirement, DutyGenderRequirement, COMMON_INVENTORY_ITEMS } from '../../types/inventory';
 import { useLanguage } from '../../context/LanguageContext';
@@ -17,28 +19,16 @@ export const InventoryRequirementRow: React.FC<InventoryRequirementRowProps> = (
   const { t } = useLanguage();
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '10px',
-        padding: '10px 14px',
-        background: 'var(--bg-surface)',
-        borderRadius: 'var(--radius-sm)',
-        border: '1px solid var(--border-subtle)',
-        marginBottom: '8px'
-      }}
-    >
+    <div className="flex items-center gap-2.5 p-2.5 px-3.5 bg-surface rounded-sm border border-border-subtle mb-2">
       {/* Item Name with Autocomplete */}
-      <div style={{ flex: 3 }}>
+      <div className="flex-[3]">
         <input
           type="text"
           list="inventory-suggestions"
           placeholder="e.g. Heavy Audio Rig"
           value={requirement.itemName}
           onChange={(e) => onChange({ ...requirement, itemName: e.target.value })}
-          className="form-input"
-          style={{ width: '100%', padding: '6px 10px', fontSize: '0.85rem' }}
+          className="w-full text-xs px-2.5 py-1.5 rounded-sm border border-border-subtle bg-surface-secondary text-text-primary outline-none focus:bg-surface focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20 placeholder:text-text-tertiary transition-all duration-150"
           required
         />
         <datalist id="inventory-suggestions">
@@ -49,14 +39,13 @@ export const InventoryRequirementRow: React.FC<InventoryRequirementRowProps> = (
       </div>
 
       {/* Assigned Gender */}
-      <div style={{ flex: 2 }}>
+      <div className="flex-[2]">
         <select
           value={requirement.assignedGender}
           onChange={(e) =>
             onChange({ ...requirement, assignedGender: e.target.value as DutyGenderRequirement })
           }
-          className="form-select"
-          style={{ width: '100%', padding: '6px 10px', fontSize: '0.85rem' }}
+          className="w-full text-xs px-2.5 py-1.5 rounded-sm border border-border-subtle bg-surface-secondary text-text-primary outline-none focus:bg-surface focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20 cursor-pointer transition-all duration-150"
         >
           <option value="Male Only">{t('gender_male_only')}</option>
           <option value="Female Only">{t('gender_female_only')}</option>
@@ -65,7 +54,7 @@ export const InventoryRequirementRow: React.FC<InventoryRequirementRowProps> = (
       </div>
 
       {/* Required Headcount */}
-      <div style={{ width: '90px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+      <div className="w-[90px] flex items-center gap-1 shrink-0">
         <input
           type="number"
           min={1}
@@ -74,20 +63,18 @@ export const InventoryRequirementRow: React.FC<InventoryRequirementRowProps> = (
           onChange={(e) =>
             onChange({ ...requirement, requiredHeadcount: Math.max(1, Number(e.target.value)) })
           }
-          className="form-input"
-          style={{ width: '100%', padding: '6px 8px', fontSize: '0.85rem', textAlign: 'center' }}
+          className="w-full text-xs px-2 py-1.5 rounded-sm border border-border-subtle bg-surface-secondary text-text-primary outline-none text-center focus:bg-surface focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20"
           title="Required Headcount"
           required
         />
-        <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>{t('crew')}</span>
+        <span className="text-xs text-text-secondary">{t('crew')}</span>
       </div>
 
       {/* Remove Button */}
       <button
         type="button"
         onClick={onRemove}
-        className="btn btn-secondary btn-icon"
-        style={{ width: '32px', height: '32px', color: '#EF4444' }}
+        className="w-8 h-8 rounded-full inline-flex items-center justify-center border border-border-subtle bg-surface text-danger hover:bg-danger-light hover:border-danger-border transition-all duration-150 cursor-pointer shrink-0"
         title="Remove requirement"
       >
         <Trash2 size={14} />

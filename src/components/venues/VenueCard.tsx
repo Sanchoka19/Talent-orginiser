@@ -1,6 +1,8 @@
+'use client';
+
 import React from 'react';
 import { HotelVenue } from '../../types/venue';
-import { MapPin, Phone, Mail, User, Building, Calendar, Bus, ChevronRight } from 'lucide-react';
+import { MapPin, Phone, Mail, User, Building, Calendar, ChevronRight } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { useLanguage } from '../../context/LanguageContext';
 
@@ -31,65 +33,21 @@ export const VenueCard: React.FC<VenueCardProps> = ({
     }
   };
 
-  // LIST VIEW ROW (Matches GroupCard list view layout)
+  // LIST VIEW ROW
   if (viewMode === 'list') {
     return (
       <div
         onClick={handleClick}
-        style={{
-          background: 'var(--bg-surface)',
-          borderRadius: 'var(--radius-md)',
-          border: '1px solid var(--border-subtle)',
-          padding: '14px 20px',
-          boxShadow: 'var(--shadow-sm)',
-          display: 'grid',
-          gridTemplateColumns: 'minmax(240px, 2fr) minmax(200px, 1.8fr) minmax(180px, 1.5fr) minmax(180px, 1.4fr) 140px',
-          alignItems: 'center',
-          gap: '16px',
-          transition: 'all var(--transition-fast)',
-          position: 'relative',
-          cursor: 'pointer'
-        }}
-        className="venue-row-card"
-        onMouseEnter={(e) => {
-          e.currentTarget.style.borderColor = 'var(--border-medium)';
-          e.currentTarget.style.boxShadow = 'var(--shadow-md)';
-          e.currentTarget.style.transform = 'translateY(-1px)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.borderColor = 'var(--border-subtle)';
-          e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
-          e.currentTarget.style.transform = 'none';
-        }}
+        className="group relative bg-surface rounded-md border border-border-subtle px-5 py-3.5 shadow-sm grid grid-cols-[minmax(240px,2fr)_minmax(200px,1.8fr)_minmax(180px,1.5fr)_minmax(180px,1.4fr)_140px] items-center gap-4 cursor-pointer transition-all duration-150 hover:border-border-medium hover:shadow-md hover:-translate-y-0.5"
       >
         {/* Col 1: Icon & Venue Name */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
-          <div
-            style={{
-              width: '36px',
-              height: '36px',
-              borderRadius: '10px',
-              background: '#E0F2FE',
-              color: '#0284C7',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0
-            }}
-          >
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-9 h-9 rounded-sm bg-sky-100 text-sky-600 flex items-center justify-center shrink-0">
             <Building size={18} strokeWidth={2} />
           </div>
-          <div style={{ minWidth: 0, overflow: 'hidden' }}>
+          <div className="min-w-0 overflow-hidden">
             <h3
-              style={{
-                fontSize: '0.95rem',
-                fontWeight: 700,
-                color: 'var(--color-charcoal)',
-                margin: 0,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap'
-              }}
+              className="text-sm font-bold text-text-primary m-0 truncate group-hover:text-brand-primary transition-colors duration-150"
               title={venue.name}
             >
               {venue.name}
@@ -99,210 +57,94 @@ export const VenueCard: React.FC<VenueCardProps> = ({
 
         {/* Col 2: Location & Address */}
         <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            fontSize: '0.825rem',
-            color: 'var(--color-text-secondary)',
-            minWidth: 0,
-            overflow: 'hidden'
-          }}
+          className="flex items-center gap-1.5 text-xs text-text-secondary min-w-0 overflow-hidden"
           title={`${venue.address}, ${venue.city}`}
         >
-          <MapPin size={15} style={{ flexShrink: 0, color: 'var(--color-charcoal)' }} />
-          <span
-            style={{
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap'
-            }}
-          >
+          <MapPin size={15} className="shrink-0 text-text-primary" />
+          <span className="truncate">
             {venue.address}, {venue.city}
           </span>
         </div>
 
         {/* Col 3: Contact Info */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', fontSize: '0.8rem', minWidth: 0, overflow: 'hidden' }}>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              fontWeight: 600,
-              color: 'var(--color-charcoal)',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap'
-            }}
-          >
-            <User size={13} style={{ flexShrink: 0 }} />
-            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <div className="flex flex-col gap-0.5 text-xs min-w-0 overflow-hidden">
+          <div className="flex items-center gap-1.5 font-semibold text-text-primary overflow-hidden">
+            <User size={13} className="shrink-0 text-text-secondary" />
+            <span className="truncate">
               {venue.contactName || t('none')}
             </span>
           </div>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              color: 'var(--color-text-secondary)',
-              fontSize: '0.75rem',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap'
-            }}
-          >
+          <div className="flex items-center gap-2 text-text-secondary text-[11px] overflow-hidden">
             {venue.contactPhone && (
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+              <span className="inline-flex items-center gap-1 shrink-0">
                 <Phone size={11} /> {venue.contactPhone}
               </span>
             )}
             {venue.contactEmail && (
               <span
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap'
-                }}
+                className="inline-flex items-center gap-1 truncate"
                 title={venue.contactEmail}
               >
-                <Mail size={11} style={{ flexShrink: 0 }} /> {venue.contactEmail}
+                <Mail size={11} className="shrink-0" /> {venue.contactEmail}
               </span>
             )}
           </div>
         </div>
 
         {/* Col 4: Status & Scheduled Shows */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'nowrap', minWidth: 0 }}>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '5px',
-              fontSize: '0.775rem',
-              color: 'var(--color-charcoal)',
-              fontWeight: 500,
-              flexShrink: 0
-            }}
-          >
-            <Calendar size={13} />
+        <div className="flex items-center gap-2 flex-nowrap min-w-0">
+          <div className="flex items-center gap-1.5 text-xs text-text-primary font-medium shrink-0">
+            <Calendar size={13} className="text-text-secondary" />
             <span>{scheduledShows.length}</span>
           </div>
           <span
-            style={{
-              fontSize: '0.725rem',
-              padding: '2px 8px',
-              borderRadius: 'var(--radius-pill)',
-              background: scheduledShows.length > 0 ? 'var(--brand-primary-light)' : 'var(--bg-surface-tertiary)',
-              color: scheduledShows.length > 0 ? 'var(--brand-primary)' : 'var(--color-text-secondary)',
-              fontWeight: 600,
-              flexShrink: 0
-            }}
+            className={`text-xs px-2 py-0.5 rounded-pill font-semibold shrink-0 ${
+              scheduledShows.length > 0
+                ? 'bg-brand-primary-light text-brand-primary'
+                : 'bg-surface-tertiary text-text-secondary'
+            }`}
           >
             {scheduledShows.length > 0 ? t('active_venue') : t('available_venue')}
           </span>
         </div>
 
         {/* Col 5: View Details Link */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '4px' }}>
-          <span
-            style={{
-              fontSize: '0.825rem',
-              fontWeight: 600,
-              color: 'var(--color-charcoal)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '2px'
-            }}
-          >
+        <div className="flex items-center justify-end gap-1">
+          <span className="text-xs font-semibold text-text-primary group-hover:text-brand-primary flex items-center gap-0.5 transition-colors duration-150">
             {language === 'ka' ? 'დეტალები' : 'View Details'}
-            <ChevronRight size={14} />
+            <ChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform duration-150" />
           </span>
         </div>
       </div>
     );
   }
 
-  // GRID VIEW (Exact match to GroupCard styling & structure)
+  // GRID VIEW
   return (
     <div
       onClick={handleClick}
-      style={{
-        background: 'var(--bg-surface)',
-        borderRadius: '16px',
-        border: '1px solid var(--border-subtle)',
-        padding: '24px',
-        boxShadow: 'var(--shadow-sm)',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'space-between',
-        position: 'relative',
-        cursor: 'pointer',
-        transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.transform = 'translateY(-2px)';
-        e.currentTarget.style.boxShadow = 'var(--shadow-md)';
-        e.currentTarget.style.borderColor = 'var(--border-medium)';
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.transform = 'none';
-        e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
-        e.currentTarget.style.borderColor = 'var(--border-subtle)';
-      }}
+      className="group relative bg-surface rounded-md border border-border-subtle p-6 shadow-sm flex flex-col justify-between cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-border-medium"
     >
       <div>
         {/* Top Row: Title + Location & Icon Badge */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
-          <div style={{ minWidth: 0 }}>
-            <h3
-              style={{
-                fontSize: '1.08rem',
-                fontWeight: 700,
-                color: 'var(--color-charcoal)',
-                margin: 0,
-                letterSpacing: '-0.01em',
-                lineHeight: 1.3
-              }}
-            >
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <h3 className="text-base font-bold text-text-primary m-0 tracking-tight leading-snug group-hover:text-brand-primary transition-colors duration-150 truncate">
               {venue.name}
             </h3>
 
             {/* Address */}
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                fontSize: '0.825rem',
-                color: 'var(--color-text-secondary)',
-                marginTop: '5px'
-              }}
-            >
-              <MapPin size={14} style={{ flexShrink: 0, color: 'var(--color-charcoal)' }} />
-              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <div className="flex items-center gap-1.5 text-xs text-text-secondary mt-1.5">
+              <MapPin size={14} className="shrink-0 text-text-primary" />
+              <span className="truncate">
                 {venue.address}, {venue.city}
               </span>
             </div>
           </div>
 
-          {/* Modern Pastel Icon Badge */}
+          {/* Pastel Icon Badge */}
           <div
-            style={{
-              width: '36px',
-              height: '36px',
-              borderRadius: '10px',
-              background: '#E0F2FE',
-              color: '#0284C7',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0
-            }}
+            className="w-9 h-9 rounded-sm bg-sky-100 text-sky-600 flex items-center justify-center shrink-0"
             title={t('venue_name')}
           >
             <Building size={18} strokeWidth={2} />
@@ -310,54 +152,36 @@ export const VenueCard: React.FC<VenueCardProps> = ({
         </div>
 
         {/* Middle Row: Primary Contact Card */}
-        <div
-          style={{
-            background: 'var(--bg-surface-secondary)',
-            borderRadius: '12px',
-            padding: '12px 16px',
-            border: '1px solid var(--border-subtle)',
-            margin: '18px 0 16px 0',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '8px'
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
-              <User size={15} style={{ color: 'var(--brand-primary)', flexShrink: 0 }} />
-              <div style={{ minWidth: 0, overflow: 'hidden' }}>
+        <div className="bg-surface-secondary rounded-sm p-3.5 border border-border-subtle my-4 flex flex-col gap-2">
+          <div className="flex items-center justify-between gap-2.5">
+            <div className="flex items-center gap-2 min-w-0">
+              <User size={15} className="text-brand-primary shrink-0" />
+              <div className="min-w-0 overflow-hidden">
                 <span
-                  style={{
-                    fontSize: '0.85rem',
-                    fontWeight: 600,
-                    color: 'var(--color-charcoal)',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                    display: 'block'
-                  }}
+                  className="text-xs font-semibold text-text-primary truncate block"
                   title={venue.contactName ? `${t('primary_contact')}: ${venue.contactName}` : t('primary_contact')}
                 >
                   {venue.contactName ? `${t('primary_contact')}: ${venue.contactName}` : t('primary_contact')}
                 </span>
               </div>
             </div>
-
-
           </div>
 
           {(venue.contactPhone || venue.contactEmail) && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', fontSize: '0.775rem', color: 'var(--color-text-secondary)', flexWrap: 'wrap' }}>
+            <div className="flex items-center gap-3.5 text-xs text-text-secondary flex-wrap">
               {venue.contactPhone && (
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', whiteSpace: 'nowrap' }}>
+                <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
                   <Phone size={12} />
                   <span>{venue.contactPhone}</span>
                 </span>
               )}
               {venue.contactEmail && (
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={venue.contactEmail}>
-                  <Mail size={12} />
-                  <span>{venue.contactEmail}</span>
+                <span
+                  className="inline-flex items-center gap-1.5 truncate"
+                  title={venue.contactEmail}
+                >
+                  <Mail size={12} className="shrink-0" />
+                  <span className="truncate">{venue.contactEmail}</span>
                 </span>
               )}
             </div>
@@ -368,57 +192,38 @@ export const VenueCard: React.FC<VenueCardProps> = ({
       {/* Bottom Section */}
       <div>
         {/* Thin Divider Line */}
-        <div style={{ borderTop: '1px solid var(--border-subtle)', marginBottom: '14px' }} />
+        <div className="border-t border-border-subtle mb-3.5" />
 
         {/* Bottom Row: Scheduled Shows Counter & View Details link */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flexWrap: 'nowrap' }}>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                fontSize: '0.825rem',
-                color: 'var(--color-charcoal)',
-                fontWeight: 600,
-                whiteSpace: 'nowrap',
-                flexShrink: 0
-              }}
-            >
-              <Calendar size={14} style={{ color: 'var(--color-text-secondary)' }} />
-              <span>{scheduledShows.length} {scheduledShows.length === 1 ? (language === 'ka' ? 'შოუ' : 'show') : (language === 'ka' ? 'დაგეგმილი შოუ' : 'shows')}</span>
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 min-w-0 flex-nowrap">
+            <div className="flex items-center gap-1.5 text-xs text-text-primary font-semibold whitespace-nowrap shrink-0">
+              <Calendar size={14} className="text-text-secondary" />
+              <span>
+                {scheduledShows.length}{' '}
+                {scheduledShows.length === 1
+                  ? language === 'ka'
+                    ? 'შოუ'
+                    : 'show'
+                  : language === 'ka'
+                  ? 'დაგეგმილი შოუ'
+                  : 'shows'}
+              </span>
             </div>
             <span
-              style={{
-                fontSize: '0.725rem',
-                padding: '3px 10px',
-                borderRadius: 'var(--radius-pill)',
-                background: scheduledShows.length > 0 ? 'var(--brand-primary-light)' : 'var(--bg-surface-secondary)',
-                color: scheduledShows.length > 0 ? 'var(--brand-primary)' : 'var(--color-text-secondary)',
-                fontWeight: 600,
-                whiteSpace: 'nowrap',
-                flexShrink: 0
-              }}
+              className={`text-xs px-2.5 py-0.5 rounded-pill font-semibold whitespace-nowrap shrink-0 ${
+                scheduledShows.length > 0
+                  ? 'bg-brand-primary-light text-brand-primary'
+                  : 'bg-surface-secondary text-text-secondary'
+              }`}
             >
               {scheduledShows.length > 0 ? t('active_venue') : t('available_venue')}
             </span>
           </div>
 
-          <div
-            style={{
-              fontSize: '0.85rem',
-              fontWeight: 600,
-              color: 'var(--color-charcoal)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-              whiteSpace: 'nowrap',
-              flexShrink: 0,
-              transition: 'color var(--transition-fast)'
-            }}
-          >
+          <div className="text-xs font-semibold text-text-primary group-hover:text-brand-primary flex items-center gap-1 whitespace-nowrap shrink-0 transition-colors duration-150">
             <span>{language === 'ka' ? 'დეტალები' : 'View Details'}</span>
-            <ChevronRight size={14} />
+            <ChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform duration-150" />
           </div>
         </div>
       </div>

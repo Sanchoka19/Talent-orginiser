@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { ChevronDown, Search, X } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
@@ -174,19 +176,11 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({
   return (
     <div
       ref={dropdownRef}
-      style={{
-        position: 'relative',
-        display: 'flex',
-        alignItems: 'stretch',
-        width: '100%',
-        height: '42px',
-        background: 'var(--bg-surface)',
-        border: isFocused ? '1px solid var(--brand-primary, #FF6C41)' : '1px solid var(--border-medium)',
-        borderRadius: 'var(--radius-sm)',
-        boxShadow: isFocused ? '0 0 0 3px rgba(255, 108, 65, 0.15)' : 'none',
-        transition: 'border-color var(--transition-fast), box-shadow var(--transition-fast)',
-        boxSizing: 'border-box'
-      }}
+      className={`relative flex items-stretch w-full h-[42px] bg-surface rounded-sm transition-all duration-150 border ${
+        isFocused
+          ? 'border-brand-primary ring-2 ring-brand-primary/10'
+          : 'border-border-subtle hover:border-border-medium'
+      }`}
     >
       {/* Country Code Trigger Button (Locked Width: 92px) */}
       <button
@@ -203,41 +197,16 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({
             });
           }
         }}
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '5px',
-          width: '92px',
-          minWidth: '92px',
-          maxWidth: '92px',
-          flexShrink: 0,
-          border: 'none',
-          borderRight: '1px solid var(--border-subtle)',
-          borderRadius: 'calc(var(--radius-sm) - 1px) 0 0 calc(var(--radius-sm) - 1px)',
-          background: 'var(--bg-surface-secondary)',
-          color: 'var(--color-text-primary)',
-          cursor: disabled ? 'not-allowed' : 'pointer',
-          fontSize: '0.85rem',
-          fontWeight: 600,
-          outline: 'none',
-          padding: '0 8px',
-          height: '100%',
-          boxSizing: 'border-box',
-          transition: 'background var(--transition-fast)'
-        }}
+        className="inline-flex items-center justify-center gap-1.5 w-[92px] min-w-[92px] shrink-0 border-r border-border-subtle rounded-l-[9px] bg-surface-secondary text-text-primary text-sm font-semibold outline-none px-2 h-full transition-colors cursor-pointer disabled:cursor-not-allowed hover:bg-surface-tertiary"
         title={`${selectedCountry.name} (${selectedCountry.dialCode})`}
       >
-        <span style={{ fontSize: '1.15rem', lineHeight: 1 }}>{selectedCountry.flag}</span>
-        <span style={{ fontSize: '0.825rem', color: 'var(--color-charcoal)', fontWeight: 600 }}>{selectedCountry.dialCode}</span>
+        <span className="text-lg leading-none">{selectedCountry.flag}</span>
+        <span className="text-xs text-text-primary font-semibold">{selectedCountry.dialCode}</span>
         <ChevronDown
           size={13}
-          style={{
-            color: 'var(--color-text-secondary)',
-            transform: isOpen ? 'rotate(180deg)' : 'none',
-            transition: 'transform var(--transition-fast)',
-            flexShrink: 0
-          }}
+          className={`text-text-secondary transition-transform duration-150 shrink-0 ${
+            isOpen ? 'rotate-180' : ''
+          }`}
         />
       </button>
 
@@ -253,75 +222,28 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
         placeholder={placeholder || selectedCountry.placeholder}
-        style={{
-          flex: 1,
-          minWidth: 0,
-          border: 'none',
-          outline: 'none',
-          background: 'transparent',
-          padding: '0 12px',
-          height: '100%',
-          fontSize: '0.875rem',
-          fontFamily: 'inherit',
-          color: 'var(--color-charcoal)',
-          boxSizing: 'border-box'
-        }}
+        className="flex-1 min-w-0 border-none outline-none bg-transparent px-3 h-full text-sm text-text-primary placeholder:text-text-tertiary"
       />
 
       {/* Floating Country Picker Dropdown - Anchored to right with zIndex 2000 */}
       {isOpen && (
-        <div
-          style={{
-            position: 'absolute',
-            top: 'calc(100% + 6px)',
-            right: 0,
-            width: '300px',
-            maxWidth: '90vw',
-            maxHeight: '300px',
-            background: 'var(--bg-surface)',
-            border: '1px solid var(--border-medium)',
-            borderRadius: 'var(--radius-md)',
-            boxShadow: '0 12px 32px rgba(0, 0, 0, 0.2), 0 4px 12px rgba(0, 0, 0, 0.1)',
-            zIndex: 2000,
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden',
-            animation: 'fadeIn 0.15s ease-out'
-          }}
-        >
+        <div className="absolute top-[calc(100%+6px)] right-0 w-[300px] max-w-[90vw] max-h-[300px] bg-surface border border-border-subtle rounded-md shadow-xl z-[2000] flex flex-col overflow-hidden animate-in fade-in duration-150">
           {/* Search Box */}
-          <div
-            style={{
-              padding: '8px 10px',
-              borderBottom: '1px solid var(--border-subtle)',
-              background: 'var(--bg-surface-secondary)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }}
-          >
-            <Search size={14} style={{ color: 'var(--color-text-secondary)', flexShrink: 0 }} />
+          <div className="p-2 px-2.5 border-b border-border-subtle bg-surface-secondary flex items-center gap-2">
+            <Search size={14} className="text-text-secondary shrink-0" />
             <input
               ref={searchInputRef}
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={language === 'ka' ? 'მოძებნეთ ქვეყანა ან კოდი...' : 'Search country or code...'}
-              style={{
-                width: '100%',
-                border: 'none',
-                background: 'transparent',
-                outline: 'none',
-                fontSize: '0.825rem',
-                fontFamily: 'inherit',
-                color: 'var(--color-text-primary)'
-              }}
+              className="w-full border-none bg-transparent outline-none text-xs text-text-primary placeholder:text-text-tertiary"
             />
             {searchQuery && (
               <button
                 type="button"
                 onClick={() => setSearchQuery('')}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)', padding: 0 }}
+                className="bg-transparent border-none cursor-pointer text-text-secondary hover:text-text-primary p-0"
               >
                 <X size={13} />
               </button>
@@ -329,16 +251,9 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({
           </div>
 
           {/* Countries List */}
-          <div
-            className="thin-scrollbar"
-            style={{
-              overflowY: 'auto',
-              maxHeight: '240px',
-              padding: '4px'
-            }}
-          >
+          <div className="overflow-y-auto max-h-[240px] p-1 flex flex-col gap-0.5">
             {filteredCountries.length === 0 ? (
-              <div style={{ padding: '16px', textAlign: 'center', fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
+              <div className="p-4 text-center text-xs text-text-secondary">
                 {language === 'ka' ? 'ქვეყანა ვერ მოიძებნა' : 'No country found'}
               </div>
             ) : (
@@ -349,43 +264,22 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({
                     key={c.code}
                     type="button"
                     onClick={() => handleSelectCountry(c)}
-                    style={{
-                      width: '100%',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '8px 10px',
-                      borderRadius: 'var(--radius-xs)',
-                      border: 'none',
-                      background: isSelected ? 'var(--brand-primary-light, rgba(255, 108, 65, 0.12))' : 'transparent',
-                      color: isSelected ? 'var(--brand-primary, #FF6C41)' : 'var(--color-text-primary)',
-                      fontWeight: isSelected ? 600 : 400,
-                      fontSize: '0.825rem',
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      transition: 'background var(--transition-fast)'
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!isSelected) e.currentTarget.style.background = 'var(--bg-surface-secondary)';
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!isSelected) e.currentTarget.style.background = 'transparent';
-                    }}
+                    className={`w-full flex items-center justify-between p-2 px-2.5 rounded-xs border-none text-xs cursor-pointer transition-colors text-left ${
+                      isSelected
+                        ? 'bg-brand-primary/10 text-brand-primary font-semibold'
+                        : 'text-text-primary hover:bg-surface-secondary font-normal'
+                    }`}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
-                      <span style={{ fontSize: '1.2rem', lineHeight: 1 }}>{c.flag}</span>
-                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-lg leading-none">{c.flag}</span>
+                      <span className="truncate">
                         {language === 'ka' ? c.nameKa : c.name}
                       </span>
                     </div>
                     <span
-                      style={{
-                        fontSize: '0.8rem',
-                        fontWeight: 600,
-                        color: isSelected ? 'var(--brand-primary, #FF6C41)' : 'var(--color-text-secondary)',
-                        marginLeft: '8px',
-                        flexShrink: 0
-                      }}
+                      className={`text-xs font-semibold ml-2 shrink-0 ${
+                        isSelected ? 'text-brand-primary' : 'text-text-secondary'
+                      }`}
                     >
                       {c.dialCode}
                     </span>

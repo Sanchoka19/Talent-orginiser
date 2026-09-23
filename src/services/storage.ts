@@ -507,6 +507,7 @@ export const INITIAL_SCHEDULE: ShowEvent[] = [
 ];
 
 export function getStoredTalents(): Talent[] {
+  if (typeof window === 'undefined') return INITIAL_TALENTS;
   const data = localStorage.getItem(TALENTS_KEY);
   if (!data) {
     localStorage.setItem(TALENTS_KEY, JSON.stringify(INITIAL_TALENTS));
@@ -520,10 +521,12 @@ export function getStoredTalents(): Talent[] {
 }
 
 export function saveStoredTalents(talents: Talent[]): void {
+  if (typeof window === 'undefined') return;
   localStorage.setItem(TALENTS_KEY, JSON.stringify(talents));
 }
 
 export function getStoredGroups(): Group[] {
+  if (typeof window === 'undefined') return INITIAL_GROUPS;
   const data = localStorage.getItem(GROUPS_KEY);
   if (!data) {
     localStorage.setItem(GROUPS_KEY, JSON.stringify(INITIAL_GROUPS));
@@ -537,10 +540,12 @@ export function getStoredGroups(): Group[] {
 }
 
 export function saveStoredGroups(groups: Group[]): void {
+  if (typeof window === 'undefined') return;
   localStorage.setItem(GROUPS_KEY, JSON.stringify(groups));
 }
 
 export function getStoredVenues(): HotelVenue[] {
+  if (typeof window === 'undefined') return INITIAL_VENUES;
   const data = localStorage.getItem(VENUES_KEY);
   if (!data) {
     localStorage.setItem(VENUES_KEY, JSON.stringify(INITIAL_VENUES));
@@ -554,10 +559,12 @@ export function getStoredVenues(): HotelVenue[] {
 }
 
 export function saveStoredVenues(venues: HotelVenue[]): void {
+  if (typeof window === 'undefined') return;
   localStorage.setItem(VENUES_KEY, JSON.stringify(venues));
 }
 
 export function getStoredSchedule(): ShowEvent[] {
+  if (typeof window === 'undefined') return INITIAL_SCHEDULE;
   const data = localStorage.getItem(SCHEDULE_KEY);
   if (!data) {
     localStorage.setItem(SCHEDULE_KEY, JSON.stringify(INITIAL_SCHEDULE));
@@ -571,12 +578,15 @@ export function getStoredSchedule(): ShowEvent[] {
 }
 
 export function saveStoredSchedule(schedule: ShowEvent[]): void {
+  if (typeof window === 'undefined') return;
   localStorage.setItem(SCHEDULE_KEY, JSON.stringify(schedule));
 }
 
 export function resetToDemoData(): void {
+  if (typeof window === 'undefined') return;
   localStorage.setItem(TALENTS_KEY, JSON.stringify(INITIAL_TALENTS));
   localStorage.setItem(GROUPS_KEY, JSON.stringify(INITIAL_GROUPS));
   localStorage.setItem(VENUES_KEY, JSON.stringify(INITIAL_VENUES));
   localStorage.setItem(SCHEDULE_KEY, JSON.stringify(INITIAL_SCHEDULE));
 }
+

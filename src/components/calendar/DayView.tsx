@@ -1,10 +1,12 @@
+'use client';
+
 import React from 'react';
 import { ShowEvent } from '../../types/schedule';
 import { Group } from '../../types/group';
 import { HotelVenue } from '../../types/venue';
 import { Talent } from '../../types/talent';
 import { useLanguage } from '../../context/LanguageContext';
-import { Clock, MapPin, Users, Sparkles, Calendar, ArrowRight, Bus } from 'lucide-react';
+import { MapPin, Users, Sparkles, Calendar, ArrowRight, Bus } from 'lucide-react';
 import { toLocalDateStr } from '../../utils/dateUtils';
 
 interface DayViewProps {
@@ -38,160 +40,123 @@ export const DayView: React.FC<DayViewProps> = ({
   const localeStr = language === 'ka' ? 'ka-GE' : 'en-US';
 
   return (
-    <div
-      style={{
-        background: 'var(--bg-surface)',
-        borderRadius: 'var(--radius-lg)',
-        border: '1px solid var(--border-subtle)',
-        padding: '24px',
-        boxShadow: 'var(--shadow-sm)'
-      }}
-    >
+    <div className="bg-surface rounded-lg border border-border-subtle p-6 shadow-sm">
       {/* Header */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          paddingBottom: '18px',
-          borderBottom: '1px solid var(--border-subtle)',
-          marginBottom: '20px',
-          flexWrap: 'wrap',
-          gap: '12px'
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div
-            style={{
-              width: '44px',
-              height: '44px',
-              borderRadius: 'var(--radius-md)',
-              background: 'var(--brand-primary)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#FFFFFF',
-              fontWeight: 700,
-              fontSize: '1.2rem'
-            }}
-          >
+      <div className="flex items-center justify-between pb-4.5 border-b border-border-subtle mb-5 flex-wrap gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 rounded-md bg-brand-primary flex items-center justify-center text-text-inverse font-bold text-lg shrink-0 shadow-sm">
             {currentDate.getDate()}
           </div>
           <div>
-            <h3 style={{ fontSize: '1.2rem', fontWeight: 600, color: 'var(--color-charcoal)' }}>
-              {currentDate.toLocaleDateString(localeStr, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+            <h3 className="text-lg font-semibold text-text-primary capitalize">
+              {currentDate.toLocaleDateString(localeStr, {
+                weekday: 'long',
+                month: 'long',
+                day: 'numeric',
+                year: 'numeric'
+              })}
             </h3>
-            <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
+            <p className="text-xs text-text-secondary mt-0.5">
               {dayEvents.length} {dayEvents.length === 1 ? t('show') : t('shows')} {t('scheduled_for_today')}
             </p>
           </div>
         </div>
 
-        <button onClick={onOpenSchedule} className="btn btn-primary">
+        <button
+          type="button"
+          onClick={onOpenSchedule}
+          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-pill text-sm font-medium bg-brand-primary text-text-inverse shadow-glow hover:bg-brand-primary-hover hover:-translate-y-0.5 active:translate-y-0 transition-all duration-150 cursor-pointer outline-none"
+        >
           <span>{t('book_show_for_today')}</span>
         </button>
       </div>
 
       {/* Shows List */}
       {dayEvents.length === 0 ? (
-        <div
-          style={{
-            textAlign: 'center',
-            padding: '60px 20px',
-            color: 'var(--color-text-secondary)'
-          }}
-        >
-          <Calendar size={36} style={{ marginBottom: '12px', opacity: 0.4 }} />
-          <h4 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--color-charcoal)', marginBottom: '4px' }}>
+        <div className="text-center py-16 px-5 text-text-secondary flex flex-col items-center justify-center">
+          <Calendar className="w-9 h-9 mb-3 opacity-40 text-text-secondary" />
+          <h4 className="text-base font-semibold text-text-primary mb-1">
             {t('no_shows_today')}
           </h4>
-          <p style={{ fontSize: '0.825rem', marginBottom: '16px' }}>
+          <p className="text-xs text-text-secondary mb-4">
             {t('no_shows_today_sub')}
           </p>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div className="flex flex-col gap-4">
           {dayEvents.map((ev) => {
             const group = groupMap.get(ev.groupId);
             const venue = venueMap.get(ev.hotelId);
-            const startTime = new Date(ev.startDateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            const endTime = new Date(ev.endDateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const startTime = new Date(ev.startDateTime).toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit'
+            });
+            const endTime = new Date(ev.endDateTime).toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit'
+            });
 
-            const effectiveLobby = ev.lobbyTime || (() => {
-              const d = new Date(ev.startDateTime);
-              const travel = venue?.travelTimeMinutes ?? 45;
-              const totalM = (d.getHours() * 60 + d.getMinutes() - travel + 1440) % 1440;
-              return `${String(Math.floor(totalM / 60)).padStart(2, '0')}:${String(totalM % 60).padStart(2, '0')}`;
-            })();
+            const effectiveLobby =
+              ev.lobbyTime ||
+              (() => {
+                const d = new Date(ev.startDateTime);
+                const travel = venue?.travelTimeMinutes ?? 45;
+                const totalM = (d.getHours() * 60 + d.getMinutes() - travel + 1440) % 1440;
+                return `${String(Math.floor(totalM / 60)).padStart(2, '0')}:${String(
+                  totalM % 60
+                ).padStart(2, '0')}`;
+              })();
 
             return (
               <div
                 key={ev.id}
                 onClick={() => onSelectEvent(ev)}
-                style={{
-                  border: '1px solid var(--border-subtle)',
-                  borderRadius: 'var(--radius-md)',
-                  padding: '18px 20px',
-                  background: 'var(--bg-surface-secondary)',
-                  cursor: 'pointer',
-                  transition: 'all var(--transition-fast)'
-                }}
-                className="day-show-card"
+                className="border border-border-subtle rounded-md p-4 sm:p-5 bg-surface-secondary hover:border-brand-primary hover:bg-brand-primary/5 transition-all duration-150 cursor-pointer"
               >
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '12px' }}>
+                <div className="flex items-start justify-between mb-3 gap-3 flex-wrap">
                   <div>
-                    <h4 style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--color-charcoal)' }}>
+                    <h4 className="text-base font-semibold text-text-primary">
                       {ev.title}
                     </h4>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginTop: '6px', fontSize: '0.825rem', color: 'var(--color-text-secondary)', flexWrap: 'wrap' }}>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'var(--color-charcoal)', fontWeight: 600 }}>
-                        <Bus size={14} strokeWidth={2} style={{ flexShrink: 0 }} /> {t('gathering_label')}: {effectiveLobby}
+                    <div className="flex items-center gap-4 mt-1.5 text-xs text-text-secondary flex-wrap">
+                      <span className="flex items-center gap-1.5 text-text-primary font-semibold">
+                        <Bus className="w-3.5 h-3.5 shrink-0" strokeWidth={2} /> {t('gathering_label')}: {effectiveLobby}
                       </span>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                        <Sparkles size={14} strokeWidth={2} style={{ flexShrink: 0 }} /> {t('show_time_label')}: {startTime} - {endTime}
+                      <span className="flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 shrink-0" strokeWidth={2} /> {t('show_time_label')}: {startTime} - {endTime}
                       </span>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                        <MapPin size={14} /> {venue?.name}
+                      <span className="flex items-center gap-1.5">
+                        <MapPin className="w-3.5 h-3.5 shrink-0" /> {venue?.name}
                       </span>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                        <Users size={14} /> {group?.name}
+                      <span className="flex items-center gap-1.5">
+                        <Users className="w-3.5 h-3.5 shrink-0" /> {group?.name}
                       </span>
                     </div>
                   </div>
 
-                  <button className="btn btn-secondary" style={{ fontSize: '0.775rem', padding: '6px 12px' }}>
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-pill text-xs font-medium border border-border-subtle bg-surface text-text-primary hover:bg-surface-tertiary hover:border-border-medium transition-all duration-150 shrink-0"
+                  >
                     <span>{t('manage_duties')}</span>
-                    <ArrowRight size={13} />
+                    <ArrowRight className="w-3 h-3" />
                   </button>
                 </div>
 
                 {/* Inventory Duty Crew Section */}
-                <div
-                  style={{
-                    background: '#FFFFFF',
-                    borderRadius: 'var(--radius-sm)',
-                    padding: '12px 14px',
-                    border: '1px solid var(--border-subtle)'
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.775rem', fontWeight: 700, color: 'var(--color-charcoal)', marginBottom: '8px' }}>
-                    <Sparkles size={13} color="var(--brand-primary)" />
+                <div className="bg-surface rounded-sm p-3 sm:p-3.5 border border-border-subtle">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-text-primary mb-2">
+                    <Sparkles className="w-3.5 h-3.5 text-brand-primary" />
                     <span>{t('assigned_duty_rotation')}</span>
                   </div>
 
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  <div className="flex flex-wrap gap-2">
                     {ev.dutyAssignments.map((duty) => (
                       <div
                         key={duty.requirementId}
-                        style={{
-                          padding: '6px 10px',
-                          borderRadius: 'var(--radius-xs)',
-                          background: 'var(--bg-surface-secondary)',
-                          border: '1px solid var(--border-subtle)',
-                          fontSize: '0.75rem'
-                        }}
+                        className="px-2.5 py-1.5 rounded-xs bg-surface-secondary border border-border-subtle text-xs text-text-primary"
                       >
-                        <strong>{duty.itemName}:</strong>{' '}
+                        <strong className="font-semibold">{duty.itemName}:</strong>{' '}
                         {duty.assignedTalentIds.map((tid, idx) => {
                           const talent = talentMap.get(tid);
                           return (

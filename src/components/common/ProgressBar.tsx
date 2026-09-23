@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 
 interface SplitProgressBarProps {
@@ -19,44 +21,25 @@ export const SplitProgressBar: React.FC<SplitProgressBarProps> = ({
 
   return (
     <div
-      style={{
-        width: '100%',
-        height: `${height}px`,
-        borderRadius: 'var(--radius-pill)',
-        background: 'var(--bg-surface-tertiary)',
-        display: 'flex',
-        overflow: 'hidden',
-        border: '1px solid var(--border-subtle)'
-      }}
+      className="w-full rounded-pill bg-surface-tertiary flex overflow-hidden border border-border-subtle"
+      style={{ height: `${height}px` }}
     >
       {effectivePrimary > 0 && (
         <div
-          style={{
-            width: `${effectivePrimary}%`,
-            height: '100%',
-            background: 'var(--brand-primary)',
-            transition: 'width 0.3s ease'
-          }}
+          className="h-full bg-brand-primary transition-all duration-300"
+          style={{ width: `${effectivePrimary}%` }}
         />
       )}
       {darkPercent > 0 && (
         <div
-          style={{
-            width: `${darkPercent}%`,
-            height: '100%',
-            background: 'var(--brand-navy)',
-            transition: 'width 0.3s ease'
-          }}
+          className="h-full bg-brand-navy transition-all duration-300"
+          style={{ width: `${darkPercent}%` }}
         />
       )}
       {stripedPercent > 0 && (
         <div
-          className="pattern-striped"
-          style={{
-            width: `${stripedPercent}%`,
-            height: '100%',
-            transition: 'width 0.3s ease'
-          }}
+          className="h-full pattern-striped transition-all duration-300"
+          style={{ width: `${stripedPercent}%` }}
         />
       )}
     </div>

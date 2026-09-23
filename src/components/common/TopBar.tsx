@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -24,7 +26,7 @@ interface TopBarProps {
   onMenuToggle?: () => void;
 }
 
-export const TopBar: React.FC<TopBarProps> = ({ activeTab, onMenuToggle }) => {
+export const TopBar: React.FC<TopBarProps> = ({ onMenuToggle }) => {
   const { talents, groups, resetAllData } = useApp();
   const { language, setLanguage, t } = useLanguage();
   const { confirm } = useConfirm();
@@ -34,8 +36,6 @@ export const TopBar: React.FC<TopBarProps> = ({ activeTab, onMenuToggle }) => {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-
-
 
   const notifRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
@@ -106,86 +106,41 @@ export const TopBar: React.FC<TopBarProps> = ({ activeTab, onMenuToggle }) => {
 
   const toggleTheme = () => {
     setIsDarkMode((prev) => !prev);
-    // Optional root attribute for dark mode styling
     document.documentElement.classList.toggle('dark');
   };
 
   return (
-    <header
-      style={{
-        height: '76px',
-        minHeight: '76px',
-        background: 'var(--bg-surface)',
-        borderBottom: '1px solid var(--border-subtle)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '0 32px',
-        zIndex: 40,
-        position: 'sticky',
-        top: 0,
-        backdropFilter: 'blur(8px)'
-      }}
-    >
-      {/* Hamburger button – visible only on mobile via CSS */}
+    <header className="h-[76px] min-h-[76px] bg-surface border-b border-border-subtle flex items-center justify-between px-6 sm:px-8 z-40 sticky top-0 backdrop-blur-md">
+      {/* Hamburger button – visible only on mobile */}
       <button
-        className="topbar-burger-btn"
         onClick={onMenuToggle}
         aria-label="Open navigation menu"
-        style={{
-          display: 'none', // shown via CSS media query
-          alignItems: 'center',
-          justifyContent: 'center',
-          width: '40px',
-          height: '40px',
-          borderRadius: '10px',
-          border: 'none',
-          background: 'var(--bg-surface-secondary)',
-          cursor: 'pointer',
-          color: 'var(--color-text-primary)',
-          flexShrink: 0
-        }}
+        className="md:hidden inline-flex items-center justify-center w-10 h-10 rounded-sm border-none bg-surface-secondary cursor-pointer text-text-primary shrink-0 mr-3"
       >
         <Menu size={20} strokeWidth={2} />
       </button>
 
       {/* Right: Actions & Profile */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginLeft: 'auto' }}>
+      <div className="flex items-center gap-3.5 sm:gap-4 ml-auto">
         {/* Theme Toggle Button */}
         <button
           onClick={toggleTheme}
-          className="btn btn-secondary btn-icon"
-          style={{ width: '40px', height: '40px', borderRadius: '10px' }}
+          className="w-10 h-10 rounded-sm inline-flex items-center justify-center border border-border-subtle bg-surface-secondary text-text-primary hover:bg-surface-tertiary hover:border-border-medium transition-all duration-150 cursor-pointer shrink-0"
           title={isDarkMode ? t('theme_light') : t('theme_dark')}
         >
           {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
         </button>
 
-        {/* 4. Notification Center Bell */}
-        <div ref={notifRef} style={{ position: 'relative' }}>
+        {/* Notification Center Bell */}
+        <div ref={notifRef} className="relative">
           <button
             onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-            className="btn btn-secondary btn-icon"
-            style={{ width: '40px', height: '40px', borderRadius: '10px', position: 'relative' }}
+            className="w-10 h-10 rounded-sm inline-flex items-center justify-center border border-border-subtle bg-surface-secondary text-text-primary hover:bg-surface-tertiary hover:border-border-medium transition-all duration-150 cursor-pointer shrink-0 relative"
             title={t('btn_notifications')}
           >
             <Bell size={18} />
             {totalAlertsCount > 0 && (
-              <span
-                style={{
-                  position: 'absolute',
-                  top: '-2px',
-                  right: '-2px',
-                  background: '#EF4444',
-                  color: '#FFFFFF',
-                  fontSize: '0.7rem',
-                  fontWeight: 700,
-                  padding: '1px 6px',
-                  borderRadius: 'var(--radius-pill)',
-                  border: '2px solid white',
-                  lineHeight: 1
-                }}
-              >
+              <span className="absolute -top-1 -right-1 bg-danger text-white text-[10px] font-bold px-1.5 py-0.5 rounded-pill border-2 border-white leading-none shadow-sm">
                 {totalAlertsCount}
               </span>
             )}
@@ -193,36 +148,23 @@ export const TopBar: React.FC<TopBarProps> = ({ activeTab, onMenuToggle }) => {
 
           {/* Notifications Dropdown Panel */}
           {isNotificationsOpen && (
-            <div
-              style={{
-                position: 'absolute',
-                top: '50px',
-                right: 0,
-                width: '340px',
-                background: 'var(--bg-surface)',
-                borderRadius: 'var(--radius-md)',
-                border: '1px solid var(--border-subtle)',
-                boxShadow: 'var(--shadow-lg)',
-                padding: '16px',
-                zIndex: 100
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--color-charcoal)' }}>
+            <div className="absolute top-12 right-0 w-[340px] bg-surface rounded-md border border-border-subtle shadow-xl p-4 z-50 animate-in fade-in duration-150">
+              <div className="flex items-center justify-between mb-3">
+                <div className="font-bold text-sm text-text-primary">
                   {t('btn_notifications')} ({totalAlertsCount})
                 </div>
                 <button
                   onClick={() => setIsNotificationsOpen(false)}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)' }}
+                  className="bg-transparent border-none cursor-pointer text-text-secondary hover:text-text-primary p-0"
                 >
                   <X size={14} />
                 </button>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '240px', overflowY: 'auto' }}>
+              <div className="flex flex-col gap-2 max-h-60 overflow-y-auto">
                 {totalAlertsCount === 0 ? (
-                  <div style={{ textAlign: 'center', padding: '16px', fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
-                    <CheckCircle2 size={24} style={{ color: '#16A34A', margin: '0 auto 6px auto', display: 'block' }} />
+                  <div className="text-center p-4 text-xs text-text-secondary">
+                    <CheckCircle2 size={24} className="text-emerald-600 mx-auto mb-1.5 block" />
                     {language === 'ka' ? 'ახალი შეტყობინებები არ არის' : 'No new notifications'}
                   </div>
                 ) : (
@@ -230,20 +172,12 @@ export const TopBar: React.FC<TopBarProps> = ({ activeTab, onMenuToggle }) => {
                     {documentAlerts.map((alert, idx) => (
                       <div
                         key={`doc-${idx}`}
-                        style={{
-                          padding: '8px 10px',
-                          borderRadius: '8px',
-                          background: 'var(--bg-surface-secondary)',
-                          fontSize: '0.775rem',
-                          display: 'flex',
-                          alignItems: 'flex-start',
-                          gap: '8px'
-                        }}
+                        className="p-2 px-2.5 rounded-md bg-surface-secondary text-xs flex items-start gap-2 border border-border-subtle"
                       >
-                        <FileText size={14} style={{ color: '#F59E0B', flexShrink: 0, marginTop: '2px' }} />
+                        <FileText size={14} className="text-amber-500 shrink-0 mt-0.5" />
                         <div>
-                          <div style={{ fontWeight: 600, color: 'var(--color-charcoal)' }}>{alert.talentName}</div>
-                          <div style={{ color: 'var(--color-text-secondary)', fontSize: '0.725rem' }}>
+                          <div className="font-semibold text-text-primary">{alert.talentName}</div>
+                          <div className="text-text-secondary text-[11px]">
                             {alert.docName} ({alert.daysRemaining} {language === 'ka' ? 'დღე' : 'days'})
                           </div>
                         </div>
@@ -253,20 +187,12 @@ export const TopBar: React.FC<TopBarProps> = ({ activeTab, onMenuToggle }) => {
                     {inventoryShortages.map((shortage, idx) => (
                       <div
                         key={`shortage-${idx}`}
-                        style={{
-                          padding: '8px 10px',
-                          borderRadius: '8px',
-                          background: 'rgba(239, 68, 68, 0.08)',
-                          fontSize: '0.775rem',
-                          display: 'flex',
-                          alignItems: 'flex-start',
-                          gap: '8px'
-                        }}
+                        className="p-2 px-2.5 rounded-md bg-danger/10 text-xs flex items-start gap-2 border border-danger/25"
                       >
-                        <AlertTriangle size={14} style={{ color: '#EF4444', flexShrink: 0, marginTop: '2px' }} />
+                        <AlertTriangle size={14} className="text-danger shrink-0 mt-0.5" />
                         <div>
-                          <div style={{ fontWeight: 600, color: 'var(--color-charcoal)' }}>{shortage.groupName}</div>
-                          <div style={{ color: '#EF4444', fontSize: '0.725rem' }}>
+                          <div className="font-semibold text-text-primary">{shortage.groupName}</div>
+                          <div className="text-danger text-[11px]">
                             {shortage.itemName}
                           </div>
                         </div>
@@ -279,79 +205,47 @@ export const TopBar: React.FC<TopBarProps> = ({ activeTab, onMenuToggle }) => {
           )}
         </div>
 
-        {/* 5. User Profile Card & Dropdown */}
-        <div ref={profileRef} style={{ position: 'relative' }}>
+        {/* User Profile Card & Dropdown */}
+        <div ref={profileRef} className="relative">
           <div
             onClick={() => setIsProfileOpen(!isProfileOpen)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              padding: '4px 14px 4px 4px',
-              borderRadius: 'var(--radius-pill)',
-              background: 'var(--bg-surface-secondary)',
-              border: '1px solid var(--border-subtle)',
-              cursor: 'pointer',
-              transition: 'all var(--transition-fast)'
-            }}
+            className="flex items-center gap-3 p-1 pr-3.5 rounded-pill bg-surface-secondary border border-border-subtle cursor-pointer hover:border-border-medium transition-all select-none"
           >
             <img
               src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80"
               alt="Admin"
-              style={{
-                width: '38px',
-                height: '38px',
-                borderRadius: '50%',
-                objectFit: 'cover',
-                border: '1.5px solid #FFFFFF'
-              }}
+              className="w-9 h-9 rounded-full object-cover border-2 border-white shrink-0"
             />
-            <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left', lineHeight: 1.25 }}>
-              <span style={{ fontSize: '0.95rem', fontWeight: 650, color: 'var(--color-charcoal)' }}>
+            <div className="flex flex-col text-left leading-tight">
+              <span className="text-sm font-semibold text-text-primary">
                 {t('admin_full_name')}
               </span>
-              <span style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', fontWeight: 500 }}>
+              <span className="text-xs text-text-secondary font-medium">
                 {t('role_administrator')}
               </span>
             </div>
-            <ChevronDown size={16} color="var(--color-text-secondary)" style={{ marginLeft: '2px' }} />
+            <ChevronDown size={16} className="text-text-secondary ml-0.5" />
           </div>
 
           {/* Profile Dropdown Menu */}
           {isProfileOpen && (
-            <div
-              style={{
-                position: 'absolute',
-                top: '52px',
-                right: 0,
-                width: '240px',
-                background: 'var(--bg-surface)',
-                borderRadius: 'var(--radius-md)',
-                border: '1px solid var(--border-subtle)',
-                boxShadow: 'var(--shadow-lg)',
-                padding: '12px',
-                zIndex: 100,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '8px'
-              }}
-            >
-              <div style={{ padding: '6px 8px', borderBottom: '1px solid var(--border-subtle)' }}>
-                <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--color-charcoal)' }}>
+            <div className="absolute top-13 right-0 w-60 bg-surface rounded-md border border-border-subtle shadow-xl p-3 z-50 flex flex-col gap-2 animate-in fade-in duration-150">
+              <div className="p-1.5 px-2 border-b border-border-subtle">
+                <div className="font-semibold text-sm text-text-primary">
                   {t('admin_full_name')}
                 </div>
-                <div style={{ fontSize: '0.775rem', color: 'var(--color-text-secondary)' }}>
+                <div className="text-xs text-text-secondary">
                   admin@artistent.com
                 </div>
               </div>
 
               {/* Language Selection with Flags */}
-              <div style={{ padding: '4px 6px', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '8px' }}>
-                <div style={{ fontSize: '0.72rem', fontWeight: 650, color: 'var(--color-text-secondary)', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <div className="p-1 px-1.5 border-b border-border-subtle pb-2">
+                <div className="text-[11px] font-semibold text-text-secondary mb-1.5 flex items-center gap-1.5">
                   <Globe size={13} />
                   <span>{isKa ? 'ინტერფეისის ენა' : (language === 'tr' ? 'Arayüz Dili' : 'Interface Language')}</span>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <div className="flex flex-col gap-1">
                   {[
                     { code: 'ka' as const, label: 'ქართული', flag: '🇬🇪' },
                     { code: 'en' as const, label: 'English', flag: '🇬🇧' },
@@ -372,27 +266,17 @@ export const TopBar: React.FC<TopBarProps> = ({ activeTab, onMenuToggle }) => {
                               : 'Language changed: English'
                           );
                         }}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          padding: '7px 10px',
-                          borderRadius: '8px',
-                          border: isSelected ? '1.5px solid var(--brand-primary)' : '1px solid transparent',
-                          background: isSelected ? 'var(--brand-primary)' : 'var(--bg-surface-secondary)',
-                          color: isSelected ? '#FFFFFF' : 'var(--color-charcoal)',
-                          fontSize: '0.825rem',
-                          fontWeight: 650,
-                          cursor: 'pointer',
-                          boxShadow: isSelected ? '0 2px 8px var(--brand-primary-glow)' : 'none',
-                          transition: 'all 0.15s ease'
-                        }}
+                        className={`flex items-center justify-between p-1.5 px-2.5 rounded-sm border text-xs font-semibold cursor-pointer transition-all ${
+                          isSelected
+                            ? 'border-brand-primary bg-brand-primary text-white shadow-sm'
+                            : 'border-transparent bg-surface-secondary text-text-primary hover:bg-surface-tertiary'
+                        }`}
                       >
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ fontSize: '1.05rem' }}>{item.flag}</span>
+                        <span className="flex items-center gap-2">
+                          <span className="text-base">{item.flag}</span>
                           <span>{item.label}</span>
                         </span>
-                        {isSelected && <CheckCircle2 size={15} color="#FFFFFF" />}
+                        {isSelected && <CheckCircle2 size={15} className="text-white" />}
                       </button>
                     );
                   })}
@@ -418,8 +302,7 @@ export const TopBar: React.FC<TopBarProps> = ({ activeTab, onMenuToggle }) => {
                     }
                   });
                 }}
-                className="btn btn-secondary"
-                style={{ width: '100%', justifyContent: 'flex-start', fontSize: '0.825rem', gap: '8px', padding: '8px 12px' }}
+                className="w-full inline-flex items-center justify-start text-xs gap-2 p-2 px-3 rounded-pill font-medium border border-border-subtle bg-surface-secondary text-text-primary hover:bg-surface-tertiary hover:border-border-medium transition-all cursor-pointer"
               >
                 <RotateCcw size={14} />
                 <span>{t('btn_reset_demo')}</span>

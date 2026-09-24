@@ -322,20 +322,20 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
       onClose={onClose}
       title={editingTalent ? t('edit_performer') : t('add_new_performer')}
       subtitle={t('performer_form_subtitle')}
-      maxWidth="640px"
+      maxWidth="600px"
       footer={
         <div className="flex items-center justify-end gap-2.5 w-full">
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex items-center justify-center px-4 py-2 rounded-pill text-sm font-medium border border-border-subtle bg-surface-secondary text-text-primary hover:bg-surface-tertiary hover:border-border-medium transition-all duration-150 cursor-pointer outline-none"
+            className="inline-flex items-center justify-center px-3.5 py-1.5 rounded-md text-xs sm:text-sm font-medium border border-border-subtle bg-surface-secondary text-text-primary hover:bg-surface-tertiary hover:border-border-medium transition-all duration-150 cursor-pointer outline-none"
           >
             {t('cancel')}
           </button>
           <button
             type="submit"
             form="talent-form"
-            className="inline-flex items-center justify-center gap-2 px-5 py-2 rounded-pill text-sm font-medium bg-brand-primary text-white shadow-glow hover:bg-brand-primary-hover hover:-translate-y-0.5 active:translate-y-0 transition-all duration-150 cursor-pointer outline-none"
+            className="inline-flex items-center justify-center gap-2 px-4 py-1.5 rounded-md text-xs sm:text-sm font-semibold bg-brand-primary text-white shadow-xs hover:bg-brand-primary-hover transition-all duration-150 cursor-pointer outline-none"
           >
             {editingTalent ? t('save_changes') : t('add_performer')}
           </button>
@@ -344,13 +344,13 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
     >
       <form id="talent-form" onSubmit={handleSubmit} className="flex flex-col gap-4">
         {/* Name Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-semibold text-text-secondary">{t('first_name')} *</label>
             <input
               type="text"
               required
-              className="w-full text-sm px-3.5 py-2.5 rounded-sm border border-border-subtle bg-surface-secondary text-text-primary outline-none transition-all duration-150 focus:bg-surface focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10 placeholder:text-text-tertiary"
+              className="w-full text-xs sm:text-sm px-3 py-2 rounded-md border border-border-subtle bg-surface-secondary text-text-primary outline-none transition-all duration-150 focus:bg-surface focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20 placeholder:text-text-tertiary"
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
               placeholder="e.g. Amélie"
@@ -362,7 +362,7 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
             <input
               type="text"
               required
-              className="w-full text-sm px-3.5 py-2.5 rounded-sm border border-border-subtle bg-surface-secondary text-text-primary outline-none transition-all duration-150 focus:bg-surface focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10 placeholder:text-text-tertiary"
+              className="w-full text-xs sm:text-sm px-3 py-2 rounded-md border border-border-subtle bg-surface-secondary text-text-primary outline-none transition-all duration-150 focus:bg-surface focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20 placeholder:text-text-tertiary"
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
               placeholder="e.g. Laurent"
@@ -371,12 +371,12 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
         </div>
 
         {/* Email & Phone Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-semibold text-text-secondary">{t('email_address')}</label>
             <input
               type="email"
-              className="w-full text-sm px-3.5 py-2.5 rounded-sm border border-border-subtle bg-surface-secondary text-text-primary outline-none transition-all duration-150 focus:bg-surface focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10 placeholder:text-text-tertiary"
+              className="w-full text-xs sm:text-sm px-3 py-2 rounded-md border border-border-subtle bg-surface-secondary text-text-primary outline-none transition-all duration-150 focus:bg-surface focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20 placeholder:text-text-tertiary"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="amelie@artistent.com"
@@ -390,11 +390,11 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
         </div>
 
         {/* Gender, Height, Weight */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-semibold text-text-secondary">{t('gender')} *</label>
             <select
-              className="w-full text-sm px-3.5 py-2.5 rounded-sm border border-border-subtle bg-surface-secondary text-text-primary outline-none transition-all duration-150 focus:bg-surface focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10 cursor-pointer"
+              className="w-full text-xs sm:text-sm px-3 py-2 rounded-md border border-border-subtle bg-surface-secondary text-text-primary outline-none transition-all duration-150 focus:bg-surface focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20 cursor-pointer font-medium"
               value={gender}
               onChange={(e) => setGender(e.target.value as Gender)}
             >
@@ -410,7 +410,7 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
               required
               min={120}
               max={230}
-              className="w-full text-sm px-3.5 py-2.5 rounded-sm border border-border-subtle bg-surface-secondary text-text-primary outline-none transition-all duration-150 focus:bg-surface focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10 placeholder:text-text-tertiary"
+              className="w-full text-xs sm:text-sm px-3 py-2 rounded-md border border-border-subtle bg-surface-secondary text-text-primary outline-none transition-all duration-150 focus:bg-surface focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20 placeholder:text-text-tertiary"
               value={heightCm}
               onChange={(e) => setHeightCm(Number(e.target.value))}
             />
@@ -422,7 +422,7 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
               type="number"
               min={30}
               max={200}
-              className="w-full text-sm px-3.5 py-2.5 rounded-sm border border-border-subtle bg-surface-secondary text-text-primary outline-none transition-all duration-150 focus:bg-surface focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10 placeholder:text-text-tertiary"
+              className="w-full text-xs sm:text-sm px-3 py-2 rounded-md border border-border-subtle bg-surface-secondary text-text-primary outline-none transition-all duration-150 focus:bg-surface focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20 placeholder:text-text-tertiary"
               placeholder="e.g. 58"
               value={weightKg}
               onChange={(e) => setWeightKg(e.target.value === '' ? '' : Number(e.target.value))}
@@ -447,7 +447,7 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
               ref={specInputRef}
               type="text"
               required
-              className="w-full text-sm px-3.5 py-2.5 pr-9 rounded-sm border border-border-subtle bg-surface-secondary text-text-primary outline-none transition-all duration-150 focus:bg-surface focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10 cursor-pointer placeholder:text-text-tertiary"
+              className="w-full text-xs sm:text-sm px-3 py-2 pr-9 rounded-md border border-border-subtle bg-surface-secondary text-text-primary outline-none transition-all duration-150 focus:bg-surface focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20 cursor-pointer placeholder:text-text-tertiary"
               value={primarySkill}
               readOnly={!isSpecDropdownOpen}
               onChange={(e) => {
@@ -510,7 +510,7 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
                         setNewCustomSpecInput(trimmed);
                       }
                     }}
-                    className="w-full py-2 px-3.5 bg-surface border border-border-subtle rounded-sm text-xs font-semibold text-text-primary hover:border-brand-primary hover:bg-brand-primary-light transition-all duration-150 flex items-center justify-center cursor-pointer"
+                    className="w-full py-2 px-3.5 bg-surface border border-border-subtle rounded-md text-xs font-semibold text-text-primary hover:border-brand-primary hover:bg-brand-primary-light transition-all duration-150 flex items-center justify-center cursor-pointer"
                   >
                     <span>
                       {primarySkill.trim() && !allSpecializations.some((s) => s.toLowerCase() === primarySkill.trim().toLowerCase())
@@ -527,7 +527,7 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
                       type="text"
                       autoFocus
                       placeholder={t('enter_new_specialty')}
-                      className="flex-1 text-xs px-2.5 py-1.5 rounded-sm border border-border-subtle bg-surface text-text-primary outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20"
+                      className="flex-1 text-xs px-2.5 py-1.5 rounded-md border border-border-subtle bg-surface text-text-primary outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20"
                       value={newCustomSpecInput}
                       onChange={(e) => setNewCustomSpecInput(e.target.value)}
                       onKeyDown={(e) => {
@@ -546,7 +546,7 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
                           handleSelectSpec(newCustomSpecInput.trim());
                         }
                       }}
-                      className="px-3 py-1.5 rounded-pill text-xs font-semibold bg-brand-primary text-white hover:bg-brand-primary-hover disabled:opacity-50 transition-colors"
+                      className="px-3 py-1.5 rounded-md text-xs font-semibold bg-brand-primary text-white hover:bg-brand-primary-hover disabled:opacity-50 transition-colors"
                       disabled={!newCustomSpecInput.trim()}
                     >
                       {t('btn_add')}
@@ -554,7 +554,7 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
                     <button
                       type="button"
                       onClick={() => setIsCreatingCustomSpec(false)}
-                      className="w-7.5 h-7.5 p-0 rounded-full inline-flex items-center justify-center border border-border-subtle bg-surface text-text-secondary hover:text-text-primary hover:bg-surface-secondary transition-all"
+                      className="w-7 h-7 p-0 rounded-md inline-flex items-center justify-center border border-border-subtle bg-surface text-text-secondary hover:text-text-primary hover:bg-surface-secondary transition-all"
                     >
                       <X size={13} />
                     </button>
@@ -566,7 +566,7 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
         </div>
 
         {/* Dynamic Documents Section */}
-        <div className="p-4 rounded-sm bg-surface-secondary border border-border-subtle mb-1">
+        <div className="p-4 rounded-lg bg-surface-secondary border border-border-subtle mb-1">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-1.5">
               <FileText size={15} className="text-text-secondary" />
@@ -578,7 +578,7 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
             <button
               type="button"
               onClick={handleAddDocField}
-              className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1 rounded-pill border border-border-subtle bg-surface text-text-primary hover:bg-surface-tertiary hover:border-border-medium transition-all duration-150 cursor-pointer"
+              className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1 rounded-md border border-border-subtle bg-surface text-text-primary hover:bg-surface-tertiary hover:border-border-medium transition-all duration-150 cursor-pointer shadow-xs"
             >
               <Plus size={13} strokeWidth={2.5} />
               <span>{t('add_document_field')}</span>
@@ -594,7 +594,7 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
               {documents.map((doc, idx) => (
                 <div
                   key={doc.id || idx}
-                  className="bg-surface p-3 rounded-sm border border-border-subtle flex flex-col gap-2.5"
+                  className="bg-surface p-3 rounded-lg border border-border-subtle flex flex-col gap-2.5"
                 >
                   {/* File Upload area */}
                   <input
@@ -614,7 +614,7 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
                   {!doc.file ? (
                     <div
                       onClick={() => fileInputRefs.current[doc.id]?.click()}
-                      className="border-2 border-dashed border-border-medium rounded-xs py-3.5 px-3 text-center cursor-pointer bg-surface-secondary hover:border-brand-primary hover:bg-brand-primary-light/50 transition-all duration-150"
+                      className="border-2 border-dashed border-border-medium rounded-md py-3 px-3 text-center cursor-pointer bg-surface-secondary hover:border-brand-primary hover:bg-brand-primary-light/50 transition-all duration-150"
                     >
                       <UploadCloud size={20} className="text-brand-primary mx-auto mb-1" />
                       <div className="text-xs font-semibold text-text-primary">
@@ -625,7 +625,7 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
                       </div>
                     </div>
                   ) : (
-                    <div className="flex items-center justify-between p-2 px-2.5 bg-surface-secondary border border-border-medium rounded-xs">
+                    <div className="flex items-center justify-between p-2 px-2.5 bg-surface-secondary border border-border-medium rounded-md">
                       <div className="flex items-center gap-2 min-w-0">
                         <FileText size={16} className="text-brand-primary shrink-0" />
                         <div className="min-w-0">
@@ -666,7 +666,7 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
                               }
                             });
                           }}
-                          className="bg-transparent border-none text-danger hover:text-red-700 cursor-pointer p-0.5 flex"
+                          className="bg-transparent border-none text-rose-600 hover:text-rose-700 cursor-pointer p-0.5 flex"
                           title={isKa ? 'ფაილის წაშლა' : 'Remove File'}
                         >
                           <X size={13} />
@@ -680,13 +680,13 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
                     <input
                       type="text"
                       placeholder={t('doc_title_placeholder')}
-                      className="flex-[2] text-xs px-2.5 py-1.5 rounded-sm border border-border-subtle bg-surface text-text-primary outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20"
+                      className="flex-[2] text-xs px-2.5 py-1.5 rounded-md border border-border-subtle bg-surface text-text-primary outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20"
                       value={doc.name}
                       onChange={(e) => handleDocChange(doc.id, 'name', e.target.value)}
                       required
                     />
                     <select
-                      className="flex-1 text-xs px-2.5 py-1.5 rounded-sm border border-border-subtle bg-surface text-text-primary outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20 cursor-pointer"
+                      className="flex-1 text-xs px-2.5 py-1.5 rounded-md border border-border-subtle bg-surface text-text-primary outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20 cursor-pointer font-medium"
                       value={doc.type}
                       onChange={(e) => handleDocChange(doc.id, 'type', e.target.value as any)}
                     >
@@ -702,7 +702,7 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
                     <button
                       type="button"
                       onClick={() => handleRemoveDoc(doc.id, doc.name)}
-                      className="w-7.5 h-7.5 p-0 rounded-full inline-flex items-center justify-center border border-border-subtle bg-surface text-danger hover:bg-danger-light hover:border-danger-border transition-all duration-150 cursor-pointer shrink-0"
+                      className="w-7 h-7 p-0 rounded-md inline-flex items-center justify-center border border-border-subtle bg-surface text-rose-600 hover:bg-rose-50 hover:border-rose-200 transition-all duration-150 cursor-pointer shrink-0"
                       title="Remove"
                     >
                       <Trash2 size={13} />
@@ -711,7 +711,7 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
 
                   {/* Contract Expiration Date (ONLY when doc.type === 'Contract') */}
                   {doc.type === 'Contract' && (
-                    <div className="mt-2 p-2.5 rounded-sm bg-brand-primary-light/40 border border-brand-primary/20 flex flex-col gap-1.5">
+                    <div className="mt-2 p-2.5 rounded-md bg-brand-primary-light/40 border border-brand-primary/20 flex flex-col gap-1.5">
                       <div className="flex items-center justify-between">
                         <label className="text-xs font-semibold text-text-primary flex items-center gap-1.5">
                           <Calendar size={13} className="text-brand-primary" />
@@ -726,14 +726,14 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
                         {!doc.isParsing && doc.parseDetected === true && (
                           <span className="text-[11px] text-status-active-text font-semibold flex items-center gap-1">
                             <Sparkles size={11} />
-                            <span>{t('auto_detected_date')} ✓</span>
+                            <span>{t('auto_detected_date')}</span>
                           </span>
                         )}
                       </div>
 
                       <input
                         type="date"
-                        className="text-xs px-2.5 py-1.5 rounded-sm border border-border-subtle bg-surface text-text-primary outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20"
+                        className="text-xs px-2.5 py-1.5 rounded-md border border-border-subtle bg-surface text-text-primary outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20 font-medium"
                         value={doc.expiryDate || ''}
                         onChange={(e) => handleDocChange(doc.id, 'expiryDate', e.target.value)}
                         required
@@ -741,7 +741,7 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
 
                       <div className="text-[11px] text-text-secondary">
                         {doc.parseDetected === false ? (
-                          <span className="text-amber-600 font-medium">⚠️ {t('manual_date_hint')}</span>
+                          <span className="text-amber-600 font-medium">{t('manual_date_hint')}</span>
                         ) : (
                           <span>{t('contract_expiry_hint')}</span>
                         )}
@@ -759,7 +759,7 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
           <label className="text-xs font-semibold text-text-secondary">{t('internal_notes')}</label>
           <textarea
             rows={2}
-            className="w-full text-sm px-3.5 py-2.5 rounded-sm border border-border-subtle bg-surface-secondary text-text-primary outline-none transition-all duration-150 focus:bg-surface focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10 placeholder:text-text-tertiary resize-y"
+            className="w-full text-xs sm:text-sm px-3 py-2 rounded-md border border-border-subtle bg-surface-secondary text-text-primary outline-none transition-all duration-150 focus:bg-surface focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20 placeholder:text-text-tertiary resize-y"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="Performance style, restrictions, costume sizing notes..."

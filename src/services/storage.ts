@@ -1,4 +1,4 @@
-import { Talent } from '../types/talent';
+import { Talent, ContractRecord } from '../types/talent';
 import { Group } from '../types/group';
 import { HotelVenue } from '../types/venue';
 import { ShowEvent } from '../types/schedule';
@@ -8,7 +8,70 @@ const GROUPS_KEY = 'talent_organizer_groups_v1';
 const VENUES_KEY = 'talent_organizer_venues_v1';
 const SCHEDULE_KEY = 'talent_organizer_schedule_v1';
 
-export const INITIAL_TALENTS: Talent[] = [
+export function normalizeContractRecord(
+  r: any,
+  talentMeta: { id: string; firstName: string; lastName: string; primarySkill: string; avatarUrl?: string }
+): ContractRecord {
+  const rating = Number((r.rating ?? r.overallRating ?? 5.0).toFixed(1));
+  const contractStatus: 'completed' | 'terminated' =
+    r.contractStatus === 'terminated' || r.completionStatus === 'Terminated Early'
+      ? 'terminated'
+      : 'completed';
+
+  let rehireStatus: 'eligible' | 'neutral' | 'do_not_rehire' = 'eligible';
+  const rawRehire = String(r.rehireStatus || '').toLowerCase();
+  if (rawRehire.includes('not') || rawRehire.includes('black')) {
+    rehireStatus = 'do_not_rehire';
+  } else if (rawRehire.includes('neutral') || rawRehire.includes('under')) {
+    rehireStatus = 'neutral';
+  } else {
+    rehireStatus = 'eligible';
+  }
+
+  const reviewDate = r.reviewDate ?? (r.createdAt ? r.createdAt.split('T')[0] : '2026-01-01');
+  const internalNote = r.internalNote ?? r.privateNote ?? '';
+  const reviewedBy = r.reviewedBy ?? r.reviewerName ?? 'Sandro Chokoraia';
+
+  const startDate = r.startDate || '2025-05-01';
+  const endDate = r.endDate || reviewDate;
+
+  const rawInit = String(r.initiator || '').toLowerCase();
+  const initiator: 'mutual' | 'admin' | 'talent' =
+    rawInit.includes('admin') || rawInit.includes('management')
+      ? 'admin'
+      : rawInit.includes('talent') || rawInit.includes('artist')
+      ? 'talent'
+      : 'mutual';
+
+  return {
+    id: r.id || `ctr-${Date.now()}`,
+    talentId: r.talentId || talentMeta.id,
+    talentName: r.talentName || `${talentMeta.firstName} ${talentMeta.lastName}`,
+    talentRole: r.talentRole || talentMeta.primarySkill,
+    avatarUrl: r.avatarUrl || talentMeta.avatarUrl,
+    projectName: r.projectName || 'Show Season',
+    location: r.location || 'Belek Arena, Turkey',
+    period: r.period || '2025 – 2026',
+    startDate,
+    endDate,
+    contractStatus,
+    rating,
+    rehireStatus,
+    terminationReason: r.terminationReason,
+    initiator,
+    internalNote,
+    reviewedBy,
+    reviewDate,
+    // backward compat aliases
+    overallRating: rating,
+    privateNote: internalNote,
+    reviewerName: reviewedBy,
+    createdAt: r.createdAt || `${reviewDate}T12:00:00Z`,
+    completionStatus: contractStatus === 'terminated' ? 'Terminated Early' : 'Completed Successfully'
+  };
+}
+
+const RAW_INITIAL_TALENTS: any[] = [
   {
     id: 't-1',
     firstName: 'Amélie',
@@ -603,6 +666,32 @@ export const INITIAL_TALENTS: Talent[] = [
   }
 ];
 
+export const INITIAL_TALENTS: Talent[] = RAW_INITIAL_TALENTS.map((t) => {
+  const meta = {
+    id: t.id,
+    firstName: t.firstName,
+    lastName: t.lastName,
+    primarySkill: t.primarySkill,
+    avatarUrl: t.avatarUrl
+  };
+  const contractRecords: ContractRecord[] = (t.reviews || []).map((r: any) => normalizeContractRecord(r, meta));
+  let rehireStatus: 'eligible' | 'neutral' | 'do_not_rehire' = 'eligible';
+  const rawRehire = String(t.rehireStatus || '').toLowerCase();
+  if (rawRehire.includes('not') || rawRehire.includes('black')) {
+    rehireStatus = 'do_not_rehire';
+  } else if (rawRehire.includes('neutral') || rawRehire.includes('under')) {
+    rehireStatus = 'neutral';
+  } else {
+    rehireStatus = 'eligible';
+  }
+
+  return {
+    ...t,
+    rehireStatus,
+    reviews: contractRecords
+  };
+});
+
 export const INITIAL_GROUPS: Group[] = [
   {
     id: 'g-1',
@@ -823,24 +912,30 @@ export function getStoredTalents(): Talent[] {
   }
   try {
     const parsed = JSON.parse(data) as Talent[];
-    const totalReviews = parsed.reduce((acc, t) => acc + (t.reviews?.length || 0), 0);
-    if (totalReviews < 6) {
-      const initialMap = new Map(INITIAL_TALENTS.map((t) => [t.id, t]));
-      const merged = parsed.map((t) => {
-        const init = initialMap.get(t.id);
-        if (init && init.reviews && (!t.reviews || t.reviews.length < init.reviews.length)) {
-          return {
-            ...t,
-            reviews: init.reviews,
-            rehireStatus: init.rehireStatus || t.rehireStatus
-          };
-        }
-        return t;
-      });
-      localStorage.setItem(TALENTS_KEY, JSON.stringify(merged));
-      return merged;
-    }
-    return parsed;
+    const initialMap = new Map(INITIAL_TALENTS.map((t) => [t.id, t]));
+    const normalized = parsed.map((t) => {
+      const talentMeta = {
+        id: t.id,
+        firstName: t.firstName,
+        lastName: t.lastName,
+        primarySkill: t.primarySkill,
+        avatarUrl: t.avatarUrl
+      };
+      const init = initialMap.get(t.id);
+      const rawReviews = (t.reviews && t.reviews.length >= (init?.reviews?.length || 0))
+        ? t.reviews
+        : (init?.reviews || t.reviews || []);
+
+      const contractRecords = rawReviews.map((r: any) => normalizeContractRecord(r, talentMeta));
+      return {
+        ...t,
+        reviews: contractRecords,
+        contractExpiryDate: t.contractExpiryDate || init?.contractExpiryDate,
+        rehireStatus: t.rehireStatus || (contractRecords.length > 0 ? contractRecords[0].rehireStatus : 'eligible')
+      };
+    });
+    localStorage.setItem(TALENTS_KEY, JSON.stringify(normalized));
+    return normalized;
   } catch {
     return INITIAL_TALENTS;
   }

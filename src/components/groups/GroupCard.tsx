@@ -53,9 +53,14 @@ export const GroupCard: React.FC<GroupCardProps> = ({
             <Users size={18} strokeWidth={2} />
           </div>
           <div className="min-w-0 overflow-hidden">
-            <h3 className="text-sm font-bold text-text-primary m-0 truncate group-hover:text-brand-primary transition-colors duration-150">
-              {group.name} · {t('season_tag')}
-            </h3>
+            <div className="flex items-center gap-2 min-w-0">
+              <h3 className="text-sm font-bold text-text-primary m-0 truncate group-hover:text-brand-primary transition-colors duration-150">
+                {group.name}
+              </h3>
+              <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded bg-brand-primary/10 text-brand-primary border border-brand-primary/20 shrink-0">
+                {t('season_tag')}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -133,9 +138,14 @@ export const GroupCard: React.FC<GroupCardProps> = ({
         {/* Top Row: Title + Location & Mint-Green Users Badge */}
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <h3 className="text-base font-bold text-text-primary m-0 tracking-tight leading-snug group-hover:text-brand-primary transition-colors duration-150 truncate">
-              {group.name} · {t('season_tag')}
-            </h3>
+            <div className="flex items-center gap-2 min-w-0 flex-wrap">
+              <h3 className="text-base font-bold text-text-primary m-0 tracking-tight leading-snug group-hover:text-brand-primary transition-colors duration-150 truncate">
+                {group.name}
+              </h3>
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-brand-primary/10 text-brand-primary border border-brand-primary/20 shrink-0">
+                {t('season_tag')}
+              </span>
+            </div>
           </div>
 
           {/* Mint-Green Icon Badge */}

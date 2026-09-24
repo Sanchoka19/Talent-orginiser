@@ -182,7 +182,7 @@ export const GroupList: React.FC = () => {
       <GroupDetailModal
         isOpen={!!selectedGroupForDetail}
         onClose={() => setSelectedGroupForDetail(null)}
-        group={selectedGroupForDetail}
+        group={selectedGroupForDetail ? groups.find((g) => g.id === selectedGroupForDetail.id) || selectedGroupForDetail : null}
         talents={talents}
         onEdit={handleEdit}
         onDelete={deleteGroup}

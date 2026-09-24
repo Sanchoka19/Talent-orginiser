@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Talent, TalentStatus, TalentDocument, TalentReview, RehireStatus } from '../../types/talent';
+import { Talent, TalentStatus, TalentDocument, TalentReview, RehireStatus, ReviewType } from '../../types/talent';
 import { Drawer } from '../common/Drawer';
-import { StatusBadge, GenderBadge } from '../common/Badge';
+import { StatusBadge, GenderBadge, RehireBadge } from '../common/Badge';
 import { SplitProgressBar } from '../common/ProgressBar';
 import { useApp } from '../../context/AppContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -29,6 +29,7 @@ import {
   PhoneCall,
   Copy,
   Check,
+  CheckCircle2,
   UploadCloud,
   X,
   Loader2,
@@ -37,7 +38,8 @@ import {
   UserCheck,
   UserX,
   Lock,
-  ShieldCheck
+  ShieldCheck,
+  MoreVertical
 } from 'lucide-react';
 import { extractContractExpiryDate } from '../../utils/contractParser';
 import { getCountryFromPhone } from '../common/PhoneInput';
@@ -61,13 +63,13 @@ export const DOCUMENT_TYPES: {
   bg: string;
   color: string;
 }[] = [
-  { value: 'Passport', labelKa: 'პასპორტი', labelEn: 'Passport', short: 'PAS', badgeClass: 'bg-sky-100 text-sky-700', bg: '#E0F2FE', color: '#0284C7' },
-  { value: 'Visa', labelKa: 'ვიზა', labelEn: 'Visa', short: 'VISA', badgeClass: 'bg-amber-100 text-amber-800', bg: '#FEF3C7', color: '#B45309' },
-  { value: 'ID Card', labelKa: 'პირადობის მოწმობა', labelEn: 'ID Card', short: 'ID', badgeClass: 'bg-indigo-100 text-indigo-700', bg: '#E0E7FF', color: '#4338CA' },
-  { value: 'Medical', labelKa: 'სამედიცინო ცნობა', labelEn: 'Medical Clearance', short: 'MED', badgeClass: 'bg-red-100 text-red-700', bg: '#FEE2E2', color: '#DC2626' },
-  { value: 'Contract', labelKa: 'კონტრაქტი', labelEn: 'Contract', short: 'CON', badgeClass: 'bg-emerald-100 text-emerald-800', bg: '#DCFCE7', color: '#15803D' },
-  { value: 'Other', labelKa: 'სხვა დოკუმენტი', labelEn: 'Other Document', short: 'DOC', badgeClass: 'bg-zinc-100 text-zinc-700', bg: '#F3F4F6', color: '#4B5563' },
-];
+    { value: 'Passport', labelKa: 'პასპორტი', labelEn: 'Passport', short: 'PAS', badgeClass: 'bg-sky-100 text-sky-700', bg: '#E0F2FE', color: '#0284C7' },
+    { value: 'Visa', labelKa: 'ვიზა', labelEn: 'Visa', short: 'VISA', badgeClass: 'bg-amber-100 text-amber-800', bg: '#FEF3C7', color: '#B45309' },
+    { value: 'ID Card', labelKa: 'პირადობის მოწმობა', labelEn: 'ID Card', short: 'ID', badgeClass: 'bg-indigo-100 text-indigo-700', bg: '#E0E7FF', color: '#4338CA' },
+    { value: 'Medical', labelKa: 'სამედიცინო ცნობა', labelEn: 'Medical Clearance', short: 'MED', badgeClass: 'bg-red-100 text-red-700', bg: '#FEE2E2', color: '#DC2626' },
+    { value: 'Contract', labelKa: 'კონტრაქტი', labelEn: 'Contract', short: 'CON', badgeClass: 'bg-emerald-100 text-emerald-800', bg: '#DCFCE7', color: '#15803D' },
+    { value: 'Other', labelKa: 'სხვა დოკუმენტი', labelEn: 'Other Document', short: 'DOC', badgeClass: 'bg-zinc-100 text-zinc-700', bg: '#F3F4F6', color: '#4B5563' },
+  ];
 
 export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
   talent,
@@ -84,6 +86,9 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
   const [activeTab, setActiveTab] = useState<DrawerTab>('info');
   const [statsSubTab, setStatsSubTab] = useState<'rotation' | 'shows'>('rotation');
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [selectedReviewType, setSelectedReviewType] = useState<ReviewType>('End of Season');
+  const [isActionsMenuOpen, setIsActionsMenuOpen] = useState(false);
+  const actionsMenuRef = React.useRef<HTMLDivElement>(null);
   const [newDocName, setNewDocName] = useState('');
   const [newDocType, setNewDocType] = useState<TalentDocument['type']>('Passport');
   const [newDocExpiryDate, setNewDocExpiryDate] = useState('');
@@ -102,10 +107,35 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
       if (statusDropdownRef.current && !statusDropdownRef.current.contains(e.target as Node)) {
         setIsStatusDropdownOpen(false);
       }
+      if (actionsMenuRef.current && !actionsMenuRef.current.contains(e.target as Node)) {
+        setIsActionsMenuOpen(false);
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsStatusDropdownOpen(false);
+        setIsActionsMenuOpen(false);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
   }, []);
+
+  React.useEffect(() => {
+    if (!isOpen) {
+      setIsStatusDropdownOpen(false);
+      setIsActionsMenuOpen(false);
+    }
+  }, [isOpen]);
+
+  const handleOpenReview = (type: ReviewType = 'End of Season') => {
+    setSelectedReviewType(type);
+    setIsReviewModalOpen(true);
+  };
 
   const handleTabSelect = (tab: DrawerTab) => {
     setActiveTab(tab);
@@ -146,14 +176,20 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
   // Groups this talent is part of
   const memberGroups = groups.filter((g) => g.memberTalentIds.includes(talent.id));
 
+  // Check if talent contract is expired
+  const contractExpiry = talent.contractExpiryDate || talent.documents?.find((d) => d.type === 'Contract')?.expiryDate;
+  const isContractExpired = Boolean(
+    contractExpiry && new Date(contractExpiry).getTime() <= Date.now()
+  );
+
   const handleStatusChange = (newStatus: TalentStatus) => {
     updateTalent(talent.id, { status: newStatus });
     const statusLabel =
       newStatus === 'Active'
         ? (isKa ? 'აქტიური' : 'Active')
         : newStatus === 'Rest'
-        ? (isKa ? 'დასვენება' : 'Rest')
-        : (isKa ? 'ავად/ტრავმირებული' : 'Sick/Injured');
+          ? (isKa ? 'დასვენება' : 'Rest')
+          : (isKa ? 'ავად/ტრავმირებული' : 'Sick/Injured');
     toast.success(isKa ? `სტატუსი განახლდა: ${statusLabel}` : `Status updated: ${statusLabel}`);
   };
 
@@ -254,7 +290,7 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
     }
 
     const fileName = newDocName.trim() || selectedFile.name.replace(/\.[^/.]+$/, '') || 'Document';
-    
+
     let formattedSize = '1.8 MB';
     const bytes = selectedFile.size;
     if (bytes < 1024 * 1024) {
@@ -331,7 +367,7 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
   };
 
   return (
-    <Drawer isOpen={isOpen} onClose={onClose} width="520px">
+    <Drawer isOpen={isOpen} onClose={onClose} width="600px">
       {/* Fixed Top Header (Non-scrolling: avatar, profile info, status, tabs) */}
       <div className="shrink-0 bg-surface border-b border-border-subtle relative z-[5]">
         {/* Hero Banner with Modern Brand Aura */}
@@ -352,83 +388,148 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
         <div className="pt-12 px-6 pb-3.5">
           <div className="flex items-start justify-between mb-3.5">
             <div>
-              <h2 className="text-[1.35rem] font-bold text-text-primary tracking-tight m-0">
-                {talent.firstName} {talent.lastName}
-              </h2>
+              <div className="flex items-center flex-wrap gap-2">
+                <h2 className="text-[1.35rem] font-bold text-text-primary tracking-tight m-0">
+                  {talent.firstName} {talent.lastName}
+                </h2>
+                {talent.rehireStatus && (
+                  <RehireBadge status={talent.rehireStatus} />
+                )}
+              </div>
               <p className="text-[0.85rem] text-text-secondary mt-0.5 m-0">
                 {talent.primarySkill}
               </p>
             </div>
 
-            <div className="flex gap-1.5">
+            <div className="flex items-center gap-1.5">
               <button
+                type="button"
                 onClick={() => onEdit(talent)}
                 className="w-8.5 h-8.5 rounded-full inline-flex items-center justify-center border border-border-subtle bg-surface-secondary text-text-primary hover:bg-surface-tertiary hover:border-border-medium transition-all duration-150 cursor-pointer outline-none"
                 title={t('edit_performer')}
               >
                 <Edit2 size={15} />
               </button>
-              <button
-                onClick={handleDelete}
-                className="w-8.5 h-8.5 rounded-full inline-flex items-center justify-center border border-border-subtle bg-surface-secondary text-danger hover:bg-danger-light hover:border-danger-border transition-all duration-150 cursor-pointer outline-none"
-                title={t('delete')}
-              >
-                <Trash2 size={15} />
-              </button>
+
+              {/* More Actions Dropdown Menu */}
+              <div ref={actionsMenuRef} className="relative">
+                <button
+                  type="button"
+                  onClick={() => setIsActionsMenuOpen((prev) => !prev)}
+                  className={`w-8.5 h-8.5 rounded-full inline-flex items-center justify-center border border-border-subtle bg-surface-secondary text-text-primary hover:bg-surface-tertiary hover:border-border-medium transition-all duration-150 cursor-pointer outline-none ${isActionsMenuOpen
+                      ? 'border-brand-primary text-brand-primary bg-surface-tertiary shadow-xs'
+                      : ''
+                    }`}
+                  title={isKa ? 'სხვა მოქმედებები' : 'More Actions'}
+                  aria-expanded={isActionsMenuOpen}
+                  aria-haspopup="true"
+                >
+                  <MoreVertical size={16} />
+                </button>
+
+                {isActionsMenuOpen && (
+                  <div
+                    className="absolute right-0 top-full mt-1.5 z-40 w-64 p-1 rounded-lg bg-surface border border-border-subtle shadow-lg animate-in fade-in zoom-in-95 duration-150"
+                    role="menu"
+                  >
+                    {/* Action 1: Terminate Contract Early */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsActionsMenuOpen(false);
+                        handleOpenReview('Early Termination');
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-medium text-amber-800 dark:text-amber-400 hover:bg-amber-500/10 transition-colors text-left cursor-pointer group"
+                      role="menuitem"
+                    >
+                      <div className="w-6.5 h-6.5 rounded bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                        <AlertTriangle size={13} />
+                      </div>
+                      <div className="flex flex-col min-w-0">
+                        <span className="truncate font-semibold">{isKa ? 'კონტრაქტის ვადაზე ადრე შეწყვეტა' : 'Terminate Contract Early'}</span>
+                        <span className="text-[10px] text-amber-700/70 dark:text-amber-400/70 font-normal truncate">
+                          {isKa ? 'ფორსმაჟორი, ტრავმა ან დისციპლინა' : 'Force majeure, injury or discipline'}
+                        </span>
+                      </div>
+                    </button>
+
+                    {/* Divider */}
+                    <div className="my-1 border-t border-border-subtle" />
+
+                    {/* Action 2: Delete Talent */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsActionsMenuOpen(false);
+                        handleDelete();
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-medium text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors text-left cursor-pointer group"
+                      role="menuitem"
+                    >
+                      <div className="w-6.5 h-6.5 rounded bg-rose-500/10 text-rose-600 flex items-center justify-center shrink-0">
+                        <Trash2 size={13} />
+                      </div>
+                      <div className="flex flex-col min-w-0">
+                        <span className="truncate font-semibold">{isKa ? 'ტალანტის წაშლა' : 'Delete Talent'}</span>
+                        <span className="text-[10px] text-rose-500/70 font-normal truncate">
+                          {isKa ? 'პროფილის სრული ამოშლა' : 'Permanent profile removal'}
+                        </span>
+                      </div>
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
           {/* Status Selector Custom Dropdown */}
           <div
             ref={statusDropdownRef}
-            className={`relative flex items-center justify-between gap-3 px-3 py-2 rounded-sm bg-surface-secondary border border-border-subtle ${
-              talent.status !== 'Active' ? 'mb-2.5' : 'mb-3.5'
-            }`}
+            className={`relative flex items-center justify-between gap-3 px-3 py-2 rounded-md bg-surface-secondary border border-border-subtle ${talent.status !== 'Active' ? 'mb-2.5' : 'mb-3.5'
+              }`}
           >
-            <span className="text-[0.825rem] font-semibold text-text-secondary">
+            <span className="text-xs font-medium text-text-secondary">
               {t('availability_status')}:
             </span>
 
             <button
               type="button"
               onClick={() => setIsStatusDropdownOpen((prev) => !prev)}
-              className={`inline-flex items-center gap-2 px-3 py-1 rounded-pill border text-[0.825rem] font-semibold cursor-pointer transition-all ${
-                talent.status === 'Active'
+              className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-md border text-xs font-medium cursor-pointer transition-all ${talent.status === 'Active'
                   ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700'
                   : talent.status === 'Rest'
-                  ? 'border-amber-500/30 bg-amber-500/10 text-amber-700'
-                  : 'border-danger/30 bg-danger/10 text-danger'
-              }`}
+                    ? 'border-amber-500/30 bg-amber-500/10 text-amber-700'
+                    : 'border-rose-500/30 bg-rose-500/10 text-rose-600'
+                }`}
             >
               <span
-                className={`w-[7px] h-[7px] rounded-full ${
-                  talent.status === 'Active'
+                className={`w-1.5 h-1.5 rounded-full ${talent.status === 'Active'
                     ? 'bg-emerald-600'
                     : talent.status === 'Rest'
-                    ? 'bg-amber-600'
-                    : 'bg-danger'
-                }`}
+                      ? 'bg-amber-600'
+                      : 'bg-rose-600'
+                  }`}
               />
               <span>
                 {talent.status === 'Active'
                   ? t('status_active')
                   : talent.status === 'Rest'
-                  ? t('status_rest')
-                  : t('status_sick')}
+                    ? t('status_rest')
+                    : t('status_sick')}
               </span>
               <ChevronDown
-                size={14}
+                size={13}
                 className={`transition-transform duration-150 ${isStatusDropdownOpen ? 'rotate-180' : ''}`}
               />
             </button>
 
             {/* Status Dropdown Menu */}
             {isStatusDropdownOpen && (
-              <div className="absolute top-[calc(100%+6px)] right-3 min-w-[160px] bg-surface rounded-md border border-border-medium shadow-modal z-[200] overflow-hidden py-1">
+              <div className="absolute top-[calc(100%+6px)] right-3 min-w-[160px] bg-surface rounded-md border border-border-subtle shadow-modal z-[200] overflow-hidden py-1">
                 {(['Active', 'Rest', 'Sick/Injured'] as TalentStatus[]).map((st) => {
                   const isSelected = talent.status === st;
-                  const dotColor = st === 'Active' ? 'bg-emerald-600' : st === 'Rest' ? 'bg-amber-600' : 'bg-danger';
-                  const textColor = st === 'Active' ? 'text-emerald-700' : st === 'Rest' ? 'text-amber-700' : 'text-danger';
+                  const dotColor = st === 'Active' ? 'bg-emerald-600' : st === 'Rest' ? 'bg-amber-600' : 'bg-rose-600';
+                  const textColor = st === 'Active' ? 'text-emerald-700' : st === 'Rest' ? 'text-amber-700' : 'text-rose-600';
                   const label = st === 'Active' ? t('status_active') : st === 'Rest' ? t('status_rest') : t('status_sick');
 
                   return (
@@ -438,17 +539,16 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
                         handleStatusChange(st);
                         setIsStatusDropdownOpen(false);
                       }}
-                      className={`px-3 py-2 text-[0.825rem] flex items-center justify-between cursor-pointer transition-colors ${
-                        isSelected
-                          ? 'font-bold bg-surface-secondary text-text-primary'
-                          : 'font-medium text-text-primary hover:bg-surface-secondary'
-                      }`}
+                      className={`px-3 py-2 text-xs flex items-center justify-between cursor-pointer transition-colors ${isSelected
+                          ? 'font-semibold bg-surface-secondary text-text-primary'
+                          : 'font-normal text-text-primary hover:bg-surface-secondary'
+                        }`}
                     >
                       <div className="flex items-center gap-2">
-                        <span className={`w-[7px] h-[7px] rounded-full ${dotColor}`} />
+                        <span className={`w-1.5 h-1.5 rounded-full ${dotColor}`} />
                         <span>{label}</span>
                       </div>
-                      {isSelected && <Check size={14} className={textColor} strokeWidth={2.5} />}
+                      {isSelected && <Check size={13} className={textColor} strokeWidth={2.5} />}
                     </div>
                   );
                 })}
@@ -458,8 +558,8 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
 
           {/* Compact, Refined Warning Notice */}
           {talent.status !== 'Active' && (
-            <div className="mb-3 px-3 py-2 rounded-sm bg-accent-orange/10 border border-accent-orange/30 text-accent-orange text-[0.785rem] font-medium flex items-center gap-2 leading-relaxed">
-              <AlertTriangle size={14} strokeWidth={2} className="shrink-0 text-accent-orange" />
+            <div className="mb-3 px-3 py-2 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 text-xs font-medium flex items-center gap-2 leading-relaxed">
+              <AlertTriangle size={13} strokeWidth={2} className="shrink-0 text-amber-600" />
               <span>
                 {language === 'ka'
                   ? 'ავტომატურად ამოღებულია როტაციიდან და შოუებიდან'
@@ -468,18 +568,38 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
             </div>
           )}
 
-          {/* Tab Navigation Buttons - Segmented Pill Control (Optimized for 4 items without text wrapping) */}
-          <div className="flex items-center bg-surface-secondary rounded-pill p-1 border border-border-subtle gap-1 h-[42px] box-border">
+          {/* Smart Contract Expiry Banner */}
+          {isContractExpired && (
+            <div className="mb-3.5 bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 flex items-center justify-between gap-3 animate-in fade-in duration-150">
+              <div className="flex items-center gap-2 min-w-0">
+                <AlertTriangle size={15} className="text-amber-600 dark:text-amber-400 shrink-0" />
+                <span className="text-xs font-semibold text-amber-900 dark:text-amber-300 leading-tight">
+                  {isKa
+                    ? 'კონტრაქტის ვადა ამოიწურა — საჭიროებს სეზონის შეფასებას და დახურვას'
+                    : 'Contract has expired — requires season evaluation and closure'}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleOpenReview('End of Season')}
+                className="shrink-0 px-3 py-1.5 rounded-md bg-amber-600 hover:bg-amber-700 text-white font-medium text-xs shadow-sm transition-all cursor-pointer whitespace-nowrap"
+              >
+                {isKa ? 'შეფასება & დახურვა' : 'Review & Close'}
+              </button>
+            </div>
+          )}
+
+          {/* Tab Navigation Buttons - Linear/Vercel Segmented Control */}
+          <div className="flex items-center bg-surface-secondary rounded-lg p-0.5 border border-border-subtle gap-0.5 h-[38px] box-border">
             {/* Tab 1: Info */}
             <button
               type="button"
               onClick={() => handleTabSelect('info')}
               title={isKa ? 'ინფორმაცია' : 'Personal Information'}
-              className={`flex-1 h-[34px] flex items-center justify-center gap-1 px-2 rounded-pill border-none text-xs cursor-pointer whitespace-nowrap min-w-0 transition-all duration-150 ${
-                activeTab === 'info'
-                  ? 'font-bold bg-brand-primary text-white shadow-glow'
+              className={`flex-1 h-[32px] flex items-center justify-center gap-1.5 px-2 rounded-md border-none text-xs cursor-pointer whitespace-nowrap min-w-0 transition-all duration-150 ${activeTab === 'info'
+                  ? 'font-semibold bg-surface text-text-primary shadow-xs border border-border-subtle'
                   : 'font-medium bg-transparent text-text-secondary hover:text-text-primary'
-              }`}
+                }`}
             >
               <User size={13} className="shrink-0" />
               <span className="whitespace-nowrap truncate">{isKa ? 'ინფო' : 'Info'}</span>
@@ -490,20 +610,18 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
               type="button"
               onClick={() => handleTabSelect('docs')}
               title={isKa ? 'დოკუმენტები' : 'Documents'}
-              className={`flex-1 relative h-[34px] flex items-center justify-center gap-1 px-1.5 rounded-pill border-none text-xs cursor-pointer whitespace-nowrap min-w-0 transition-all duration-150 ${
-                activeTab === 'docs'
-                  ? 'font-bold bg-brand-primary text-white shadow-glow'
+              className={`flex-1 relative h-[32px] flex items-center justify-center gap-1 px-1.5 rounded-md border-none text-xs cursor-pointer whitespace-nowrap min-w-0 transition-all duration-150 ${activeTab === 'docs'
+                  ? 'font-semibold bg-surface text-text-primary shadow-xs border border-border-subtle'
                   : 'font-medium bg-transparent text-text-secondary hover:text-text-primary'
-              }`}
+                }`}
             >
               <FileText size={13} className="shrink-0" />
               <span className="whitespace-nowrap truncate">{isKa ? 'დოკუმენტები' : 'Docs'}</span>
               <span
-                className={`text-[0.65rem] font-bold rounded-pill px-1.5 min-w-[17px] h-[17px] flex items-center justify-center leading-none shrink-0 transition-colors ${
-                  activeTab === 'docs'
-                    ? 'bg-white text-brand-primary shadow-xs'
-                    : 'bg-surface border border-border-subtle text-text-secondary'
-                }`}
+                className={`text-[10px] font-semibold rounded px-1.5 min-w-[16px] h-[16px] flex items-center justify-center leading-none shrink-0 transition-colors ${activeTab === 'docs'
+                    ? 'bg-surface-secondary text-text-primary border border-border-subtle'
+                    : 'bg-surface-secondary text-text-secondary'
+                  }`}
               >
                 {talent.documents.length}
               </span>
@@ -514,11 +632,10 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
               type="button"
               onClick={() => handleTabSelect('stats')}
               title={isKa ? 'მორიგეობის სტატისტიკა' : 'Duty Statistics'}
-              className={`flex-1 h-[34px] flex items-center justify-center gap-1 px-2 rounded-pill border-none text-xs cursor-pointer whitespace-nowrap min-w-0 transition-all duration-150 ${
-                activeTab === 'stats'
-                  ? 'font-bold bg-brand-primary text-white shadow-glow'
+              className={`flex-1 h-[32px] flex items-center justify-center gap-1.5 px-2 rounded-md border-none text-xs cursor-pointer whitespace-nowrap min-w-0 transition-all duration-150 ${activeTab === 'stats'
+                  ? 'font-semibold bg-surface text-text-primary shadow-xs border border-border-subtle'
                   : 'font-medium bg-transparent text-text-secondary hover:text-text-primary'
-              }`}
+                }`}
             >
               <BarChart3 size={13} className="shrink-0" />
               <span className="whitespace-nowrap truncate">{isKa ? 'სტატისტიკა' : 'Stats'}</span>
@@ -529,21 +646,19 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
               type="button"
               onClick={() => handleTabSelect('reviews')}
               title={isKa ? 'შეფასება & არქივი' : 'Reviews & Contract Archive'}
-              className={`flex-1 relative h-[34px] flex items-center justify-center gap-1 px-1.5 rounded-pill border-none text-xs cursor-pointer whitespace-nowrap min-w-0 transition-all duration-150 ${
-                activeTab === 'reviews'
-                  ? 'font-bold bg-brand-primary text-white shadow-glow'
+              className={`flex-1 relative h-[32px] flex items-center justify-center gap-1 px-1.5 rounded-md border-none text-xs cursor-pointer whitespace-nowrap min-w-0 transition-all duration-150 ${activeTab === 'reviews'
+                  ? 'font-semibold bg-surface text-text-primary shadow-xs border border-border-subtle'
                   : 'font-medium bg-transparent text-text-secondary hover:text-text-primary'
-              }`}
+                }`}
             >
               <Star size={13} className="shrink-0" />
               <span className="whitespace-nowrap truncate">{isKa ? 'შეფასება' : 'Reviews'}</span>
               {talent.reviews && talent.reviews.length > 0 && (
                 <span
-                  className={`text-[0.65rem] font-bold rounded-pill px-1.5 min-w-[17px] h-[17px] flex items-center justify-center leading-none shrink-0 transition-colors ${
-                    activeTab === 'reviews'
-                      ? 'bg-white text-brand-primary shadow-xs'
-                      : 'bg-surface border border-border-subtle text-text-secondary'
-                  }`}
+                  className={`text-[10px] font-semibold rounded px-1.5 min-w-[16px] h-[16px] flex items-center justify-center leading-none shrink-0 transition-colors ${activeTab === 'reviews'
+                      ? 'bg-surface-secondary text-text-primary border border-border-subtle'
+                      : 'bg-surface-secondary text-text-secondary'
+                    }`}
                 >
                   {talent.reviews.length}
                 </span>
@@ -625,11 +740,10 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
                                 setTimeout(() => setCopiedPhone(false), 2000);
                               }}
                               title={copiedPhone ? (language === 'ka' ? 'დაკოპირებულია!' : 'Copied!') : (language === 'ka' ? 'ნომრის კოპირება' : 'Copy number')}
-                              className={`inline-flex items-center justify-center w-[30px] h-[30px] rounded-sm border cursor-pointer transition-all duration-150 ${
-                                copiedPhone
+                              className={`inline-flex items-center justify-center w-[30px] h-[30px] rounded-sm border cursor-pointer transition-all duration-150 ${copiedPhone
                                   ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30'
                                   : 'bg-canvas text-text-secondary border-border-subtle hover:text-text-primary hover:bg-surface-tertiary'
-                              }`}
+                                }`}
                             >
                               {copiedPhone ? <Check size={14} /> : <Copy size={14} />}
                             </button>
@@ -866,7 +980,7 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
                       {!isParsingDoc && parseDetected === true && (
                         <span className="text-[0.72rem] text-emerald-600 font-semibold flex items-center gap-1">
                           <Sparkles size={12} />
-                          <span>{t('auto_detected_date')} ✓</span>
+                          <span>{t('auto_detected_date')}</span>
                         </span>
                       )}
                     </div>
@@ -885,7 +999,7 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
                     <div className="text-[0.7rem] text-text-secondary mt-0.5">
                       {parseDetected === false ? (
                         <span className="text-amber-600 font-medium">
-                          ⚠️ {t('manual_date_hint')}
+                          {t('manual_date_hint')}
                         </span>
                       ) : (
                         <span>{t('contract_expiry_hint')}</span>
@@ -951,9 +1065,8 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
                           {doc.expiryDate && (
                             <>
                               <span>•</span>
-                              <span className={`inline-flex items-center gap-1 font-semibold ${
-                                isExpired ? 'text-danger' : isExpiringSoon ? 'text-amber-600' : 'text-emerald-700'
-                              }`}>
+                              <span className={`inline-flex items-center gap-1 font-semibold ${isExpired ? 'text-danger' : isExpiringSoon ? 'text-amber-600' : 'text-emerald-700'
+                                }`}>
                                 <Calendar size={11} />
                                 <span>{t('valid_until')} {doc.expiryDate}</span>
                               </span>
@@ -1029,20 +1142,18 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
                 <button
                   key={tab.key}
                   onClick={() => setStatsSubTab(tab.key)}
-                  className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded-sm border-none cursor-pointer text-[0.8rem] transition-all duration-150 ${
-                    statsSubTab === tab.key
+                  className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded-sm border-none cursor-pointer text-[0.8rem] transition-all duration-150 ${statsSubTab === tab.key
                       ? 'font-bold bg-surface text-text-primary shadow-sm'
                       : 'font-medium bg-transparent text-text-secondary hover:text-text-primary'
-                  }`}
+                    }`}
                 >
                   {tab.icon}
                   {tab.label}
                   <span
-                    className={`text-[0.7rem] font-bold min-w-[18px] h-[18px] inline-flex items-center justify-center rounded-full transition-colors ${
-                      statsSubTab === tab.key
+                    className={`text-[0.7rem] font-bold min-w-[18px] h-[18px] inline-flex items-center justify-center rounded-full transition-colors ${statsSubTab === tab.key
                         ? 'bg-brand-primary text-white'
                         : 'bg-border-medium text-text-secondary'
-                    }`}
+                      }`}
                   >
                     {tab.count}
                   </span>
@@ -1112,22 +1223,20 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
                       return (
                         <div
                           key={ev.id}
-                          className={`px-3 py-2.5 rounded-sm border text-[0.8rem] ${
-                            isPast
+                          className={`px-3 py-2.5 rounded-sm border text-[0.8rem] ${isPast
                               ? 'bg-black/[0.02] border-border-subtle opacity-85'
                               : 'bg-brand-primary/5 border-brand-primary/20'
-                          }`}
+                            }`}
                         >
                           <div className="flex justify-between items-start mb-1">
                             <div className="font-semibold text-text-primary truncate flex-1 mr-2">
                               {ev.title}
                             </div>
                             <span
-                              className={`text-[0.68rem] font-bold px-2 py-0.5 rounded-pill shrink-0 flex items-center gap-1 border ${
-                                isPast
+                              className={`text-[0.68rem] font-bold px-2 py-0.5 rounded-pill shrink-0 flex items-center gap-1 border ${isPast
                                   ? 'bg-surface-secondary text-text-secondary border-border-subtle'
                                   : 'bg-brand-primary/10 text-brand-primary border-brand-primary/25'
-                              }`}
+                                }`}
                             >
                               {isPast && <Check size={10} strokeWidth={2.5} />}
                               {isPast ? (isKa ? 'დასრულდა' : 'Done') : (isKa ? 'დაგეგმილი' : 'Upcoming')}
@@ -1157,10 +1266,10 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
         {activeTab === 'reviews' && (() => {
           const reviewsList = talent.reviews || [];
           const averageRating = reviewsList.length > 0
-            ? Number((reviewsList.reduce((acc, r) => acc + (r.overallRating || 0), 0) / reviewsList.length).toFixed(1))
+            ? Number((reviewsList.reduce((acc, r) => acc + (r.rating ?? r.overallRating ?? 0), 0) / reviewsList.length).toFixed(1))
             : null;
 
-          const effectiveRehireStatus = talent.rehireStatus || (reviewsList.length > 0 ? reviewsList[0].rehireStatus : 'Eligible for Rehire');
+          const effectiveRehireStatus = talent.rehireStatus || (reviewsList.length > 0 ? reviewsList[0].rehireStatus : 'eligible');
 
           return (
             <div className="flex flex-col gap-3.5 animate-in fade-in duration-150">
@@ -1172,41 +1281,30 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
                     {isKa ? 'სტატუსი:' : 'Status:'}
                   </span>
                   {reviewsList.length === 0 ? (
-                    <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-brand-primary/10 text-brand-primary border border-brand-primary/20 shrink-0">
+                    <span className="px-2.5 py-0.5 rounded-md text-xs font-semibold bg-brand-primary/10 text-brand-primary border border-brand-primary/20 shrink-0">
                       {isKa ? 'ახალი ტალანტი' : 'New Talent'}
                     </span>
                   ) : (
-                    <span
-                      className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border shrink-0 ${
-                        effectiveRehireStatus === 'Eligible for Rehire'
-                          ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/25'
-                          : effectiveRehireStatus === 'Do Not Rehire'
-                          ? 'bg-danger/10 text-danger border-danger/25'
-                          : 'bg-amber-500/10 text-amber-600 border-amber-500/25'
-                      }`}
-                    >
-                      {effectiveRehireStatus === 'Eligible for Rehire'
-                        ? 'Eligible'
-                        : effectiveRehireStatus === 'Do Not Rehire'
-                        ? 'Do Not Rehire'
-                        : 'Under Review'}
-                    </span>
+                    <RehireBadge status={effectiveRehireStatus} />
                   )}
                 </div>
 
                 {/* Right: Rating */}
-                <div className="flex items-center gap-1.5 shrink-0 text-text-primary font-semibold text-xs">
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 font-semibold text-xs shrink-0">
                   <Star
-                    size={14}
-                    className={averageRating !== null ? 'fill-amber-400 text-amber-400' : 'text-slate-300 dark:text-text-secondary'}
+                    size={13}
+                    className={averageRating !== null ? 'fill-amber-400 text-amber-400 shrink-0' : 'text-slate-300 shrink-0'}
                   />
                   <span>
                     {averageRating !== null
-                      ? `${averageRating} / 5.0 (${reviewsList.length} ${isKa ? 'შეფასება' : 'reviews'})`
-                      : isKa
-                      ? '— / 5.0 (შეუფასებელი)'
-                      : '— / 5.0 (Unrated)'}
+                      ? `${averageRating} / 5.0`
+                      : '— / 5.0'}
                   </span>
+                  {reviewsList.length > 0 && (
+                    <span className="text-amber-600/75 dark:text-amber-400/75 font-normal">
+                      ({reviewsList.length} {isKa ? 'შეფასება' : 'reviews'})
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -1216,17 +1314,6 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
                   <h4 className="text-xs font-bold text-text-primary uppercase tracking-wider m-0">
                     {isKa ? 'ისტორია' : 'History'} ({reviewsList.length})
                   </h4>
-
-                  {reviewsList.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => setIsReviewModalOpen(true)}
-                      className="inline-flex items-center justify-center gap-1 px-2.5 py-1 rounded-pill text-[11px] font-semibold bg-brand-primary/10 text-brand-primary hover:bg-brand-primary hover:text-white transition-all cursor-pointer"
-                    >
-                      <Plus size={12} />
-                      <span>{isKa ? 'შეფასების დამატება' : 'Add Evaluation'}</span>
-                    </button>
-                  )}
                 </div>
 
                 {/* Compact Empty State */}
@@ -1238,146 +1325,87 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
                     <div className="text-xs font-semibold text-text-secondary">
                       {isKa ? 'შეფასებების ისტორია ცარიელია' : 'Evaluation history is empty'}
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setIsReviewModalOpen(true)}
-                      className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-pill text-xs font-semibold bg-surface border border-border-subtle hover:bg-surface-secondary text-brand-primary shadow-xs hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer"
-                    >
-                      <Plus size={13} />
-                      <span>{isKa ? '+ პირველი შეფასების დამატება' : '+ Add First Evaluation'}</span>
-                    </button>
                   </div>
                 ) : (
-                  <div className="flex flex-col gap-3">
+                  <div className="flex flex-col gap-2.5">
                     {reviewsList.map((review) => {
-                      const isTerminatedEarly = review.completionStatus === 'Terminated Early';
+                      const isTerminatedEarly = review.contractStatus === 'terminated' || review.completionStatus === 'Terminated Early';
 
                       return (
                         <div
                           key={review.id}
-                          className="p-4 rounded-xl bg-surface border border-border-subtle shadow-xs hover:border-brand-primary/40 transition-all flex flex-col gap-3"
+                          className="p-3.5 rounded-lg bg-surface border border-border-subtle shadow-xs hover:border-border-medium transition-all flex flex-col gap-2"
                         >
-                          {/* Header: Project name, period, and main completion badge */}
-                          <div className="flex items-start justify-between gap-3">
+                          {/* Header: Project name, period, status badge & rating */}
+                          <div className="flex items-start justify-between gap-2.5">
                             <div className="min-w-0">
-                              <h5 className="text-sm font-bold text-text-primary m-0 tracking-tight truncate">
+                              <h5 className="text-xs sm:text-[13px] font-semibold text-text-primary m-0 tracking-tight truncate">
                                 {review.projectName}
                               </h5>
-                              <div className="flex items-center gap-2 text-xs text-text-secondary mt-1">
+                              <div className="flex items-center gap-1.5 text-[11px] text-text-secondary mt-0.5">
                                 <span className="flex items-center gap-1">
-                                  <Calendar size={12} className="text-text-secondary" />
+                                  <Calendar size={11} className="text-text-tertiary shrink-0" />
                                   <span>{review.period}</span>
                                 </span>
                                 <span>•</span>
-                                <span className="text-[11px] font-medium text-text-secondary">
-                                  {review.reviewType === 'End of Season'
-                                    ? (isKa ? 'სეზონის ბოლოს შეფასება' : 'End of Season')
-                                    : review.reviewType === 'Mid-Season Review'
-                                    ? (isKa ? 'შუალედური შეფასება' : 'Mid-Season Review')
-                                    : (isKa ? 'ვადაზე ადრე გაწყვეტა' : 'Early Termination')}
+                                <span className="text-[11px] text-text-tertiary">
+                                  {review.contractStatus === 'terminated' || review.reviewType === 'Early Termination'
+                                    ? (isKa ? 'ვადაზე ადრე შეწყვეტა' : 'Early Termination')
+                                    : (isKa ? 'სეზონის დასასრული' : 'End of Season')}
                                 </span>
                               </div>
                             </div>
 
-                            <div className="flex items-center gap-1.5 shrink-0">
-                              <span
-                                className={`text-[11px] font-bold px-2.5 py-1 rounded-pill flex items-center gap-1 border ${
-                                  isTerminatedEarly
-                                    ? 'bg-danger/10 text-danger border-danger/30'
-                                    : 'bg-emerald-500/10 text-emerald-700 border-emerald-500/30'
-                                }`}
-                              >
-                                {isTerminatedEarly ? (
-                                  <>
-                                    <AlertTriangle size={12} />
-                                    <span>
-                                      {isKa ? 'ვადაზე ადრე შეწყდა' : 'Terminated Early'}
-                                      {review.terminationReason && ` (${review.terminationReason})`}
-                                    </span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <Check size={12} strokeWidth={2.5} />
-                                    <span>{isKa ? 'წარმატებით დასრულდა' : 'Completed Successfully'}</span>
-                                  </>
-                                )}
-                              </span>
-                            </div>
-                          </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              {review.rehireStatus ? (
+                                <RehireBadge status={review.rehireStatus} />
+                              ) : (
+                                <span
+                                  className={`text-xs font-semibold px-2.5 py-0.5 rounded-md flex items-center gap-1 border shrink-0 ${isTerminatedEarly
+                                      ? 'bg-rose-100 text-rose-800 border-rose-300 dark:bg-rose-950 dark:text-rose-300 dark:border-rose-800'
+                                      : 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800'
+                                    }`}
+                                >
+                                  {isTerminatedEarly ? (
+                                    <>
+                                      <AlertTriangle size={11} strokeWidth={2.5} />
+                                      <span>{isKa ? 'ვადაზე ადრე შეწყდა' : 'Terminated Early'}</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Check size={11} strokeWidth={2.5} />
+                                      <span>{isKa ? 'დასრულდა' : 'Completed'}</span>
+                                    </>
+                                  )}
+                                </span>
+                              )}
 
-                          {/* Scores Breakdown Pill Grid */}
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
-                            <div className="p-2 rounded-lg bg-surface-secondary/70 border border-border-subtle flex items-center justify-between text-xs">
-                              <span className="text-[11px] text-text-secondary truncate">
-                                {isKa ? 'პუნქტუალურობა:' : 'Punctuality:'}
-                              </span>
-                              <span className="font-bold text-text-primary ml-1 flex items-center gap-0.5">
-                                <Star size={11} className="fill-amber-400 text-amber-400" />
-                                {review.scores.punctuality}.0
-                              </span>
-                            </div>
-
-                            <div className="p-2 rounded-lg bg-surface-secondary/70 border border-border-subtle flex items-center justify-between text-xs">
-                              <span className="text-[11px] text-text-secondary truncate">
-                                {isKa ? 'შესრულება:' : 'Performance:'}
-                              </span>
-                              <span className="font-bold text-text-primary ml-1 flex items-center gap-0.5">
-                                <Star size={11} className="fill-amber-400 text-amber-400" />
-                                {review.scores.performance}.0
-                              </span>
-                            </div>
-
-                            <div className="p-2 rounded-lg bg-surface-secondary/70 border border-border-subtle flex items-center justify-between text-xs">
-                              <span className="text-[11px] text-text-secondary truncate">
-                                {isKa ? 'გუნდურობა:' : 'Teamwork:'}
-                              </span>
-                              <span className="font-bold text-text-primary ml-1 flex items-center gap-0.5">
-                                <Star size={11} className="fill-amber-400 text-amber-400" />
-                                {review.scores.teamwork}.0
-                              </span>
-                            </div>
-
-                            <div className="p-2 rounded-lg bg-surface-secondary/70 border border-border-subtle flex items-center justify-between text-xs">
-                              <span className="text-[11px] text-text-secondary truncate">
-                                {isKa ? 'ინვენტარი:' : 'Gear Care:'}
-                              </span>
-                              <span className="font-bold text-text-primary ml-1 flex items-center gap-0.5">
-                                <Star size={11} className="fill-amber-400 text-amber-400" />
-                                {review.scores.gearCare || 5}.0
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* Private Confidential Note Box */}
-                          {review.privateNote && (
-                            <div className="p-3 rounded-lg bg-surface-secondary/90 border border-border-subtle text-xs text-text-primary flex flex-col gap-1">
-                              <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-amber-600">
-                                <Lock size={11} />
-                                <span>{isKa ? 'კონფიდენციალური შიდა კომენტარი' : 'Confidential Admin Note'}</span>
+                              <div className="flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-300 font-semibold text-xs border border-amber-500/20 shrink-0">
+                                <Star size={11} className="fill-amber-400 text-amber-400 shrink-0" />
+                                <span>{(review.rating ?? review.overallRating ?? 5.0).toFixed(1)}</span>
                               </div>
-                              <p className="m-0 text-text-secondary leading-relaxed">
-                                {review.privateNote}
-                              </p>
                             </div>
+                          </div>
+
+                          {/* Private Note (plain, in quotes, text-xs text-text-secondary) */}
+                          {(review.internalNote || review.privateNote) && (
+                            <p className="m-0 text-xs text-text-secondary italic leading-relaxed">
+                              "{review.internalNote || review.privateNote}"
+                            </p>
                           )}
 
-                          {/* Footer: Reviewer and Date */}
-                          <div className="pt-2 border-t border-border-subtle flex items-center justify-between text-[11px] text-text-secondary">
-                            <div className="flex items-center gap-1.5">
-                              <ShieldCheck size={13} className="text-brand-primary" />
-                              <span>
-                                {isKa ? 'შემფასებელი:' : 'Evaluator:'}{' '}
-                                <strong className="text-text-primary font-semibold">{review.reviewerName}</strong>
-                              </span>
-                            </div>
-
-                            <div>
-                              {new Date(review.createdAt).toLocaleDateString(isKa ? 'ka-GE' : 'en-US', {
+                          {/* Footer: Reviewer and Date on one line (text-[11px] text-text-tertiary) */}
+                          <div className="flex items-center justify-between text-[11px] text-text-tertiary pt-1.5 border-t border-border-subtle/50">
+                            <span className="font-medium text-text-secondary">
+                              {review.reviewedBy || review.reviewerName}
+                            </span>
+                            <span>
+                              {new Date(review.reviewDate || review.createdAt || '').toLocaleDateString(isKa ? 'ka-GE' : 'en-US', {
                                 year: 'numeric',
                                 month: 'short',
                                 day: 'numeric'
                               })}
-                            </div>
+                            </span>
                           </div>
                         </div>
                       );
@@ -1396,15 +1424,26 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
           isOpen={isReviewModalOpen}
           onClose={() => setIsReviewModalOpen(false)}
           talent={talent}
+          initialReviewType={selectedReviewType}
           onSubmit={(newReview) => {
             const currentReviews = talent.reviews || [];
             const updatedReviews = [newReview, ...currentReviews];
+            const isEarlyEnd = newReview.contractStatus === 'terminated' || newReview.completionStatus === 'Terminated Early';
+
             updateTalent(talent.id, {
               reviews: updatedReviews,
-              rehireStatus: newReview.rehireStatus
+              rehireStatus: newReview.rehireStatus,
+              contractExpiryDate: undefined,
+              status: 'Rest'
             });
             toast.success(
-              isKa ? 'შეფასება წარმატებით დაემატა არქივში' : 'Evaluation successfully added to archive'
+              isKa
+                ? isEarlyEnd
+                  ? 'კონტრაქტი ვადაზე ადრე შეწყდა და გადავიდა არქივში'
+                  : 'სეზონი წარმატებით დაიხურა და გადავიდა არქივში'
+                : isEarlyEnd
+                ? 'Contract terminated early and archived'
+                : 'Season successfully closed and archived'
             );
           }}
         />

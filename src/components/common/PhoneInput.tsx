@@ -176,9 +176,9 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({
   return (
     <div
       ref={dropdownRef}
-      className={`relative flex items-stretch w-full h-[42px] bg-surface rounded-sm transition-all duration-150 border ${
+      className={`relative flex items-stretch w-full h-[38px] bg-surface rounded-md transition-all duration-150 border ${
         isFocused
-          ? 'border-brand-primary ring-2 ring-brand-primary/10'
+          ? 'border-brand-primary ring-1 ring-brand-primary/20'
           : 'border-border-subtle hover:border-border-medium'
       }`}
     >
@@ -197,7 +197,7 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({
             });
           }
         }}
-        className="inline-flex items-center justify-center gap-1.5 w-[92px] min-w-[92px] shrink-0 border-r border-border-subtle rounded-l-[9px] bg-surface-secondary text-text-primary text-sm font-semibold outline-none px-2 h-full transition-colors cursor-pointer disabled:cursor-not-allowed hover:bg-surface-tertiary"
+        className="inline-flex items-center justify-center gap-1.5 w-[92px] min-w-[92px] shrink-0 border-r border-border-subtle rounded-l-md bg-surface-secondary text-text-primary text-xs font-semibold outline-none px-2 h-full transition-colors cursor-pointer disabled:cursor-not-allowed hover:bg-surface-tertiary"
         title={`${selectedCountry.name} (${selectedCountry.dialCode})`}
       >
         <span className="text-lg leading-none">{selectedCountry.flag}</span>
@@ -264,7 +264,7 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({
                     key={c.code}
                     type="button"
                     onClick={() => handleSelectCountry(c)}
-                    className={`w-full flex items-center justify-between p-2 px-2.5 rounded-xs border-none text-xs cursor-pointer transition-colors text-left ${
+                    className={`w-full flex items-center justify-between p-2 px-2.5 rounded-md border-none text-xs cursor-pointer transition-colors text-left ${
                       isSelected
                         ? 'bg-brand-primary/10 text-brand-primary font-semibold'
                         : 'text-text-primary hover:bg-surface-secondary font-normal'

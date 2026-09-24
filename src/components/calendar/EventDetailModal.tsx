@@ -108,6 +108,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
         title={event.title}
         subtitle={t('event_detail_sub')}
         maxWidth="680px"
+        position="side"
         footer={
           <div className="flex items-center justify-between w-full flex-wrap gap-2.5">
             {isPast ? (

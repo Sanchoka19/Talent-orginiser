@@ -125,22 +125,22 @@ export const TopBar: React.FC<TopBarProps> = ({ onMenuToggle }) => {
         {/* Theme Toggle Button */}
         <button
           onClick={toggleTheme}
-          className="w-10 h-10 rounded-sm inline-flex items-center justify-center border border-border-subtle bg-surface-secondary text-text-primary hover:bg-surface-tertiary hover:border-border-medium transition-all duration-150 cursor-pointer shrink-0"
+          className="w-9 h-9 rounded-md inline-flex items-center justify-center border border-border-subtle bg-surface-secondary text-text-primary hover:bg-surface-tertiary hover:border-border-medium transition-all duration-150 cursor-pointer shrink-0"
           title={isDarkMode ? t('theme_light') : t('theme_dark')}
         >
-          {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
+          {isDarkMode ? <Sun size={17} /> : <Moon size={17} />}
         </button>
 
         {/* Notification Center Bell */}
         <div ref={notifRef} className="relative">
           <button
             onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-            className="w-10 h-10 rounded-sm inline-flex items-center justify-center border border-border-subtle bg-surface-secondary text-text-primary hover:bg-surface-tertiary hover:border-border-medium transition-all duration-150 cursor-pointer shrink-0 relative"
+            className="w-9 h-9 rounded-md inline-flex items-center justify-center border border-border-subtle bg-surface-secondary text-text-primary hover:bg-surface-tertiary hover:border-border-medium transition-all duration-150 cursor-pointer shrink-0 relative"
             title={t('btn_notifications')}
           >
-            <Bell size={18} />
+            <Bell size={17} />
             {totalAlertsCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-danger text-white text-[10px] font-bold px-1.5 py-0.5 rounded-pill border-2 border-white leading-none shadow-sm">
+              <span className="absolute -top-1 -right-1 bg-rose-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full border-2 border-white leading-none shadow-xs">
                 {totalAlertsCount}
               </span>
             )}
@@ -148,7 +148,7 @@ export const TopBar: React.FC<TopBarProps> = ({ onMenuToggle }) => {
 
           {/* Notifications Dropdown Panel */}
           {isNotificationsOpen && (
-            <div className="absolute top-12 right-0 w-[340px] bg-surface rounded-md border border-border-subtle shadow-xl p-4 z-50 animate-in fade-in duration-150">
+            <div className="absolute top-12 right-0 w-[340px] bg-surface rounded-lg border border-border-subtle shadow-xl p-4 z-50 animate-in fade-in duration-150">
               <div className="flex items-center justify-between mb-3">
                 <div className="font-bold text-sm text-text-primary">
                   {t('btn_notifications')} ({totalAlertsCount})
@@ -209,27 +209,27 @@ export const TopBar: React.FC<TopBarProps> = ({ onMenuToggle }) => {
         <div ref={profileRef} className="relative">
           <div
             onClick={() => setIsProfileOpen(!isProfileOpen)}
-            className="flex items-center gap-3 p-1 pr-3.5 rounded-pill bg-surface-secondary border border-border-subtle cursor-pointer hover:border-border-medium transition-all select-none"
+            className="flex items-center gap-2.5 p-1 pr-3 rounded-lg bg-surface-secondary border border-border-subtle cursor-pointer hover:border-border-medium transition-all select-none"
           >
             <img
               src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80"
               alt="Admin"
-              className="w-9 h-9 rounded-full object-cover border-2 border-white shrink-0"
+              className="w-8 h-8 rounded-full object-cover border border-white shrink-0"
             />
             <div className="flex flex-col text-left leading-tight">
-              <span className="text-sm font-semibold text-text-primary">
+              <span className="text-xs sm:text-sm font-semibold text-text-primary">
                 {t('admin_full_name')}
               </span>
-              <span className="text-xs text-text-secondary font-medium">
+              <span className="text-[11px] text-text-secondary font-medium">
                 {t('role_administrator')}
               </span>
             </div>
-            <ChevronDown size={16} className="text-text-secondary ml-0.5" />
+            <ChevronDown size={14} className="text-text-secondary ml-0.5" />
           </div>
 
           {/* Profile Dropdown Menu */}
           {isProfileOpen && (
-            <div className="absolute top-13 right-0 w-60 bg-surface rounded-md border border-border-subtle shadow-xl p-3 z-50 flex flex-col gap-2 animate-in fade-in duration-150">
+            <div className="absolute top-12 right-0 w-60 bg-surface rounded-lg border border-border-subtle shadow-xl p-3 z-50 flex flex-col gap-2 animate-in fade-in duration-150">
               <div className="p-1.5 px-2 border-b border-border-subtle">
                 <div className="font-semibold text-sm text-text-primary">
                   {t('admin_full_name')}
@@ -302,7 +302,7 @@ export const TopBar: React.FC<TopBarProps> = ({ onMenuToggle }) => {
                     }
                   });
                 }}
-                className="w-full inline-flex items-center justify-start text-xs gap-2 p-2 px-3 rounded-pill font-medium border border-border-subtle bg-surface-secondary text-text-primary hover:bg-surface-tertiary hover:border-border-medium transition-all cursor-pointer"
+                className="w-full inline-flex items-center justify-start text-xs gap-2 p-2 px-3 rounded-md font-medium border border-border-subtle bg-surface-secondary text-text-primary hover:bg-surface-tertiary hover:border-border-medium transition-all cursor-pointer"
               >
                 <RotateCcw size={14} />
                 <span>{t('btn_reset_demo')}</span>

@@ -1,6 +1,7 @@
 import type { Config } from 'tailwindcss';
 
 const config: Config = {
+  darkMode: 'class',
   content: [
     './app/**/*.{js,ts,jsx,tsx,mdx}',
     './src/**/*.{js,ts,jsx,tsx,mdx}',
@@ -117,19 +118,20 @@ const config: Config = {
         },
       },
       borderRadius: {
-        xs: '6px',
-        sm: '10px',
-        md: '16px',
-        lg: '24px',
-        xl: '32px',
-        pill: '9999px',
+        xs: '4px',
+        sm: '6px',
+        md: '8px',
+        lg: '12px',
+        xl: '16px',
+        pill: '8px',
       },
       boxShadow: {
-        sm: '0 2px 6px rgba(0, 0, 0, 0.04)',
-        md: '0 8px 24px -4px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04)',
-        lg: '0 20px 48px -8px rgba(0, 0, 0, 0.10), 0 4px 12px rgba(0, 0, 0, 0.05)',
-        modal: '0 28px 64px -12px rgba(0, 0, 0, 0.18), 0 8px 24px rgba(0, 0, 0, 0.08)',
-        glow: '0 4px 14px rgba(30, 106, 255, 0.25)',
+        xs: '0 1px 2px 0 rgba(0, 0, 0, 0.04)',
+        sm: '0 1px 3px 0 rgba(0, 0, 0, 0.06), 0 1px 2px -1px rgba(0, 0, 0, 0.06)',
+        md: '0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.04)',
+        lg: '0 10px 15px -3px rgba(0, 0, 0, 0.07), 0 4px 6px -4px rgba(0, 0, 0, 0.03)',
+        modal: '0 20px 25px -5px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.06)',
+        glow: '0 1px 3px rgba(30, 106, 255, 0.15)',
       },
       maxWidth: {
         drawer: '620px',
@@ -144,6 +146,25 @@ const config: Config = {
         '7.5': '1.875rem',
         '8.5': '2.125rem',
         '9.5': '2.375rem',
+      },
+      keyframes: {
+        slideInRight: {
+          '0%': { transform: 'translateX(100%)' },
+          '100%': { transform: 'translateX(0)' },
+        },
+        fadeIn: {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        zoomIn95: {
+          '0%': { opacity: '0', transform: 'scale(0.95)' },
+          '100%': { opacity: '1', transform: 'scale(1)' },
+        },
+      },
+      animation: {
+        slideInRight: 'slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+        fadeIn: 'fadeIn 0.2s ease-out',
+        zoomIn: 'zoomIn95 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
       },
     },
   },

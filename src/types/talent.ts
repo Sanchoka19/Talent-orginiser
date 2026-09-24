@@ -13,7 +13,7 @@ export interface TalentDocument {
 
 export type ReviewType = 'End of Season' | 'Mid-Season Review' | 'Early Termination';
 export type TerminationReason = 'Discipline' | 'Conflict' | 'Injury' | 'Other';
-export type RehireStatus = 'Eligible for Rehire' | 'Neutral' | 'Do Not Rehire' | 'Under Review';
+export type RehireStatus = 'eligible' | 'neutral' | 'do_not_rehire' | 'Eligible for Rehire' | 'Neutral' | 'Do Not Rehire' | 'Under Review';
 export type CompletionStatus = 'Completed Successfully' | 'Terminated Early';
 
 export interface ReviewScores {
@@ -23,49 +23,43 @@ export interface ReviewScores {
   gearCare?: number; // 1 to 5
 }
 
-export interface TalentReview {
-  id: string;
-  projectName: string;
-  period: string; // e.g., 'May 2025 – Oct 2025'
-  reviewType: ReviewType;
-  terminationReason?: TerminationReason;
-  completionStatus: CompletionStatus;
-  scores: ReviewScores;
-  overallRating: number; // e.g. 4.8
-  rehireStatus: RehireStatus;
-  privateNote: string;
-  reviewerName: string;
-  createdAt: string;
-  location?: string;
-  initiator?: 'Management' | 'Artist' | 'Mutual';
-  terminationDate?: string;
-}
-
-export interface ArchiveRecord {
+export interface ContractRecord {
   id: string;
   talentId: string;
   talentName: string;
-  talentAvatar?: string;
   talentRole: string;
-  talentEmail: string;
-  talentPhone: string;
+  avatarUrl?: string;
   projectName: string;
   location: string;
-  period: string;
-  year: number;
-  reviewType: ReviewType;
-  completionStatus: CompletionStatus;
-  terminationReason?: TerminationReason;
+  period: string; // e.g. "მაისი 2026 – სექტემბერი 2026"
+  startDate: string;
+  endDate: string;
+  contractStatus: 'completed' | 'terminated';
+  rating: number; // 1.0 - 5.0
+  rehireStatus: 'eligible' | 'neutral' | 'do_not_rehire';
+  terminationReason?: string; // მხოლოდ terminated-ის შემთხვევაში
+  initiator?: 'mutual' | 'admin' | 'talent';
+  internalNote?: string;
+  reviewedBy: string;
+  reviewDate: string;
+
+  // Backward-compatibility aliases
+  overallRating?: number;
+  privateNote?: string;
+  reviewerName?: string;
+  createdAt?: string;
+  completionStatus?: CompletionStatus;
+  reviewType?: ReviewType;
+  scores?: ReviewScores;
   terminationDate?: string;
-  initiator: 'Management' | 'Artist' | 'Mutual';
-  scores: ReviewScores;
-  overallRating: number;
-  rehireStatus: RehireStatus;
-  privateNote: string;
-  reviewerName: string;
-  createdAt: string;
+  talentAvatar?: string;
+  talentEmail?: string;
+  talentPhone?: string;
+  year?: number;
 }
 
+export type TalentReview = ContractRecord;
+export type ArchiveRecord = ContractRecord;
 
 export interface Talent {
   id: string;
@@ -82,8 +76,9 @@ export interface Talent {
   avatarUrl?: string;
   documents: TalentDocument[];
   notes?: string;
-  reviews?: TalentReview[];
+  reviews?: ContractRecord[];
   rehireStatus?: RehireStatus;
+  contractExpiryDate?: string; // ISO date string e.g. '2026-09-20'
   createdAt: string;
 }
 

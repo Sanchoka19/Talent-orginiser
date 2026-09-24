@@ -364,7 +364,7 @@ export const CreateRoleModal: React.FC<CreateRoleModalProps> = ({
               <label className="text-xs font-semibold uppercase tracking-wider text-text-secondary flex items-center gap-2">
                 <span>{isKa ? 'უფლებების მატრიცა' : 'Permissions Matrix'}</span>
                 <span
-                  className={`text-[11px] font-semibold px-2 py-0.5 rounded-pill border border-border-subtle ${
+                  className={`text-[11px] font-medium px-2 py-0.5 rounded-md border border-border-subtle ${
                     selectedPermissions.length > 0
                       ? 'bg-brand-primary/10 text-brand-primary'
                       : 'bg-surface-secondary text-text-secondary'
@@ -499,7 +499,7 @@ export const CreateRoleModal: React.FC<CreateRoleModalProps> = ({
             <button
               type="button"
               onClick={handleClose}
-              className="px-4 py-2 rounded-pill border border-border-subtle bg-surface text-text-secondary hover:bg-surface-secondary hover:text-text-primary font-semibold text-sm transition-all duration-150 cursor-pointer outline-none"
+              className="px-4 py-2 rounded-md border border-border-subtle bg-surface text-text-secondary hover:bg-surface-secondary hover:text-text-primary font-medium text-sm transition-all duration-150 cursor-pointer outline-none"
             >
               {isKa ? 'გაუქმება' : 'Cancel'}
             </button>
@@ -508,7 +508,7 @@ export const CreateRoleModal: React.FC<CreateRoleModalProps> = ({
               type="submit"
               id="btn-submit-role"
               disabled={isSubmitDisabled}
-              className="inline-flex items-center gap-2 px-5 py-2 rounded-pill text-sm font-semibold text-text-inverse bg-brand-primary shadow-glow hover:bg-brand-primary-hover hover:-translate-y-0.5 active:translate-y-0 transition-all duration-150 cursor-pointer outline-none disabled:opacity-45 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:shadow-none"
+              className="inline-flex items-center gap-2 px-5 py-2 rounded-md text-sm font-semibold text-text-inverse bg-brand-primary shadow-xs hover:bg-brand-primary-hover transition-all duration-150 cursor-pointer outline-none disabled:opacity-45 disabled:cursor-not-allowed disabled:shadow-none"
             >
               <Sparkles className="w-4 h-4" />
               <span>

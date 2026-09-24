@@ -243,7 +243,7 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
                       onClose();
                       onRequestCreateRole();
                     }}
-                    className="mt-1.5 px-4 py-2 rounded-pill bg-brand-primary text-text-inverse text-xs font-semibold shadow-glow hover:bg-brand-primary-hover flex items-center gap-1.5 transition-all duration-150 cursor-pointer outline-none"
+                    className="mt-1.5 px-3.5 py-1.5 rounded-md bg-brand-primary text-text-inverse text-xs font-semibold shadow-xs hover:bg-brand-primary-hover flex items-center gap-1.5 transition-all duration-150 cursor-pointer outline-none"
                   >
                     <ShieldPlus className="w-3.5 h-3.5" />
                     <span>{isKa ? 'როლის შექმნა' : 'Create Role'}</span>
@@ -385,7 +385,7 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
             <button
               type="button"
               onClick={handleClose}
-              className="flex-1 py-2.5 px-4 rounded-pill border border-border-subtle bg-surface text-text-secondary hover:bg-surface-secondary hover:text-text-primary font-semibold text-sm transition-all duration-150 cursor-pointer outline-none"
+              className="flex-1 py-2 px-4 rounded-md border border-border-subtle bg-surface text-text-secondary hover:bg-surface-secondary hover:text-text-primary font-medium text-sm transition-all duration-150 cursor-pointer outline-none"
             >
               {isKa ? 'გაუქმება' : 'Cancel'}
             </button>
@@ -393,7 +393,7 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
               id="cu-submit-btn"
               type="submit"
               disabled={isSubmitting || roles.length === 0}
-              className="flex-[2] py-2.5 px-4 rounded-pill text-sm font-semibold text-text-inverse bg-brand-primary shadow-glow hover:bg-brand-primary-hover hover:-translate-y-0.5 active:translate-y-0 transition-all duration-150 cursor-pointer flex items-center justify-center gap-2 outline-none disabled:opacity-45 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:shadow-none"
+              className="flex-[2] py-2 px-4 rounded-md text-sm font-semibold text-text-inverse bg-brand-primary shadow-xs hover:bg-brand-primary-hover transition-all duration-150 cursor-pointer flex items-center justify-center gap-2 outline-none disabled:opacity-45 disabled:cursor-not-allowed disabled:shadow-none"
             >
               {isSubmitting ? (
                 <>

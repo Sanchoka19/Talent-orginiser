@@ -80,7 +80,7 @@ export const DutySwapModal: React.FC<DutySwapModalProps> = ({
         date: new Date(event.startDateTime).toLocaleDateString()
       })}
       maxWidth="540px"
-      zIndex={1100}
+      zIndex={1300}
       footer={
         <div className="flex items-center justify-end gap-2.5 w-full">
           <button

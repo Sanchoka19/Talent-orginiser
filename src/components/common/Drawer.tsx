@@ -44,7 +44,9 @@ export const Drawer: React.FC<DrawerProps> = ({
         onClick={(e) => e.stopPropagation()}
       >
         <button
+          type="button"
           onClick={onClose}
+          aria-label="Close"
           className="w-8 h-8 rounded-full inline-flex items-center justify-center border border-border-subtle bg-surface/90 backdrop-blur-md text-text-primary hover:bg-surface-secondary hover:border-border-medium transition-all duration-150 cursor-pointer absolute top-4 right-4 z-10 shadow-sm"
         >
           <X size={16} />

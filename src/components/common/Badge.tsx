@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { TalentStatus, Gender } from '../../types/talent';
+import { TalentStatus, Gender, RehireStatus } from '../../types/talent';
 import { DutyGenderRequirement } from '../../types/inventory';
 import { useLanguage } from '../../context/LanguageContext';
 
@@ -27,7 +27,7 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
   }
 
   return (
-    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-pill text-xs font-medium tracking-wide whitespace-nowrap shrink-0 ${colorClasses}`}>
+    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium tracking-normal whitespace-nowrap shrink-0 ${colorClasses}`}>
       <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotClasses}`} />
       <span>{label}</span>
     </span>
@@ -59,7 +59,7 @@ export const GenderBadge: React.FC<GenderBadgeProps> = ({ gender }) => {
   }
 
   return (
-    <span className={`inline-flex items-center px-3 py-1 rounded-pill text-xs font-medium tracking-wide whitespace-nowrap shrink-0 ${colorClasses}`}>
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium tracking-normal whitespace-nowrap shrink-0 ${colorClasses}`}>
       {label}
     </span>
   );
@@ -80,10 +80,10 @@ export const DutyBadge: React.FC<DutyBadgeProps> = ({ name, headcount, genderReq
   else if (genderReq === 'Any') genderLabel = t('gender_any');
 
   return (
-    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-pill text-xs font-medium bg-surface-tertiary text-text-primary border border-border-subtle">
+    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium bg-surface-secondary text-text-primary border border-border-subtle">
       <span>{name}</span>
       {headcount !== undefined && (
-        <span className="bg-brand-navy text-white rounded-full px-1.5 py-0.5 text-[10px] font-semibold leading-none">
+        <span className="bg-brand-navy text-white rounded px-1.5 py-0.2 text-[10px] font-semibold leading-none">
           {headcount}
         </span>
       )}
@@ -92,6 +92,59 @@ export const DutyBadge: React.FC<DutyBadgeProps> = ({ name, headcount, genderReq
           ({genderLabel})
         </span>
       )}
+    </span>
+  );
+};
+
+interface RehireBadgeProps {
+  status?: RehireStatus | string;
+  className?: string;
+}
+
+export const RehireBadge: React.FC<RehireBadgeProps> = ({ status, className = '' }) => {
+  const { language } = useLanguage();
+  const isKa = language === 'ka';
+
+  if (!status) return null;
+
+  if (
+    status === 'eligible' ||
+    status === 'Eligible for Rehire' ||
+    status === 'Eligible' ||
+    status === 'Recommended'
+  ) {
+    return (
+      <span
+        className={`bg-emerald-100 text-emerald-800 border border-emerald-300 font-semibold px-2.5 py-0.5 rounded-md text-xs inline-flex items-center gap-1 ${className}`}
+      >
+        <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 shrink-0" />
+        <span>{isKa ? 'რეკომენდებული' : 'Eligible for Rehire'}</span>
+      </span>
+    );
+  }
+
+  if (
+    status === 'do_not_rehire' ||
+    status === 'Do Not Rehire' ||
+    status === 'Blacklisted' ||
+    status === 'Blacklist'
+  ) {
+    return (
+      <span
+        className={`bg-rose-100 text-rose-800 border border-rose-300 font-semibold px-2.5 py-0.5 rounded-md text-xs inline-flex items-center gap-1 ${className}`}
+      >
+        <span className="w-1.5 h-1.5 rounded-full bg-rose-600 shrink-0" />
+        <span>{isKa ? 'შავი სია' : 'Do Not Rehire'}</span>
+      </span>
+    );
+  }
+
+  return (
+    <span
+      className={`bg-slate-100 text-slate-800 border border-slate-300 font-semibold px-2.5 py-0.5 rounded-md text-xs inline-flex items-center gap-1 ${className}`}
+    >
+      <span className="w-1.5 h-1.5 rounded-full bg-slate-600 shrink-0" />
+      <span>{isKa ? 'ნეიტრალური' : 'Under Review'}</span>
     </span>
   );
 };

@@ -2,11 +2,13 @@ import { Talent, ContractRecord } from '../types/talent';
 import { Group } from '../types/group';
 import { HotelVenue } from '../types/venue';
 import { ShowEvent } from '../types/schedule';
+import { UserProfile } from '../types/user';
 
 const TALENTS_KEY = 'talent_organizer_talents_v1';
 const GROUPS_KEY = 'talent_organizer_groups_v1';
 const VENUES_KEY = 'talent_organizer_venues_v1';
 const SCHEDULE_KEY = 'talent_organizer_schedule_v1';
+const USER_PROFILE_KEY = 'talent_organizer_user_profile_v1';
 
 export function normalizeContractRecord(
   r: any,
@@ -30,7 +32,7 @@ export function normalizeContractRecord(
 
   const reviewDate = r.reviewDate ?? (r.createdAt ? r.createdAt.split('T')[0] : '2026-01-01');
   const internalNote = r.internalNote ?? r.privateNote ?? '';
-  const reviewedBy = r.reviewedBy ?? r.reviewerName ?? 'Sandro Chokoraia';
+  const reviewedBy = r.reviewedBy ?? r.reviewerName ?? 'Art Director';
 
   const startDate = r.startDate || '2025-05-01';
   const endDate = r.endDate || reviewDate;
@@ -1003,11 +1005,39 @@ export function saveStoredSchedule(schedule: ShowEvent[]): void {
   localStorage.setItem(SCHEDULE_KEY, JSON.stringify(schedule));
 }
 
+export const INITIAL_USER_PROFILE: UserProfile = {
+  fullName: 'სანდრო ჩოკორაია',
+  email: 'admin@artistent.com',
+  phone: '+995 599 12 34 56',
+  role: 'Administrator',
+  avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80'
+};
+
+export function getStoredUserProfile(): UserProfile {
+  if (typeof window === 'undefined') return INITIAL_USER_PROFILE;
+  const data = localStorage.getItem(USER_PROFILE_KEY);
+  if (!data) {
+    localStorage.setItem(USER_PROFILE_KEY, JSON.stringify(INITIAL_USER_PROFILE));
+    return INITIAL_USER_PROFILE;
+  }
+  try {
+    return JSON.parse(data);
+  } catch {
+    return INITIAL_USER_PROFILE;
+  }
+}
+
+export function saveStoredUserProfile(profile: UserProfile): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(USER_PROFILE_KEY, JSON.stringify(profile));
+}
+
 export function resetToDemoData(): void {
   if (typeof window === 'undefined') return;
   localStorage.setItem(TALENTS_KEY, JSON.stringify(INITIAL_TALENTS));
   localStorage.setItem(GROUPS_KEY, JSON.stringify(INITIAL_GROUPS));
   localStorage.setItem(VENUES_KEY, JSON.stringify(INITIAL_VENUES));
   localStorage.setItem(SCHEDULE_KEY, JSON.stringify(INITIAL_SCHEDULE));
+  localStorage.setItem(USER_PROFILE_KEY, JSON.stringify(INITIAL_USER_PROFILE));
 }
 

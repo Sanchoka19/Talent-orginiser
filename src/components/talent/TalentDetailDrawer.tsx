@@ -60,15 +60,13 @@ export const DOCUMENT_TYPES: {
   labelEn: string;
   short: string;
   badgeClass: string;
-  bg: string;
-  color: string;
 }[] = [
-    { value: 'Passport', labelKa: 'პასპორტი', labelEn: 'Passport', short: 'PAS', badgeClass: 'bg-sky-100 text-sky-700', bg: '#E0F2FE', color: '#0284C7' },
-    { value: 'Visa', labelKa: 'ვიზა', labelEn: 'Visa', short: 'VISA', badgeClass: 'bg-amber-100 text-amber-800', bg: '#FEF3C7', color: '#B45309' },
-    { value: 'ID Card', labelKa: 'პირადობის მოწმობა', labelEn: 'ID Card', short: 'ID', badgeClass: 'bg-indigo-100 text-indigo-700', bg: '#E0E7FF', color: '#4338CA' },
-    { value: 'Medical', labelKa: 'სამედიცინო ცნობა', labelEn: 'Medical Clearance', short: 'MED', badgeClass: 'bg-red-100 text-red-700', bg: '#FEE2E2', color: '#DC2626' },
-    { value: 'Contract', labelKa: 'კონტრაქტი', labelEn: 'Contract', short: 'CON', badgeClass: 'bg-emerald-100 text-emerald-800', bg: '#DCFCE7', color: '#15803D' },
-    { value: 'Other', labelKa: 'სხვა დოკუმენტი', labelEn: 'Other Document', short: 'DOC', badgeClass: 'bg-zinc-100 text-zinc-700', bg: '#F3F4F6', color: '#4B5563' },
+    { value: 'Passport', labelKa: 'პასპორტი', labelEn: 'Passport', short: 'PAS', badgeClass: 'bg-sky-500/10 text-sky-700 dark:text-sky-300 border border-sky-500/20' },
+    { value: 'Visa', labelKa: 'ვიზა', labelEn: 'Visa', short: 'VISA', badgeClass: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20' },
+    { value: 'ID Card', labelKa: 'პირადობის მოწმობა', labelEn: 'ID Card', short: 'ID', badgeClass: 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border border-indigo-500/20' },
+    { value: 'Medical', labelKa: 'სამედიცინო ცნობა', labelEn: 'Medical Clearance', short: 'MED', badgeClass: 'bg-red-500/10 text-red-700 dark:text-red-400 border border-red-500/20' },
+    { value: 'Contract', labelKa: 'კონტრაქტი', labelEn: 'Contract', short: 'CON', badgeClass: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20' },
+    { value: 'Other', labelKa: 'სხვა დოკუმენტი', labelEn: 'Other Document', short: 'DOC', badgeClass: 'bg-surface-secondary text-text-secondary border border-border-subtle' },
   ];
 
 export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
@@ -755,17 +753,13 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
                 </div>
               )}
 
-              {/* Gender, Height & Weight */}
+              {/* Gender */}
               <div className="flex items-center justify-between py-3 border-b border-border-subtle gap-3">
                 <span className="text-sm text-text-secondary font-medium">
-                  {t('gender_height_weight')}
+                  {t('gender')}
                 </span>
                 <div className="flex items-center gap-2.5">
                   <GenderBadge gender={talent.gender} />
-                  <span className="text-[0.9rem] font-semibold text-text-primary">
-                    {talent.heightCm} {language === 'ka' ? 'სმ' : 'cm'}
-                    {talent.weightKg ? ` • ${talent.weightKg} ${language === 'ka' ? 'კგ' : 'kg'}` : ''}
-                  </span>
                 </div>
               </div>
 

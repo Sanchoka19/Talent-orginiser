@@ -254,10 +254,9 @@ export const TalentList: React.FC = () => {
         <div className="w-full overflow-x-auto pb-3">
           <div className="min-w-[920px] flex flex-col gap-2">
             {/* Table header row */}
-            <div className="grid grid-cols-4 items-center px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-text-secondary mb-0.5">
+            <div className="grid grid-cols-[minmax(240px,2fr)_minmax(140px,1fr)_120px] items-center px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-text-secondary mb-0.5">
               <div>{t('performer_name_specialty')}</div>
-              <div>{t('gender_and_height')}</div>
-              <div>{t('documents')}</div>
+              <div>{t('gender')}</div>
               <div className="text-right whitespace-nowrap">{t('availability_status')}</div>
             </div>
 

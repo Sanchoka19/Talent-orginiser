@@ -46,18 +46,16 @@ export const Modal: React.FC<ModalProps> = ({
 
   return (
     <div
-      className={`fixed inset-0 bg-surface-overlay backdrop-blur-sm z-[1200] animate-in fade-in duration-200 ${
-        isSide ? 'flex justify-end' : 'flex items-center justify-center p-4'
-      }`}
+      className={`fixed inset-0 bg-surface-overlay backdrop-blur-sm z-[1200] animate-in fade-in duration-200 ${isSide ? 'flex justify-end' : 'flex items-center justify-center p-4'
+        }`}
       onClick={onClose}
       style={zIndex ? { zIndex } : undefined}
     >
       <div
-        className={`bg-surface shadow-modal flex flex-col relative overflow-hidden ${
-          isSide
+        className={`bg-surface shadow-modal flex flex-col relative overflow-hidden ${isSide
             ? 'w-full h-screen max-h-screen border-l border-border-subtle animate-in slide-in-from-right duration-300'
-            : 'w-full max-h-[90vh] rounded-xl border border-border-subtle animate-in zoom-in-95 duration-200'
-        }`}
+            : 'w-full max-h-[90vh] rounded-xl animate-in zoom-in-95 duration-200'
+          }`}
         style={{ maxWidth }}
         onClick={(e) => e.stopPropagation()}
       >

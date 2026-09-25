@@ -115,9 +115,9 @@ export const RehireBadge: React.FC<RehireBadgeProps> = ({ status, className = ''
   ) {
     return (
       <span
-        className={`bg-emerald-100 text-emerald-800 border border-emerald-300 font-semibold px-2.5 py-0.5 rounded-md text-xs inline-flex items-center gap-1 ${className}`}
+        className={`bg-status-active-bg text-status-active-text border border-emerald-500/25 font-semibold px-2.5 py-0.5 rounded-md text-xs inline-flex items-center gap-1.5 shadow-xs ${className}`}
       >
-        <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 shrink-0" />
+        <span className="w-1.5 h-1.5 rounded-full bg-status-active-dot shrink-0" />
         <span>{isKa ? 'რეკომენდებული' : 'Eligible for Rehire'}</span>
       </span>
     );
@@ -131,9 +131,9 @@ export const RehireBadge: React.FC<RehireBadgeProps> = ({ status, className = ''
   ) {
     return (
       <span
-        className={`bg-rose-100 text-rose-800 border border-rose-300 font-semibold px-2.5 py-0.5 rounded-md text-xs inline-flex items-center gap-1 ${className}`}
+        className={`bg-status-sick-bg text-status-sick-text border border-rose-500/25 font-semibold px-2.5 py-0.5 rounded-md text-xs inline-flex items-center gap-1.5 shadow-xs ${className}`}
       >
-        <span className="w-1.5 h-1.5 rounded-full bg-rose-600 shrink-0" />
+        <span className="w-1.5 h-1.5 rounded-full bg-status-sick-dot shrink-0" />
         <span>{isKa ? 'შავი სია' : 'Do Not Rehire'}</span>
       </span>
     );
@@ -141,9 +141,9 @@ export const RehireBadge: React.FC<RehireBadgeProps> = ({ status, className = ''
 
   return (
     <span
-      className={`bg-slate-100 text-slate-800 border border-slate-300 font-semibold px-2.5 py-0.5 rounded-md text-xs inline-flex items-center gap-1 ${className}`}
+      className={`bg-surface-secondary text-text-secondary border border-border-subtle font-semibold px-2.5 py-0.5 rounded-md text-xs inline-flex items-center gap-1.5 shadow-xs ${className}`}
     >
-      <span className="w-1.5 h-1.5 rounded-full bg-slate-600 shrink-0" />
+      <span className="w-1.5 h-1.5 rounded-full bg-text-tertiary shrink-0" />
       <span>{isKa ? 'ნეიტრალური' : 'Under Review'}</span>
     </span>
   );

@@ -178,7 +178,7 @@ export const VenueFormModal: React.FC<VenueFormModalProps> = ({
             className="w-full text-sm px-3.5 py-2.5 rounded-sm border border-border-subtle bg-surface-secondary text-text-primary outline-none transition-all duration-150 focus:bg-surface focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10 placeholder:text-text-tertiary"
             value={contactName}
             onChange={(e) => setContactName(e.target.value)}
-            placeholder="Victoria Sterling"
+            placeholder={isKa ? 'მაგ. გიორგი ბერიძე' : 'e.g. John Doe'}
           />
         </div>
 
@@ -198,7 +198,7 @@ export const VenueFormModal: React.FC<VenueFormModalProps> = ({
               className="w-full text-sm px-3.5 py-2.5 rounded-sm border border-border-subtle bg-surface-secondary text-text-primary outline-none transition-all duration-150 focus:bg-surface focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10 placeholder:text-text-tertiary"
               value={contactEmail}
               onChange={(e) => setContactEmail(e.target.value)}
-              placeholder="vsterling@hotel.com"
+              placeholder="contact@hotel.com"
             />
           </div>
         </div>

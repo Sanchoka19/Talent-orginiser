@@ -5,6 +5,7 @@ import { Talent } from '../types/talent';
 import { Group } from '../types/group';
 import { HotelVenue } from '../types/venue';
 import { ShowEvent, ConflictCheckResult } from '../types/schedule';
+import { UserProfile } from '../types/user';
 import {
   getStoredTalents,
   saveStoredTalents,
@@ -14,6 +15,8 @@ import {
   saveStoredVenues,
   getStoredSchedule,
   saveStoredSchedule,
+  getStoredUserProfile,
+  saveStoredUserProfile,
   resetToDemoData
 } from '../services/storage';
 import { checkScheduleConflicts } from '../services/conflictDetector';
@@ -29,6 +32,8 @@ interface AppContextType {
   schedule: ShowEvent[];
   selectedTalent: Talent | null;
   setSelectedTalent: (talent: Talent | null) => void;
+  currentUser: UserProfile;
+  updateCurrentUser: (updates: Partial<UserProfile>) => void;
   // Talent Actions
   addTalent: (talent: Omit<Talent, 'id' | 'createdAt'>) => Talent;
   updateTalent: (id: string, updates: Partial<Talent>) => void;
@@ -81,6 +86,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [groups, setGroups] = useState<Group[]>(getStoredGroups);
   const [venues, setVenues] = useState<HotelVenue[]>(getStoredVenues);
   const [schedule, setSchedule] = useState<ShowEvent[]>(getStoredSchedule);
+  const [currentUser, setCurrentUser] = useState<UserProfile>(getStoredUserProfile);
   const [selectedTalent, setSelectedTalent] = useState<Talent | null>(null);
 
   // Sync to storage
@@ -100,7 +106,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     saveStoredSchedule(schedule);
   }, [schedule]);
 
-  // TALENT ACTIONS
+  useEffect(() => {
+    saveStoredUserProfile(currentUser);
+  }, [currentUser]);
+
+  const updateCurrentUser = (updates: Partial<UserProfile>) => {
+    setCurrentUser((prev) => ({ ...prev, ...updates }));
+  };
+
+  // TALENT ACTIONS (with cascade cleanup)
   const addTalent = (talentData: Omit<Talent, 'id' | 'createdAt'>): Talent => {
     const newTalent: Talent = {
       ...talentData,
@@ -122,19 +136,51 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteTalent = (id: string) => {
     setTalents((prev) => prev.filter((t) => t.id !== id));
-    // Remove talent from groups
+
+    // 1. Cascade cleanup in Groups: remove member ID and clear fixed assignment from tasks/inventory
     setGroups((prev) =>
       prev.map((g) => ({
         ...g,
-        memberTalentIds: g.memberTalentIds.filter((mid) => mid !== id)
+        memberTalentIds: g.memberTalentIds.filter((mid) => mid !== id),
+        inventoryRequirements: (g.inventoryRequirements || []).map((req) =>
+          req.assignedTalentId === id ? { ...req, assignedTalentId: undefined } : req
+        )
       }))
     );
+
+    // 2. Cascade cleanup in Schedule: remove deleted talent from all duty assignments and overrides
+    setSchedule((prev) =>
+      prev.map((ev) => ({
+        ...ev,
+        dutyAssignments: ev.dutyAssignments.map((duty) => {
+          const hasTalent = duty.assignedTalentIds.includes(id);
+          const hasOverride =
+            duty.manualOverrides &&
+            (duty.manualOverrides[id] || Object.values(duty.manualOverrides).includes(id));
+
+          if (!hasTalent && !hasOverride) return duty;
+
+          const newOverrides = { ...(duty.manualOverrides || {}) };
+          delete newOverrides[id];
+          for (const [origKey, replVal] of Object.entries(newOverrides)) {
+            if (replVal === id) delete newOverrides[origKey];
+          }
+
+          return {
+            ...duty,
+            assignedTalentIds: duty.assignedTalentIds.filter((tid) => tid !== id),
+            manualOverrides: Object.keys(newOverrides).length > 0 ? newOverrides : undefined
+          };
+        })
+      }))
+    );
+
     if (selectedTalent?.id === id) {
       setSelectedTalent(null);
     }
   };
 
-  // GROUP ACTIONS
+  // GROUP ACTIONS (with cascade cleanup for orphan shows)
   const addGroup = (groupData: Omit<Group, 'id' | 'createdAt'>): Group => {
     const newGroup: Group = {
       ...groupData,
@@ -153,6 +199,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteGroup = (id: string) => {
     setGroups((prev) => prev.filter((g) => g.id !== id));
+    // Cascade cleanup: remove orphan shows scheduled for the deleted group
+    setSchedule((prev) => prev.filter((ev) => ev.groupId !== id));
   };
 
   // VENUE ACTIONS
@@ -185,7 +233,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     endDateTime: string;
     lobbyTime?: string;
     lobbyDateTime?: string;
-  }): ConflictCheckResult => {
+  }) => {
     return checkScheduleConflicts(candidate, schedule, groups, venues);
   };
 
@@ -322,6 +370,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setGroups(getStoredGroups());
     setVenues(getStoredVenues());
     setSchedule(getStoredSchedule());
+    setCurrentUser(getStoredUserProfile());
     setSelectedTalent(null);
   };
 
@@ -334,6 +383,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         schedule,
         selectedTalent,
         setSelectedTalent,
+        currentUser,
+        updateCurrentUser,
         addTalent,
         updateTalent,
         deleteTalent,

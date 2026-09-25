@@ -9,7 +9,6 @@ import { useApp } from '../../context/AppContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useConfirm } from '../../context/ConfirmContext';
 import { useToast } from '../../context/ToastContext';
-import { GenderBadge } from '../common/Badge';
 import {
   Calendar,
   MapPin,
@@ -57,6 +56,55 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
 
   // Determine if event is in the past (read-only mode)
   const isPast = endDate < new Date();
+
+  // Formatted date string (e.g. პარ, 25 სექ. 2026)
+  const formattedDate = startDate.toLocaleDateString(localeStr, {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  });
+
+  // Lobby / Gathering time
+  const lobbyTime =
+    event.lobbyTime ||
+    (() => {
+      const startH = startDate.getHours();
+      const startM = startDate.getMinutes();
+      const travel = venue?.travelTimeMinutes ?? 45;
+      const totalM = (startH * 60 + startM - travel + 1440) % 1440;
+      return `${String(Math.floor(totalM / 60)).padStart(2, '0')}:${String(
+        totalM % 60
+      ).padStart(2, '0')}`;
+    })();
+
+  // Show duration calculation
+  const durationMinutes = Math.max(
+    0,
+    Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60))
+  );
+  const durationHours = Math.floor(durationMinutes / 60);
+  const remainingMinutes = durationMinutes % 60;
+  let durationStr = '';
+  if (durationHours > 0 && remainingMinutes > 0) {
+    durationStr = isKa
+      ? `${durationHours} სთ ${remainingMinutes} წთ`
+      : language === 'tr'
+      ? `${durationHours} sa ${remainingMinutes} dk`
+      : `${durationHours}h ${remainingMinutes}m`;
+  } else if (durationHours > 0) {
+    durationStr = isKa
+      ? `${durationHours} სთ`
+      : language === 'tr'
+      ? `${durationHours} sa`
+      : `${durationHours}h`;
+  } else if (durationMinutes > 0) {
+    durationStr = isKa
+      ? `${durationMinutes} წთ`
+      : language === 'tr'
+      ? `${durationMinutes} dk`
+      : `${durationMinutes}m`;
+  }
 
   const handleRegenerate = () => {
     confirm({
@@ -169,78 +217,89 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
           </div>
         )}
 
-        {/* Logistics Summary Card */}
-        <div
-          className={`grid grid-cols-1 sm:grid-cols-2 gap-4 rounded-md p-4 border border-border-subtle mb-6 ${
-            isPast ? 'bg-surface-secondary/50 opacity-85' : 'bg-surface-secondary'
-          }`}
-        >
-          <div>
-            <div className="flex items-center gap-2 mb-2 text-text-primary font-semibold">
-              <Users className="w-4 h-4 text-text-primary" />
-              <span>{group?.name || t('all_groups')}</span>
-            </div>
-            <div className="text-xs text-text-secondary">
-              {group?.memberTalentIds.length || 0} {t('members')} • {group?.rotationCycleWeeks || 1}w {t('duty_cycle')}
+        {/* Compact Performer / Troupe Meta Line */}
+        <div className="flex items-center gap-2 px-3.5 py-2 rounded-md bg-surface-secondary/70 border border-border-subtle text-xs text-text-secondary mb-4 flex-wrap">
+          <Users className="w-3.5 h-3.5 text-brand-primary shrink-0" />
+          <span>
+            <span className="text-text-secondary">
+              {isKa ? 'შემსრულებელი' : language === 'tr' ? 'Sanatçı' : 'Performer'}:
+            </span>{' '}
+            <strong className="font-semibold text-text-primary">{group?.name || t('all_groups')}</strong>
+          </span>
+          <span className="text-border-medium select-none">•</span>
+          <span>
+            {group?.memberTalentIds.length || 0} {t('members')}
+          </span>
+        </div>
+
+        {/* Logistics Cards: Location & Schedule */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 mb-6">
+          {/* Location Block */}
+          <div
+            className={`p-3.5 sm:p-4 rounded-md border border-border-subtle flex flex-col justify-between ${
+              isPast ? 'bg-surface-secondary/50 opacity-85' : 'bg-surface-secondary'
+            }`}
+          >
+            <div>
+              <div className="flex items-start gap-2">
+                <MapPin className="w-4 h-4 text-brand-primary shrink-0 mt-0.5" />
+                <div className="min-w-0 flex-1">
+                  <h4 className="text-sm sm:text-base font-bold text-text-primary leading-snug">
+                    {venue?.name || t('all_venues')}
+                  </h4>
+                  <p className="text-xs text-text-secondary mt-1">
+                    {[venue?.address, venue?.city].filter(Boolean).join(', ') ||
+                      (isKa ? 'მისამართი მითითებული არ არის' : 'No address specified')}
+                  </p>
+                  {venue?.roomOrBallroom && (
+                    <div className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-sm bg-surface text-text-primary text-xs font-medium border border-border-subtle">
+                      <span className="text-brand-primary font-semibold">✦</span>
+                      <span>{venue.roomOrBallroom}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 
-          <div>
-            <div className="flex items-center gap-2 mb-2 text-text-primary font-semibold">
-              <MapPin className="w-4 h-4 text-text-primary" />
-              <span>{venue?.name || t('all_venues')}</span>
+          {/* Schedule & Time Block */}
+          <div
+            className={`p-3.5 sm:p-4 rounded-md border border-border-subtle flex flex-col justify-between gap-2.5 ${
+              isPast ? 'bg-surface-secondary/50 opacity-85' : 'bg-surface-secondary'
+            }`}
+          >
+            {/* Date */}
+            <div className="flex items-center gap-2 text-text-primary font-bold text-sm sm:text-base">
+              <Calendar className="w-4 h-4 text-brand-primary shrink-0" />
+              <span>{formattedDate}</span>
             </div>
-            <div className="text-xs text-text-secondary">
-              {venue?.roomOrBallroom ? `${venue.roomOrBallroom} • ` : ''}
-              {venue?.address}, {venue?.city}
-            </div>
-          </div>
 
-          <div>
-            <div className="flex items-center gap-2 text-text-primary font-semibold text-sm">
-              <Calendar className="w-4 h-4 text-text-primary" />
-              <span>
-                {startDate.toLocaleDateString(localeStr, {
-                  weekday: 'short',
-                  month: 'short',
-                  day: 'numeric',
-                  year: 'numeric'
-                })}
-              </span>
-            </div>
-          </div>
+            {/* Times: Lobby Call & Show Time / Duration */}
+            <div className="flex flex-col gap-1.5 text-xs sm:text-sm">
+              <div className="flex items-center gap-1.5 text-text-primary font-medium flex-wrap">
+                <Bus className="w-3.5 h-3.5 text-text-secondary shrink-0" strokeWidth={2} />
+                <span className="text-text-secondary">{t('gathering_label')}:</span>
+                <span className="font-bold text-text-primary font-mono">{lobbyTime}</span>
+                {venue?.travelTimeMinutes && (
+                  <span className="text-xs text-text-secondary font-normal">
+                    ({venue.travelTimeMinutes} {t('minutes_short')})
+                  </span>
+                )}
+              </div>
 
-          {/* Times: Lobby / Gathering & Show */}
-          <div className="flex flex-col gap-1.5">
-            <div className="flex items-center gap-1.5 text-xs sm:text-sm text-text-primary font-semibold flex-wrap">
-              <Bus className="w-3.5 h-3.5 shrink-0" strokeWidth={2} />
-              <span>{t('gathering_label')}:</span>
-              <span className="font-bold text-text-primary">
-                {event.lobbyTime ||
-                  (() => {
-                    const startH = startDate.getHours();
-                    const startM = startDate.getMinutes();
-                    const travel = venue?.travelTimeMinutes ?? 45;
-                    const totalM = (startH * 60 + startM - travel + 1440) % 1440;
-                    return `${String(Math.floor(totalM / 60)).padStart(2, '0')}:${String(
-                      totalM % 60
-                    ).padStart(2, '0')}`;
-                  })()}
-              </span>
-              {venue?.travelTimeMinutes && (
-                <span className="text-xs text-text-secondary font-medium">
-                  ({venue.travelTimeMinutes} {t('minutes_short')})
+              <div className="flex items-center gap-1.5 text-text-primary font-medium flex-wrap">
+                <Sparkles className="w-3.5 h-3.5 text-brand-primary shrink-0" strokeWidth={2} />
+                <span className="text-text-secondary">{t('show_time_label')}:</span>
+                <span className="font-semibold text-text-primary">
+                  {startDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} -{' '}
+                  {endDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </span>
-              )}
-            </div>
-
-            <div className="flex items-center gap-1.5 text-xs sm:text-sm text-text-primary font-semibold flex-wrap">
-              <Sparkles className="w-3.5 h-3.5 shrink-0" strokeWidth={2} />
-              <span>{t('show_time_label')}:</span>
-              <span>
-                {startDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} -{' '}
-                {endDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </span>
+                {durationStr && (
+                  <span className="text-[11px] font-semibold text-brand-primary bg-brand-primary/10 border border-brand-primary/20 px-1.5 py-0.5 rounded-pill">
+                    {durationStr}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -322,8 +381,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-2.5 shrink-0">
-                            <GenderBadge gender={talent.gender} />
+                          <div className="flex items-center gap-2 shrink-0">
                             {/* Hide swap button for past events */}
                             {!isPast && (
                               <button

@@ -10,3 +10,12 @@ export interface SystemUser {
   avatarUrl?: string;
   createdAt: string;
 }
+
+export interface UserProfile {
+  fullName: string;
+  email: string;
+  phone?: string;
+  role: string;
+  avatarUrl?: string;
+}
+

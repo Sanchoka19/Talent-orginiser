@@ -3,6 +3,8 @@ import { DutyGenderRequirement } from './inventory';
 export interface DutyAssignment {
   requirementId: string;
   itemName: string;
+  position?: string;
+  category?: 'inventory' | 'special_task';
   assignedGender: DutyGenderRequirement;
   requiredHeadcount: number;
   assignedTalentIds: string[];

@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import { useApp } from '../../context/AppContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { CalendarViewMode, ShowEvent } from '../../types/schedule';
+import { Talent } from '../../types/talent';
 import { MonthView } from './MonthView';
 import { WeekView } from './WeekView';
 import { DayView } from './DayView';
@@ -29,6 +30,11 @@ const EventDetailModal = dynamic(
   { ssr: false }
 );
 
+const TalentDetailDrawer = dynamic(
+  () => import('../talent/TalentDetailDrawer').then((mod) => mod.TalentDetailDrawer),
+  { ssr: false }
+);
+
 interface TimelineCalendarProps {
   onOpenNewSchedule?: () => void;
 }
@@ -46,6 +52,7 @@ export const TimelineCalendar: React.FC<TimelineCalendarProps> = () => {
   // Modals
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<ShowEvent | null>(null);
+  const [selectedTalentForDrawer, setSelectedTalentForDrawer] = useState<Talent | null>(null);
   const [scheduleDefaultDate, setScheduleDefaultDate] = useState<string | undefined>();
 
   // Filtered Events
@@ -298,6 +305,7 @@ export const TimelineCalendar: React.FC<TimelineCalendarProps> = () => {
             venues={venues}
             talents={talents}
             onSelectEvent={(ev) => setSelectedEvent(ev)}
+            onSelectTalent={(tal) => setSelectedTalentForDrawer(tal)}
             onOpenSchedule={() => {
               setScheduleDefaultDate(toLocalDateStr(currentDate));
               setIsScheduleModalOpen(true);
@@ -357,6 +365,14 @@ export const TimelineCalendar: React.FC<TimelineCalendarProps> = () => {
         isOpen={Boolean(selectedEvent)}
         onClose={() => setSelectedEvent(null)}
         event={selectedEvent}
+      />
+
+      {/* Talent Detail Drawer */}
+      <TalentDetailDrawer
+        talent={selectedTalentForDrawer}
+        isOpen={Boolean(selectedTalentForDrawer)}
+        onClose={() => setSelectedTalentForDrawer(null)}
+        onEdit={() => setSelectedTalentForDrawer(null)}
       />
     </div>
   );

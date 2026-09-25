@@ -80,7 +80,7 @@ export const ArchiveView: React.FC = () => {
             contractStatus: review.contractStatus ?? (review.completionStatus === 'Terminated Early' ? 'terminated' : 'completed'),
             rehireStatus: review.rehireStatus || 'eligible',
             internalNote: review.internalNote ?? review.privateNote ?? '',
-            reviewedBy: review.reviewedBy ?? review.reviewerName ?? 'Sandro Chokoraia',
+            reviewedBy: review.reviewedBy ?? review.reviewerName ?? 'Administrator',
             reviewDate: review.reviewDate ?? (review.createdAt ? review.createdAt.split('T')[0] : '2026-01-01')
           });
         });

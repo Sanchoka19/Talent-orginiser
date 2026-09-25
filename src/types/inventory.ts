@@ -7,6 +7,7 @@ export interface DutySlot {
   position: string; // e.g. "მარცხნივ" / "Stage Left"
   assignedGender: DutyGenderRequirement;
   headcount: number;
+  rotationCycle?: TaskRotationCycle;
 }
 
 export interface SpecialDutyTask {
@@ -14,6 +15,8 @@ export interface SpecialDutyTask {
   name: string;
   rotationCycle: TaskRotationCycle;
   slots: DutySlot[]; // Multi-slot stage positions array
+  assignedTalentIds?: string[];
+  assignedTalentId?: string;
 }
 
 export interface InventoryRequirement {
@@ -26,6 +29,7 @@ export interface InventoryRequirement {
   position?: string;
   rotationCycle?: TaskRotationCycle;
   assignedTalentId?: string;
+  assignedTalentIds?: string[];
   parentTaskId?: string;
 }
 

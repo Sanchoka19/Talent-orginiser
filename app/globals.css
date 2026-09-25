@@ -5,6 +5,7 @@
 :root {
   /* Brand Palette */
   --brand-primary: #1E6AFF;
+  --brand-primary-rgb: 30 106 255;
   --brand-primary-hover: #0F57E8;
   --brand-primary-light: rgba(30, 106, 255, 0.10);
   --brand-primary-glow: rgba(30, 106, 255, 0.25);
@@ -20,9 +21,14 @@
 
   /* Canvas & Surfaces */
   --bg-canvas: #F5F5F5;
+  --bg-canvas-rgb: 245 245 245;
   --bg-surface: #FFFFFF;
+  --bg-surface-rgb: 255 255 255;
   --bg-surface-secondary: #F8F8F8;
+  --bg-surface-secondary-rgb: 248 248 248;
   --bg-surface-tertiary: #EFEFEF;
+  --bg-surface-tertiary-rgb: 239 239 239;
+  --surface-overlay: rgba(35, 35, 35, 0.55);
 
   /* Legacy aliases */
   --accent-orange: #1E6AFF;
@@ -44,13 +50,19 @@
   --color-charcoal: #232323;
   --color-charcoal-light: #3A3A3A;
   --color-text-primary: #232323;
+  --color-text-primary-rgb: 35 35 35;
   --color-text-secondary: #666666;
+  --color-text-secondary-rgb: 102 102 102;
   --color-text-tertiary: #999999;
+  --color-text-tertiary-rgb: 153 153 153;
   --color-text-inverse: #FFFFFF;
+  --color-text-inverse-rgb: 255 255 255;
 
   /* Borders */
   --border-subtle: #EBEBEB;
+  --border-subtle-rgb: 235 235 235;
   --border-medium: #DEDEDE;
+  --border-medium-rgb: 222 222 222;
   --border-focus: #1E6AFF;
 
   /* Status Colors */
@@ -73,6 +85,12 @@
   --tag-female-text: #9D174D;
   --tag-any-bg: #F5F5F5;
   --tag-any-text: #4B5563;
+
+  /* Danger */
+  --danger-default: #DC2626;
+  --danger-light: #FEE2E2;
+  --danger-hover: #B91C1C;
+  --danger-border: #FECACA;
 
   /* Typography fallback variable */
   --font-family: var(--font-firago), 'Noto Sans Georgian', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -100,19 +118,59 @@
 
 .dark {
   --bg-canvas: #0F172A;
+  --bg-canvas-rgb: 15 23 42;
   --bg-surface: #1E293B;
+  --bg-surface-rgb: 30 41 59;
   --bg-surface-secondary: #182234;
+  --bg-surface-secondary-rgb: 24 34 52;
   --bg-surface-tertiary: #334155;
+  --bg-surface-tertiary-rgb: 51 65 85;
+  --surface-overlay: rgba(15, 23, 42, 0.75);
+
   --brand-navy: #0F172A;
   --brand-navy-light: #1E293B;
   --brand-navy-surface: #0B1120;
+
   --color-charcoal: #F8FAFC;
   --color-charcoal-light: #E2E8F0;
   --color-text-primary: #F8FAFC;
+  --color-text-primary-rgb: 248 250 252;
   --color-text-secondary: #94A3B8;
+  --color-text-secondary-rgb: 148 163 184;
   --color-text-tertiary: #64748B;
+  --color-text-tertiary-rgb: 100 116 139;
+
   --border-subtle: #334155;
+  --border-subtle-rgb: 51 65 85;
   --border-medium: #475569;
+  --border-medium-rgb: 71 85 105;
+
+  /* Status Colors Dark */
+  --status-active-bg: rgba(34, 197, 94, 0.15);
+  --status-active-text: #4ADE80;
+  --status-active-dot: #22C55E;
+
+  --status-rest-bg: rgba(245, 158, 11, 0.15);
+  --status-rest-text: #FBBF24;
+  --status-rest-dot: #F59E0B;
+
+  --status-sick-bg: rgba(239, 68, 68, 0.15);
+  --status-sick-text: #F87171;
+  --status-sick-dot: #EF4444;
+
+  /* Tag & Chip Colors Dark */
+  --tag-male-bg: rgba(59, 130, 246, 0.15);
+  --tag-male-text: #93C5FD;
+  --tag-female-bg: rgba(236, 72, 153, 0.15);
+  --tag-female-text: #F472B6;
+  --tag-any-bg: rgba(148, 163, 184, 0.15);
+  --tag-any-text: #CBD5E1;
+
+  /* Danger Dark */
+  --danger-default: #EF4444;
+  --danger-light: rgba(239, 68, 68, 0.18);
+  --danger-hover: #DC2626;
+  --danger-border: rgba(239, 68, 68, 0.35);
 }
 
 @layer base {
@@ -182,10 +240,10 @@
 .pattern-striped {
   background: repeating-linear-gradient(
     45deg,
-    #E8EFF3,
-    #E8EFF3 6px,
-    #F9F9F9 6px,
-    #F9F9F9 12px
+    var(--border-subtle),
+    var(--border-subtle) 6px,
+    var(--bg-surface-secondary) 6px,
+    var(--bg-surface-secondary) 12px
   ) !important;
 }
 
@@ -257,24 +315,24 @@
 }
 
 .btn-danger {
-  background: #E11D48;
+  background: var(--danger-default);
   color: #FFFFFF;
-  border-color: #BE123C;
+  border-color: var(--danger-default);
   box-shadow: var(--shadow-xs);
 }
 
 .btn-danger:hover {
-  background: #BE123C;
+  background: var(--danger-hover);
 }
 
 .btn-danger-outline {
   background: transparent;
-  color: #E11D48;
-  border-color: #FECDD3;
+  color: var(--danger-default);
+  border-color: var(--danger-border);
 }
 
 .btn-danger-outline:hover {
-  background: #FFF1F2;
+  background: var(--danger-light);
 }
 
 .btn-icon {
@@ -413,6 +471,21 @@
 
 .slide-in-from-right {
   animation-name: slideInRight;
+}
+
+@keyframes slideDownFade {
+  0% {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.slide-down-fade {
+  animation: slideDownFade 240ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .zoom-in-95 {

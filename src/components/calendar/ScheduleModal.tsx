@@ -347,7 +347,7 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
             >
               {venues.map((v) => (
                 <option key={v.id} value={v.id}>
-                  {v.name} ({v.city}{v.travelTimeMinutes ? ` • ${v.travelTimeMinutes} ${t('minutes_short')}` : ''})
+                  {v.name}{v.city ? ` (${v.city})` : ''}
                 </option>
               ))}
             </select>
@@ -540,7 +540,7 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
             className="w-full text-sm px-3.5 py-2.5 rounded-sm border border-border-subtle bg-surface-secondary text-text-primary outline-none transition-all duration-150 focus:bg-surface focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10 resize-none placeholder:text-text-tertiary"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            placeholder="VIP attendance, technical requirements, sound check timing..."
+            placeholder={isKa ? 'დამატებითი შენიშვნები...' : 'Additional notes...'}
           />
         </div>
 

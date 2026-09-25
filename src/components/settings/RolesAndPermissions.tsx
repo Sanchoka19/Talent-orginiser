@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import {
   Users,
@@ -21,6 +21,7 @@ import { RoleDefinition, PERMISSION_LABELS_KA, PERMISSION_LABELS_EN } from '../.
 import { useLanguage } from '../../context/LanguageContext';
 import { useConfirm } from '../../context/ConfirmContext';
 import { useToast } from '../../context/ToastContext';
+import { useApp } from '../../context/AppContext';
 
 const CreateUserModal = dynamic(
   () => import('./CreateUserModal').then((mod) => mod.CreateUserModal),
@@ -77,16 +78,41 @@ const INITIAL_USERS: SystemUser[] = [
   }
 ];
 
-// ─── Main Component ──────────────────────────────────────────────────────────
-
 export const RolesAndPermissions: React.FC = () => {
+  const { currentUser } = useApp();
   const { language } = useLanguage();
   const { confirm } = useConfirm();
   const toast = useToast();
   const isKa = language === 'ka';
 
   const [activeTab, setActiveTab] = useState<PageTab>('roles');
-  const [users, setUsers] = useState<SystemUser[]>(INITIAL_USERS);
+  const [users, setUsers] = useState<SystemUser[]>([
+    {
+      id: 'u-seed-1',
+      fullName: currentUser.fullName,
+      email: currentUser.email,
+      role: 'management',
+      status: 'active',
+      avatarUrl: currentUser.avatarUrl,
+      createdAt: '2025-01-10T09:00:00.000Z'
+    }
+  ]);
+
+  useEffect(() => {
+    setUsers((prev) =>
+      prev.map((u) =>
+        u.id === 'u-seed-1'
+          ? {
+              ...u,
+              fullName: currentUser.fullName,
+              email: currentUser.email,
+              avatarUrl: currentUser.avatarUrl
+            }
+          : u
+      )
+    );
+  }, [currentUser]);
+
   const [roles, setRoles] = useState<RoleDefinition[]>(ROLES_LIST);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isCreateRoleModalOpen, setIsCreateRoleModalOpen] = useState(false);

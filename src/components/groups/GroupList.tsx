@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import dynamic from 'next/dynamic';
+import { useRouter } from 'next/navigation';
 import { useApp } from '../../context/AppContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { Group } from '../../types/group';
@@ -13,19 +14,14 @@ const GroupFormModal = dynamic(
   { ssr: false }
 );
 
-const GroupDetailModal = dynamic(
-  () => import('./GroupDetailModal').then((mod) => mod.GroupDetailModal),
-  { ssr: false }
-);
-
 export const GroupList: React.FC = () => {
+  const router = useRouter();
   const { groups, talents, deleteGroup } = useApp();
   const { t } = useLanguage();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingGroup, setEditingGroup] = useState<Group | null>(null);
-  const [selectedGroupForDetail, setSelectedGroupForDetail] = useState<Group | null>(null);
 
   const handleCreate = () => {
     setEditingGroup(null);
@@ -141,7 +137,7 @@ export const GroupList: React.FC = () => {
               key={group.id}
               group={group}
               talents={talents}
-              onSelect={(g) => setSelectedGroupForDetail(g)}
+              onSelect={(g) => router.push(`/groups/${g.id}`)}
               onEdit={handleEdit}
               onDelete={deleteGroup}
               viewMode="grid"
@@ -167,7 +163,7 @@ export const GroupList: React.FC = () => {
                   key={group.id}
                   group={group}
                   talents={talents}
-                  onSelect={(g) => setSelectedGroupForDetail(g)}
+                  onSelect={(g) => router.push(`/groups/${g.id}`)}
                   onEdit={handleEdit}
                   onDelete={deleteGroup}
                   viewMode="list"
@@ -178,15 +174,6 @@ export const GroupList: React.FC = () => {
         </div>
       )}
 
-      {/* Group Detail Drawer */}
-      <GroupDetailModal
-        isOpen={!!selectedGroupForDetail}
-        onClose={() => setSelectedGroupForDetail(null)}
-        group={selectedGroupForDetail ? groups.find((g) => g.id === selectedGroupForDetail.id) || selectedGroupForDetail : null}
-        talents={talents}
-        onEdit={handleEdit}
-        onDelete={deleteGroup}
-      />
 
       {/* Create / Edit Modal */}
       <GroupFormModal

@@ -64,7 +64,7 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [gender, setGender] = useState<Gender>('Female');
-  const [heightCm, setHeightCm] = useState(170);
+  const [heightCm, setHeightCm] = useState<number | ''>(170);
   const [weightKg, setWeightKg] = useState<number | ''>(60);
   const [status, setStatus] = useState<TalentStatus>('Active');
   const [primarySkill, setPrimarySkill] = useState('');
@@ -280,8 +280,8 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
         email: email.trim(),
         phone: phone.trim(),
         gender,
-        heightCm,
-        weightKg: weightKg === '' ? undefined : weightKg,
+        heightCm: Number(heightCm) || 170,
+        weightKg: weightKg === '' ? undefined : Number(weightKg),
         status,
         primarySkill: primarySkill.trim(),
         notes: notes.trim(),
@@ -299,8 +299,8 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
         email: email.trim(),
         phone: phone.trim(),
         gender,
-        heightCm,
-        weightKg: weightKg === '' ? undefined : weightKg,
+        heightCm: Number(heightCm) || 170,
+        weightKg: weightKg === '' ? undefined : Number(weightKg),
         status,
         primarySkill: primarySkill.trim(),
         notes: notes.trim(),
@@ -412,7 +412,12 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
               max={230}
               className="w-full text-xs sm:text-sm px-3 py-2 rounded-md border border-border-subtle bg-surface-secondary text-text-primary outline-none transition-all duration-150 focus:bg-surface focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20 placeholder:text-text-tertiary"
               value={heightCm}
-              onChange={(e) => setHeightCm(Number(e.target.value))}
+              onChange={(e) => setHeightCm(e.target.value === '' ? '' : Number(e.target.value))}
+              onBlur={() => {
+                if (heightCm === '' || Number(heightCm) < 120) {
+                  setHeightCm(170);
+                }
+              }}
             />
           </div>
 
@@ -426,6 +431,11 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
               placeholder="e.g. 58"
               value={weightKg}
               onChange={(e) => setWeightKg(e.target.value === '' ? '' : Number(e.target.value))}
+              onBlur={() => {
+                if (weightKg !== '' && Number(weightKg) < 30) {
+                  setWeightKg(30);
+                }
+              }}
             />
           </div>
         </div>

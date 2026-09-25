@@ -23,14 +23,15 @@ export function getCycleKey(date: Date | string, cycleWeeks: number = 1): string
 export function computeHistoricalDutyCounts(
   events: ShowEvent[],
   groupId: string,
-  cycleKey: string
+  cycleKey: string,
+  cycleWeeks: number = 1
 ): Map<string, number> {
   const dutyCounts = new Map<string, number>();
 
   for (const ev of events) {
     if (ev.groupId !== groupId || ev.status === 'Cancelled') continue;
 
-    const evCycleKey = getCycleKey(ev.startDateTime);
+    const evCycleKey = getCycleKey(ev.startDateTime, cycleWeeks);
     if (evCycleKey !== cycleKey) continue;
 
     for (const duty of ev.dutyAssignments) {
@@ -55,7 +56,15 @@ export function getEligibleTalentsForRequirement(
   requirement: InventoryRequirement,
   alreadyAssignedInThisEvent: Set<string> = new Set()
 ): Talent[] {
-  const memberTalents = allTalents.filter((t) => group.memberTalentIds.includes(t.id));
+  // If requirement specifies a restricted rotation pool (> 1 performers), restrict to pool members
+  const poolIds =
+    requirement.assignedTalentIds && requirement.assignedTalentIds.length > 1
+      ? requirement.assignedTalentIds
+      : group.memberTalentIds;
+
+  const memberTalents = allTalents.filter(
+    (t) => poolIds.includes(t.id) && group.memberTalentIds.includes(t.id)
+  );
 
   // Exclude non-active talents (Rest, Sick/Injured)
   const activeTalents = memberTalents.filter(
@@ -127,7 +136,10 @@ export function selectFairRandomTalents(
 }
 
 /**
- * Generates automated duty assignments for all inventory requirements of a group for a show.
+ * Generates automated duty assignments for all inventory requirements and stage tasks of a group for a show.
+ * - Supports fixed assigned performers (assignedTalentId) if active and available.
+ * - If fixed performer is sick or unavailable, gracefully falls back to fair rotation pool.
+ * - Respects the group's rotation cycle weeks for historical duty counting.
  */
 export function generateAutomatedDutiesForEvent(
   group: Group,
@@ -135,18 +147,44 @@ export function generateAutomatedDutiesForEvent(
   allEvents: ShowEvent[],
   eventDate: Date | string
 ): DutyAssignment[] {
-  const cycleKey = getCycleKey(eventDate, group.rotationCycleWeeks || 1);
-  const dutyCounts = computeHistoricalDutyCounts(allEvents, group.id, cycleKey);
+  const cycleWeeks = group.rotationCycleWeeks || 1;
+  const cycleKey = getCycleKey(eventDate, cycleWeeks);
+  const dutyCounts = computeHistoricalDutyCounts(allEvents, group.id, cycleKey, cycleWeeks);
   const assignedInEvent = new Set<string>();
 
   const assignments: DutyAssignment[] = [];
 
   for (const req of group.inventoryRequirements) {
-    const eligible = getEligibleTalentsForRequirement(group, allTalents, req, assignedInEvent);
-    const selectedIds = selectFairRandomTalents(eligible, req.requiredHeadcount, dutyCounts);
+    const selectedIds: string[] = [];
 
-    // Track assigned members so the same person isn't assigned 2 heavy duties on the same show
-    // (if headcount permits; if not enough members, talents may be reused across duties)
+    // 1. Check if a fixed talent was explicitly designated for this requirement/slot
+    const fixedTalentId =
+      req.assignedTalentId ||
+      (req.assignedTalentIds && req.assignedTalentIds.length === 1 ? req.assignedTalentIds[0] : undefined);
+
+    if (fixedTalentId) {
+      const designatedTalent = allTalents.find((t) => t.id === fixedTalentId);
+      // Ensure the designated talent is an active member of this group
+      if (
+        designatedTalent &&
+        designatedTalent.status === 'Active' &&
+        group.memberTalentIds.includes(designatedTalent.id)
+      ) {
+        selectedIds.push(designatedTalent.id);
+      }
+    }
+
+    // 2. If additional headcount is needed (or fixed talent was unavailable/not specified)
+    const neededCount = Math.max(0, req.requiredHeadcount - selectedIds.length);
+    if (neededCount > 0) {
+      // Exclude already assigned talents in this event, plus the already selected fixed talent
+      const currentExcluded = new Set([...assignedInEvent, ...selectedIds]);
+      const eligible = getEligibleTalentsForRequirement(group, allTalents, req, currentExcluded);
+      const remainingIds = selectFairRandomTalents(eligible, neededCount, dutyCounts);
+      selectedIds.push(...remainingIds);
+    }
+
+    // Track assigned members so they aren't double-assigned to heavy duties on the same show
     for (const id of selectedIds) {
       assignedInEvent.add(id);
       // Update local duty count for subsequent items within this event
@@ -156,6 +194,8 @@ export function generateAutomatedDutiesForEvent(
     assignments.push({
       requirementId: req.id,
       itemName: req.itemName,
+      position: req.position,
+      category: req.category,
       assignedGender: req.assignedGender,
       requiredHeadcount: req.requiredHeadcount,
       assignedTalentIds: selectedIds,

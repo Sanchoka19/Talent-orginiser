@@ -38,14 +38,13 @@ interface VenueDetailModalProps {
   onDelete: (venueId: string) => void;
 }
 
-type VenueDetailTab = 'shows' | 'contact' | 'location';
+type VenueDetailTab = 'shows' | 'details';
 
 const DICT = {
   ka: {
     // Tabs
     tabShows: 'შოუები',
-    tabContact: 'საკონტაქტო',
-    tabLocation: 'ლოკაცია და რუკა',
+    tabDetails: 'დეტალები და კონტაქტი',
 
     // Overview Stats
     scheduledShows: 'დაგეგმილი შოუები',
@@ -118,8 +117,7 @@ const DICT = {
   en: {
     // Tabs
     tabShows: 'Shows',
-    tabContact: 'Contact',
-    tabLocation: 'Location & Map',
+    tabDetails: 'Details & Contact',
 
     // Overview Stats
     scheduledShows: 'Scheduled Shows',
@@ -192,8 +190,7 @@ const DICT = {
   tr: {
     // Tabs
     tabShows: 'Gösteriler',
-    tabContact: 'İletişim',
-    tabLocation: 'Konum & Harita',
+    tabDetails: 'Detaylar ve İletişim',
 
     // Overview Stats
     scheduledShows: 'Planlanmış Gösteriler',
@@ -288,7 +285,7 @@ export const VenueDetailModal: React.FC<VenueDetailModalProps> = ({
       setSearchQuery('');
       setStatusFilter('all');
       const hasShows = schedule.some((s) => s.hotelId === venue.id);
-      setActiveTab(hasShows ? 'shows' : 'contact');
+      setActiveTab(hasShows ? 'shows' : 'details');
     }
   }, [isOpen, venue?.id, schedule]);
 
@@ -394,8 +391,8 @@ export const VenueDetailModal: React.FC<VenueDetailModalProps> = ({
       }
     >
       <div className="flex flex-col gap-4">
-        {/* Top 3 Stat Cards (Always visible for immediate high-level overview) */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+        {/* Top Stat Cards (Always visible for immediate high-level overview) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
           {/* Stat 1: Scheduled Shows */}
           <div className="p-3.5 rounded-md bg-surface-secondary border border-border-subtle flex flex-col justify-between min-h-[94px]">
             <div className="flex items-center gap-1.5 text-xs text-text-secondary font-semibold uppercase tracking-wider">
@@ -410,21 +407,7 @@ export const VenueDetailModal: React.FC<VenueDetailModalProps> = ({
             </div>
           </div>
 
-          {/* Stat 2: Transit / Travel Time */}
-          <div className="p-3.5 rounded-md bg-surface-secondary border border-border-subtle flex flex-col justify-between min-h-[94px]">
-            <div className="flex items-center gap-1.5 text-xs text-text-secondary font-semibold uppercase tracking-wider">
-              <Bus size={14} className="text-text-primary shrink-0" />
-              <span className="truncate">{dict.transitTime}</span>
-            </div>
-            <div className="text-2xl font-extrabold text-text-primary mt-1 leading-tight">
-              {venue.travelTimeMinutes ? `${venue.travelTimeMinutes} ${t('minutes_short')}` : '—'}
-            </div>
-            <div className="text-xs text-text-secondary mt-0.5 truncate">
-              {dict.fromBaseHub}
-            </div>
-          </div>
-
-          {/* Stat 3: Venue Status */}
+          {/* Stat 2: Venue Status */}
           <div className="p-3.5 rounded-md bg-surface-secondary border border-border-subtle flex flex-col justify-between min-h-[94px]">
             <div className="flex items-center gap-1.5 text-xs text-text-secondary font-semibold uppercase tracking-wider">
               <ShieldCheck
@@ -446,13 +429,12 @@ export const VenueDetailModal: React.FC<VenueDetailModalProps> = ({
           </div>
         </div>
 
-        {/* Tab Navigation Pill Bar (3 Logical Tabs: Shows, Contact, Location & Map) */}
+        {/* Tab Navigation Pill Bar (2 Logical Tabs: Shows | Details & Contact) */}
         <div className="flex items-center bg-surface-secondary rounded-pill p-1 border border-border-subtle gap-1 min-h-[46px] box-border">
           {/* Tab 1: Shows */}
           <button
             type="button"
             onClick={() => setActiveTab('shows')}
-            title={dict.tabShows}
             className={`flex-1 relative h-[38px] flex items-center justify-center gap-1.5 px-3 rounded-pill border-none text-[0.825rem] cursor-pointer whitespace-nowrap min-w-0 transition-all duration-150 ${
               activeTab === 'shows'
                 ? 'font-bold bg-brand-primary text-white shadow-glow'
@@ -472,34 +454,18 @@ export const VenueDetailModal: React.FC<VenueDetailModalProps> = ({
             </span>
           </button>
 
-          {/* Tab 2: Contact */}
+          {/* Tab 2: Details & Contact */}
           <button
             type="button"
-            onClick={() => setActiveTab('contact')}
-            title={dict.tabContact}
+            onClick={() => setActiveTab('details')}
             className={`flex-1 relative h-[38px] flex items-center justify-center gap-1.5 px-3 rounded-pill border-none text-[0.825rem] cursor-pointer whitespace-nowrap min-w-0 transition-all duration-150 ${
-              activeTab === 'contact'
+              activeTab === 'details'
                 ? 'font-bold bg-brand-primary text-white shadow-glow'
                 : 'font-medium bg-transparent text-text-secondary hover:text-text-primary'
             }`}
           >
-            <User size={14} className="shrink-0" />
-            <span className="truncate">{dict.tabContact}</span>
-          </button>
-
-          {/* Tab 3: Location */}
-          <button
-            type="button"
-            onClick={() => setActiveTab('location')}
-            title={dict.tabLocation}
-            className={`flex-1 relative h-[38px] flex items-center justify-center gap-1.5 px-3 rounded-pill border-none text-[0.825rem] cursor-pointer whitespace-nowrap min-w-0 transition-all duration-150 ${
-              activeTab === 'location'
-                ? 'font-bold bg-brand-primary text-white shadow-glow'
-                : 'font-medium bg-transparent text-text-secondary hover:text-text-primary'
-            }`}
-          >
-            <MapPin size={14} className="shrink-0" />
-            <span className="truncate">{dict.tabLocation}</span>
+            <Info size={14} className="shrink-0" />
+            <span className="truncate">{dict.tabDetails}</span>
           </button>
         </div>
 
@@ -670,21 +636,66 @@ export const VenueDetailModal: React.FC<VenueDetailModalProps> = ({
           </div>
         )}
 
-        {/* Tab 2 Content: Primary Contact Person */}
-        {activeTab === 'contact' && (
-          <div className="flex flex-col gap-3.5 animate-in fade-in duration-150">
-            {/* Main Contact Card */}
-            <div className="bg-surface-secondary rounded-sm border border-border-subtle p-4 flex flex-col gap-3.5">
+        {/* Tab 2 Content: Details & Contact (Location + Contact merged) */}
+        {activeTab === 'details' && (
+          <div className="flex flex-col gap-4 animate-in fade-in duration-150">
+
+            {/* LOCATION BLOCK */}
+            <div className="bg-surface-secondary rounded-md border border-border-subtle p-4 flex flex-col gap-3">
+              <div className="flex items-start gap-2.5 min-w-0">
+                <div className="w-9 h-9 rounded-full bg-brand-primary/10 text-brand-primary flex items-center justify-center shrink-0 mt-0.5">
+                  <MapPin size={18} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-[0.675rem] text-text-secondary font-semibold uppercase tracking-wider">
+                    {dict.locationAndRouteTitle}
+                  </div>
+                  <div className="text-sm font-bold text-text-primary mt-0.5 leading-snug">
+                    {venue.address}
+                  </div>
+                  <div className="text-xs text-text-secondary">
+                    {venue.city}{venue.country ? `, ${venue.country}` : ''}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 pt-2 border-t border-border-subtle flex-wrap">
+                <a
+                  href={googleMapsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-pill text-xs font-semibold bg-brand-primary text-white hover:bg-brand-primary-hover transition-colors shadow-glow"
+                >
+                  <ExternalLink size={13} />
+                  <span>{dict.openGoogleMaps}</span>
+                </a>
+                <button
+                  type="button"
+                  onClick={() => handleCopyText(fullAddressString, 'address', dict.addressCopied)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-pill text-xs font-semibold bg-surface border border-border-subtle text-text-primary hover:bg-surface-tertiary transition-colors cursor-pointer outline-none"
+                >
+                  {copiedKey === 'address' ? (
+                    <><Check size={13} className="text-emerald-600" /><span className="text-emerald-600 font-bold">{dict.addressCopied}</span></>
+                  ) : (
+                    <><Copy size={13} /><span>{dict.copyAddress}</span></>
+                  )}
+                </button>
+                {venue.travelTimeMinutes && (
+                  <span className="ml-auto inline-flex items-center gap-1 text-xs text-text-secondary">
+                    <Bus size={13} className="text-brand-primary" />
+                    <span>{dict.transitTime}: <strong className="text-text-primary">{venue.travelTimeMinutes} {t('minutes_short')}</strong></span>
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* CONTACT BLOCK */}
+            <div className="bg-surface-secondary rounded-md border border-border-subtle p-4 flex flex-col gap-3">
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-11 h-11 rounded-full bg-brand-primary text-white font-extrabold flex items-center justify-center shrink-0 shadow-sm text-sm">
+                  <div className="w-10 h-10 rounded-full bg-brand-primary text-white font-extrabold flex items-center justify-center shrink-0 shadow-sm text-sm">
                     {venue.contactName
-                      ? venue.contactName
-                          .split(' ')
-                          .map((n) => n[0])
-                          .join('')
-                          .toUpperCase()
-                          .slice(0, 2)
+                      ? venue.contactName.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)
                       : '—'}
                   </div>
                   <div className="min-w-0">
@@ -694,12 +705,8 @@ export const VenueDetailModal: React.FC<VenueDetailModalProps> = ({
                     <div className="text-base font-bold text-text-primary truncate">
                       {venue.contactName || dict.noContactSpecified}
                     </div>
-                    <div className="text-xs text-text-secondary truncate">
-                      {dict.contactRole}
-                    </div>
                   </div>
                 </div>
-
                 {venue.roomOrBallroom && (
                   <span className="text-xs px-2.5 py-1 rounded-pill bg-surface border border-border-subtle text-text-primary font-semibold inline-flex items-center gap-1.5 shadow-xs">
                     <Building size={12} className="text-brand-primary" />
@@ -708,7 +715,7 @@ export const VenueDetailModal: React.FC<VenueDetailModalProps> = ({
                 )}
               </div>
 
-              {/* Direct Quick Actions: Call / WhatsApp / Email */}
+              {/* Quick Actions */}
               <div className="flex items-center gap-2 pt-2 border-t border-border-subtle flex-wrap">
                 {venue.contactPhone && (
                   <>
@@ -732,7 +739,6 @@ export const VenueDetailModal: React.FC<VenueDetailModalProps> = ({
                     )}
                   </>
                 )}
-
                 {venue.contactEmail && (
                   <a
                     href={`mailto:${venue.contactEmail}`}
@@ -743,214 +749,53 @@ export const VenueDetailModal: React.FC<VenueDetailModalProps> = ({
                   </a>
                 )}
               </div>
-            </div>
 
-            {/* Phone & Email Detail Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              {/* Phone card */}
-              <div className="p-3 bg-surface-secondary border border-border-subtle rounded-sm flex flex-col justify-between gap-2">
-                <div className="text-[0.675rem] text-text-secondary font-semibold uppercase tracking-wider flex items-center gap-1">
-                  <Phone size={12} className="text-brand-primary" />
-                  <span>{dict.phoneLabel}</span>
+              {/* Phone & Email detail cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div className="p-3 bg-surface rounded-sm border border-border-subtle flex flex-col gap-1.5">
+                  <div className="text-[0.675rem] text-text-secondary font-semibold uppercase tracking-wider flex items-center gap-1">
+                    <Phone size={12} className="text-brand-primary" />
+                    <span>{dict.phoneLabel}</span>
+                  </div>
+                  <div className="text-sm font-bold text-text-primary">{venue.contactPhone || dict.noPhoneSpecified}</div>
+                  {venue.contactPhone && (
+                    <button
+                      type="button"
+                      onClick={() => handleCopyText(venue.contactPhone, 'phone', dict.phoneCopied)}
+                      className="inline-flex items-center gap-1.5 text-xs text-brand-primary hover:underline font-semibold cursor-pointer outline-none w-fit"
+                    >
+                      {copiedKey === 'phone'
+                        ? <><Check size={12} className="text-emerald-600" /><span className="text-emerald-600">{dict.phoneCopied}</span></>
+                        : <><Copy size={12} /><span>{dict.copyPhone}</span></>}
+                    </button>
+                  )}
                 </div>
-                <div className="text-sm font-bold text-text-primary truncate">
-                  {venue.contactPhone || dict.noPhoneSpecified}
+                <div className="p-3 bg-surface rounded-sm border border-border-subtle flex flex-col gap-1.5">
+                  <div className="text-[0.675rem] text-text-secondary font-semibold uppercase tracking-wider flex items-center gap-1">
+                    <Mail size={12} className="text-brand-primary" />
+                    <span>{dict.emailLabel}</span>
+                  </div>
+                  <div className="text-sm font-bold text-text-primary truncate">{venue.contactEmail || dict.noEmailSpecified}</div>
+                  {venue.contactEmail && (
+                    <button
+                      type="button"
+                      onClick={() => handleCopyText(venue.contactEmail, 'email', dict.emailCopied)}
+                      className="inline-flex items-center gap-1.5 text-xs text-brand-primary hover:underline font-semibold cursor-pointer outline-none w-fit"
+                    >
+                      {copiedKey === 'email'
+                        ? <><Check size={12} className="text-emerald-600" /><span className="text-emerald-600">{dict.emailCopied}</span></>
+                        : <><Copy size={12} /><span>{dict.copyEmail}</span></>}
+                    </button>
+                  )}
                 </div>
-                {venue.contactPhone && (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      handleCopyText(venue.contactPhone, 'phone', dict.phoneCopied)
-                    }
-                    className="inline-flex items-center gap-1.5 text-xs text-brand-primary hover:underline font-semibold cursor-pointer outline-none w-fit"
-                  >
-                    {copiedKey === 'phone' ? (
-                      <>
-                        <Check size={12} className="text-emerald-600" />
-                        <span className="text-emerald-600 font-bold">{dict.phoneCopied}</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy size={12} />
-                        <span>{dict.copyPhone}</span>
-                      </>
-                    )}
-                  </button>
-                )}
               </div>
 
-              {/* Email card */}
-              <div className="p-3 bg-surface-secondary border border-border-subtle rounded-sm flex flex-col justify-between gap-2">
-                <div className="text-[0.675rem] text-text-secondary font-semibold uppercase tracking-wider flex items-center gap-1">
-                  <Mail size={12} className="text-brand-primary" />
-                  <span>{dict.emailLabel}</span>
-                </div>
-                <div className="text-sm font-bold text-text-primary truncate">
-                  {venue.contactEmail || dict.noEmailSpecified}
-                </div>
-                {venue.contactEmail && (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      handleCopyText(venue.contactEmail, 'email', dict.emailCopied)
-                    }
-                    className="inline-flex items-center gap-1.5 text-xs text-brand-primary hover:underline font-semibold cursor-pointer outline-none w-fit"
-                  >
-                    {copiedKey === 'email' ? (
-                      <>
-                        <Check size={12} className="text-emerald-600" />
-                        <span className="text-emerald-600 font-bold">{dict.emailCopied}</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy size={12} />
-                        <span>{dict.copyEmail}</span>
-                      </>
-                    )}
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Specifications & Notes (if any) */}
-            {venue.notes && (
-              <div className="p-3.5 rounded-sm bg-surface-secondary border border-border-subtle flex flex-col gap-1.5">
-                <div className="text-xs text-text-secondary font-semibold uppercase tracking-wider flex items-center gap-1.5">
-                  <Sparkles size={13} className="text-brand-primary" />
-                  <span>{dict.notesTitle}</span>
-                </div>
+              {/* Notes */}
+              {venue.notes && (
                 <div className="p-3 rounded-sm bg-surface border border-border-subtle text-xs text-text-primary leading-relaxed italic border-l-4 border-l-brand-primary">
                   "{venue.notes}"
                 </div>
-              </div>
-            )}
-
-            {/* Coordination Guidelines Box */}
-            <div className="p-3.5 rounded-sm bg-brand-primary/5 border border-brand-primary/20 flex items-start gap-2.5">
-              <Info size={16} className="text-brand-primary shrink-0 mt-0.5" />
-              <div className="text-xs text-text-secondary leading-relaxed">
-                <strong className="text-text-primary font-bold block mb-0.5">
-                  {dict.coordinationNotesTitle}
-                </strong>
-                {dict.coordinationNotesText}
-              </div>
-            </div>
-
-            {/* Front Desk Fallback */}
-            <div className="p-3 rounded-sm bg-surface-secondary border border-border-subtle text-xs text-text-secondary flex items-start gap-2.5">
-              <Building size={15} className="shrink-0 text-text-tertiary mt-0.5" />
-              <div>
-                <span className="font-semibold text-text-primary block">
-                  {dict.receptionFallbackTitle}
-                </span>
-                <span>{dict.receptionFallbackText}</span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Tab 3 Content: Location & Route Logistics */}
-        {activeTab === 'location' && (
-          <div className="flex flex-col gap-3.5 animate-in fade-in duration-150">
-            {/* Address Banner with Copy and Google Maps Link */}
-            <div className="bg-surface-secondary rounded-sm border border-border-subtle p-4 flex flex-col gap-3">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-start gap-2.5 min-w-0">
-                  <div className="w-9 h-9 rounded-full bg-brand-primary/10 text-brand-primary flex items-center justify-center shrink-0 mt-0.5">
-                    <MapPin size={18} />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-[0.675rem] text-text-secondary font-semibold uppercase tracking-wider">
-                      {dict.locationAndRouteTitle}
-                    </div>
-                    <div className="text-sm font-bold text-text-primary mt-0.5 leading-snug">
-                      {venue.address}
-                    </div>
-                    <div className="text-xs text-text-secondary">
-                      {venue.city}
-                      {venue.country ? `, ${venue.country}` : ''}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Action Buttons: Google Maps & Copy Address */}
-              <div className="flex items-center gap-2 pt-2 border-t border-border-subtle flex-wrap">
-                <a
-                  href={googleMapsUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-pill text-xs font-semibold bg-brand-primary text-white hover:bg-brand-primary-hover transition-colors shadow-glow"
-                >
-                  <ExternalLink size={13} />
-                  <span>{dict.openGoogleMaps}</span>
-                </a>
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    handleCopyText(fullAddressString, 'address', dict.addressCopied)
-                  }
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-pill text-xs font-semibold bg-surface border border-border-subtle text-text-primary hover:bg-surface-tertiary transition-colors cursor-pointer outline-none"
-                >
-                  {copiedKey === 'address' ? (
-                    <>
-                      <Check size={13} className="text-emerald-600" />
-                      <span className="text-emerald-600 font-bold">{dict.addressCopied}</span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy size={13} />
-                      <span>{dict.copyAddress}</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-
-            {/* Transit Details Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              {/* Departure Point */}
-              <div className="p-3 bg-surface-secondary border border-border-subtle rounded-sm flex flex-col justify-between gap-1.5">
-                <div className="text-[0.675rem] text-text-secondary font-semibold uppercase tracking-wider flex items-center gap-1">
-                  <Navigation size={12} className="text-brand-primary" />
-                  <span>{dict.departurePoint}</span>
-                </div>
-                <div className="text-sm font-bold text-text-primary">
-                  {dict.departurePointValue}
-                </div>
-                <div className="text-[0.7rem] text-text-secondary">
-                  {dict.transitTime}:{' '}
-                  <strong className="text-text-primary">
-                    {venue.travelTimeMinutes || 45} {t('minutes_short')}
-                  </strong>
-                </div>
-              </div>
-
-              {/* Recommended Departure */}
-              <div className="p-3 bg-surface-secondary border border-border-subtle rounded-sm flex flex-col justify-between gap-1.5">
-                <div className="text-[0.675rem] text-text-secondary font-semibold uppercase tracking-wider flex items-center gap-1">
-                  <Clock size={12} className="text-brand-primary" />
-                  <span>{dict.recommendedDeparture}</span>
-                </div>
-                <div className="text-sm font-bold text-text-primary">
-                  {dict.recommendedDepartureValue}
-                </div>
-                <div className="text-[0.7rem] text-text-secondary">
-                  {language === 'ka' ? 'შეკრება სასტუმროს ლობიში' : 'Lobby assembly at destination'}
-                </div>
-              </div>
-            </div>
-
-            {/* Parking & Unloading Logistics */}
-            <div className="p-3.5 rounded-sm bg-surface-secondary border border-border-subtle flex items-start gap-2.5">
-              <Bus size={16} className="text-brand-primary shrink-0 mt-0.5" />
-              <div className="text-xs text-text-secondary leading-relaxed">
-                <strong className="text-text-primary font-bold block mb-0.5">
-                  {dict.parkingAndUnloadingTitle}
-                </strong>
-                {dict.parkingAndUnloadingDesc}
-              </div>
+              )}
             </div>
           </div>
         )}

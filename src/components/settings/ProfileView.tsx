@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   User,
   ShieldCheck,
@@ -23,10 +23,12 @@ import {
 import { useLanguage } from '../../context/LanguageContext';
 import { useToast } from '../../context/ToastContext';
 import { useConfirm } from '../../context/ConfirmContext';
+import { useApp } from '../../context/AppContext';
 
 type ProfileTab = 'personal' | 'security' | 'notifications' | 'preferences';
 
 export const ProfileView: React.FC = () => {
+  const { currentUser, updateCurrentUser } = useApp();
   const { language, setLanguage } = useLanguage();
   const toast = useToast();
   const { confirm } = useConfirm();
@@ -35,13 +37,18 @@ export const ProfileView: React.FC = () => {
   const [activeTab, setActiveTab] = useState<ProfileTab>('personal');
 
   // ── Tab 1: Personal Info State ─────────────────────────────────────────────
-  const [fullName, setFullName] = useState('სანდრო ჩოკორაია');
-  const [email, setEmail] = useState('admin@artistent.com');
-  const [phone, setPhone] = useState('+995 599 12 34 56');
-  const [avatarUrl, setAvatarUrl] = useState(
-    'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80'
-  );
+  const [fullName, setFullName] = useState(currentUser.fullName);
+  const [email, setEmail] = useState(currentUser.email);
+  const [phone, setPhone] = useState(currentUser.phone || '');
+  const [avatarUrl, setAvatarUrl] = useState(currentUser.avatarUrl || '');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setFullName(currentUser.fullName);
+    setEmail(currentUser.email);
+    setPhone(currentUser.phone || '');
+    setAvatarUrl(currentUser.avatarUrl || '');
+  }, [currentUser]);
 
   // ── Tab 2: Security State ──────────────────────────────────────────────────
   const [currentPassword, setCurrentPassword] = useState('');
@@ -64,9 +71,14 @@ export const ProfileView: React.FC = () => {
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const tempUrl = URL.createObjectURL(file);
-      setAvatarUrl(tempUrl);
-      toast.success(isKa ? 'პროფილის ფოტო წარმატებით განახლდა' : 'Profile photo updated successfully');
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const result = reader.result as string;
+        setAvatarUrl(result);
+        updateCurrentUser({ avatarUrl: result });
+        toast.success(isKa ? 'პროფილის ფოტო წარმატებით განახლდა' : 'Profile photo updated successfully');
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -80,6 +92,12 @@ export const ProfileView: React.FC = () => {
       toast.error(isKa ? 'გთხოვთ მიუთითოთ ელ-ფოსტა' : 'Please enter email');
       return;
     }
+    updateCurrentUser({
+      fullName: fullName.trim(),
+      email: email.trim(),
+      phone: phone.trim(),
+      avatarUrl
+    });
     toast.success(isKa ? 'პირადი მონაცემები წარმატებით შეინახა' : 'Personal info saved successfully');
   };
 

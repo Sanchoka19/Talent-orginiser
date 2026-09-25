@@ -27,7 +27,7 @@ interface TopBarProps {
 }
 
 export const TopBar: React.FC<TopBarProps> = ({ onMenuToggle }) => {
-  const { talents, groups, resetAllData } = useApp();
+  const { talents, groups, resetAllData, currentUser } = useApp();
   const { language, setLanguage, t } = useLanguage();
   const { confirm } = useConfirm();
   const toast = useToast();
@@ -212,16 +212,16 @@ export const TopBar: React.FC<TopBarProps> = ({ onMenuToggle }) => {
             className="flex items-center gap-2.5 p-1 pr-3 rounded-lg bg-surface-secondary border border-border-subtle cursor-pointer hover:border-border-medium transition-all select-none"
           >
             <img
-              src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80"
-              alt="Admin"
+              src={currentUser.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80'}
+              alt={currentUser.fullName}
               className="w-8 h-8 rounded-full object-cover border border-white shrink-0"
             />
             <div className="flex flex-col text-left leading-tight">
               <span className="text-xs sm:text-sm font-semibold text-text-primary">
-                {t('admin_full_name')}
+                {currentUser.fullName}
               </span>
               <span className="text-[11px] text-text-secondary font-medium">
-                {t('role_administrator')}
+                {currentUser.role}
               </span>
             </div>
             <ChevronDown size={14} className="text-text-secondary ml-0.5" />
@@ -232,10 +232,10 @@ export const TopBar: React.FC<TopBarProps> = ({ onMenuToggle }) => {
             <div className="absolute top-12 right-0 w-60 bg-surface rounded-lg border border-border-subtle shadow-xl p-3 z-50 flex flex-col gap-2 animate-in fade-in duration-150">
               <div className="p-1.5 px-2 border-b border-border-subtle">
                 <div className="font-semibold text-sm text-text-primary">
-                  {t('admin_full_name')}
+                  {currentUser.fullName}
                 </div>
                 <div className="text-xs text-text-secondary">
-                  admin@artistent.com
+                  {currentUser.email}
                 </div>
               </div>
 

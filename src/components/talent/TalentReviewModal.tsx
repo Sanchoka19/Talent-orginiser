@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Talent, ContractRecord, ReviewType, TerminationReason } from '../../types/talent';
 import { Modal } from '../common/Modal';
 import { useLanguage } from '../../context/LanguageContext';
+import { useApp } from '../../context/AppContext';
 import {
   Star,
   Plus,
@@ -27,6 +28,7 @@ export const TalentReviewModal: React.FC<TalentReviewModalProps> = ({
   onSubmit,
   initialReviewType = 'End of Season'
 }) => {
+  const { currentUser } = useApp();
   const { language } = useLanguage();
   const isKa = language === 'ka';
 
@@ -84,13 +86,13 @@ export const TalentReviewModal: React.FC<TalentReviewModalProps> = ({
       terminationReason: reviewType === 'Early Termination' ? terminationReason : undefined,
       initiator: reviewType === 'Early Termination' ? 'admin' : 'mutual',
       internalNote: privateNote.trim(),
-      reviewedBy: 'Sandro Chokoraia',
+      reviewedBy: currentUser?.fullName || (isKa ? 'ადმინისტრატორი' : 'Administrator'),
       reviewDate: todayStr,
 
       // Compatibility fields
       overallRating,
       privateNote: privateNote.trim(),
-      reviewerName: 'Sandro Chokoraia',
+      reviewerName: currentUser?.fullName || (isKa ? 'ადმინისტრატორი' : 'Administrator'),
       createdAt: new Date().toISOString(),
       completionStatus: reviewType === 'Early Termination' ? 'Terminated Early' : 'Completed Successfully',
       reviewType
@@ -303,7 +305,7 @@ export const TalentReviewModal: React.FC<TalentReviewModalProps> = ({
                   className={`py-2 px-2 text-xs font-semibold rounded-lg border transition-all flex items-center justify-center gap-1 text-center whitespace-nowrap cursor-pointer ${
                     isSelected
                       ? option.activeClass
-                      : 'bg-white dark:bg-surface text-slate-700 dark:text-slate-300 border-slate-200 dark:border-border-subtle hover:bg-slate-50'
+                      : 'bg-surface text-text-primary border-border-subtle hover:bg-surface-secondary'
                   }`}
                 >
                   <Icon size={13} strokeWidth={2.5} className="shrink-0" />

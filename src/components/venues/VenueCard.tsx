@@ -42,7 +42,7 @@ export const VenueCard: React.FC<VenueCardProps> = ({
       >
         {/* Col 1: Icon & Venue Name */}
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-9 h-9 rounded-sm bg-sky-100 text-sky-600 flex items-center justify-center shrink-0">
+          <div className="w-9 h-9 rounded-sm bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20 flex items-center justify-center shrink-0">
             <Building size={18} strokeWidth={2} />
           </div>
           <div className="min-w-0 overflow-hidden">
@@ -144,49 +144,53 @@ export const VenueCard: React.FC<VenueCardProps> = ({
 
           {/* Pastel Icon Badge */}
           <div
-            className="w-9 h-9 rounded-sm bg-sky-100 text-sky-600 flex items-center justify-center shrink-0"
+            className="w-9 h-9 rounded-sm bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20 flex items-center justify-center shrink-0"
             title={t('venue_name')}
           >
             <Building size={18} strokeWidth={2} />
           </div>
         </div>
 
-        {/* Middle Row: Primary Contact Card */}
-        <div className="bg-surface-secondary rounded-sm p-3.5 border border-border-subtle my-4 flex flex-col gap-2">
-          <div className="flex items-center justify-between gap-2.5">
-            <div className="flex items-center gap-2 min-w-0">
-              <User size={15} className="text-brand-primary shrink-0" />
-              <div className="min-w-0 overflow-hidden">
-                <span
-                  className="text-xs font-semibold text-text-primary truncate block"
-                  title={venue.contactName ? `${t('primary_contact')}: ${venue.contactName}` : t('primary_contact')}
-                >
-                  {venue.contactName ? `${t('primary_contact')}: ${venue.contactName}` : t('primary_contact')}
-                </span>
+        {/* Middle Row: Primary Contact Card (only if contact info exists) */}
+        {(venue.contactName || venue.contactPhone || venue.contactEmail) && (
+          <div className="bg-surface-secondary rounded-sm p-3.5 border border-border-subtle my-4 flex flex-col gap-2">
+            {venue.contactName && (
+              <div className="flex items-center justify-between gap-2.5">
+                <div className="flex items-center gap-2 min-w-0">
+                  <User size={15} className="text-brand-primary shrink-0" />
+                  <div className="min-w-0 overflow-hidden">
+                    <span
+                      className="text-xs font-semibold text-text-primary truncate block"
+                      title={`${t('primary_contact')}: ${venue.contactName}`}
+                    >
+                      {venue.contactName}
+                    </span>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
+            )}
 
-          {(venue.contactPhone || venue.contactEmail) && (
-            <div className="flex items-center gap-3.5 text-xs text-text-secondary flex-wrap">
-              {venue.contactPhone && (
-                <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
-                  <Phone size={12} />
-                  <span>{venue.contactPhone}</span>
-                </span>
-              )}
-              {venue.contactEmail && (
-                <span
-                  className="inline-flex items-center gap-1.5 truncate"
-                  title={venue.contactEmail}
-                >
-                  <Mail size={12} className="shrink-0" />
-                  <span className="truncate">{venue.contactEmail}</span>
-                </span>
-              )}
-            </div>
-          )}
-        </div>
+            {(venue.contactPhone || venue.contactEmail) && (
+              <div className="flex items-center gap-3.5 text-xs text-text-secondary flex-wrap">
+                {venue.contactPhone && (
+                  <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+                    <Phone size={12} />
+                    <span>{venue.contactPhone}</span>
+                  </span>
+                )}
+                {venue.contactEmail && (
+                  <span
+                    className="inline-flex items-center gap-1.5 truncate"
+                    title={venue.contactEmail}
+                  >
+                    <Mail size={12} className="shrink-0" />
+                    <span className="truncate">{venue.contactEmail}</span>
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Bottom Section */}

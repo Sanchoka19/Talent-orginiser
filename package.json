@@ -1,31 +1,20 @@
 {
-  "name": "tallentorginiser",
+  "name": "talent-organizer-monorepo",
   "private": true,
-  "version": "0.1.0",
-  "type": "module",
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
-  },
-  "dependencies": {
-    "@fontsource/firago": "^5.3.0",
-    "canvas-confetti": "^1.9.4",
-    "lucide-react": "^1.47.0",
-    "next": "^15.2.0",
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8",
-    "unpdf": "^1.8.1"
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "test": "turbo test",
+    "dev:web": "pnpm --filter @talent/web dev",
+    "dev:api": "pnpm --filter @talent/api dev",
+    "prisma:generate": "pnpm --filter @talent/api prisma:generate",
+    "prisma:migrate": "pnpm --filter @talent/api prisma:migrate",
+    "prisma:studio": "pnpm --filter @talent/api prisma:studio",
+    "prisma:seed": "pnpm --filter @talent/api prisma:seed"
   },
   "devDependencies": {
-    "@types/canvas-confetti": "^1.9.0",
-    "@types/node": "^22.13.0",
-    "@types/react": "^19.2.18",
-    "@types/react-dom": "^19.2.7",
-    "autoprefixer": "^10.6.1",
-    "postcss": "^8.5.28",
-    "tailwindcss": "^3.4.19",
-    "typescript": "^5.7.2"
-  }
+    "turbo": "^2.4.4"
+  },
+  "packageManager": "pnpm@11.9.0"
 }

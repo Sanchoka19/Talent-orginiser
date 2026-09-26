@@ -1,0 +1,33 @@
+{
+  "name": "@talent/web",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "oxlint src/ app/"
+  },
+  "dependencies": {
+    "@fontsource/firago": "^5.3.0",
+    "@talent/types": "workspace:*",
+    "canvas-confetti": "^1.9.4",
+    "lucide-react": "^1.47.0",
+    "next": "^15.2.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "unpdf": "^1.8.1"
+  },
+  "devDependencies": {
+    "@types/canvas-confetti": "^1.9.0",
+    "@types/node": "^22.13.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
+    "autoprefixer": "^10.6.1",
+    "oxlint": "^1.58.0",
+    "postcss": "^8.5.28",
+    "tailwindcss": "^3.4.19",
+    "typescript": "^5.7.2"
+  }
+}

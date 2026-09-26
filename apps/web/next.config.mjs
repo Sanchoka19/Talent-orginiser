@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  transpilePackages: ['@talent/types'],
   webpack: (config) => {
     config.resolve.alias = {
       ...config.resolve.alias,

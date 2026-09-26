@@ -1,32 +1,76 @@
-# React + TypeScript + Vite
+# Talent Organiser Monorepo
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Turborepo and pnpm workspaces monorepo containing the Next.js frontend, NestJS backend API, and shared types.
 
-Currently, two official plugins are available:
+## Monorepo Layout
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```text
+.
+├── apps/
+│   ├── web/               # Next.js 15 frontend (@talent/web)
+│   └── api/               # NestJS 12 backend (@talent/api)
+├── packages/
+│   └── types/             # Shared TypeScript types & contracts (@talent/types)
+├── package.json           # Monorepo root scripts & dev dependencies
+├── pnpm-workspace.yaml    # Workspace definition
+└── turbo.json             # Turborepo task pipeline
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+## Getting Started
+
+### Prerequisites
+- Node.js >= 20
+- pnpm >= 9
+
+### Install Dependencies
+```bash
+pnpm install
+```
+
+### Run Both Apps Concurrently
+```bash
+pnpm dev
+```
+- **Next.js Web**: `http://localhost:3000` (or `3001` if port 3000 is occupied)
+- **NestJS API**: `http://localhost:3000/api/v1` (Swagger docs at `/docs`)
+
+### Run Individual Apps
+```bash
+# Run only Next.js frontend
+pnpm dev:web
+
+# Run only NestJS backend
+pnpm dev:api
+```
+
+### Build Everything
+```bash
+pnpm build
+```
+
+### Run Tests & Linting
+```bash
+# Run tests across all packages
+pnpm test
+
+# Run Oxlint across all packages
+pnpm lint
+```
+
+### Database & Prisma (API)
+```bash
+# Generate Prisma Client
+pnpm prisma:generate
+
+# Run DB Migrations
+pnpm prisma:migrate
+
+# Open Prisma Studio
+pnpm prisma:studio
+
+# Seed Database
+pnpm prisma:seed
+```
+
+## Shared Packages
+- **`@talent/types`**: Shared interfaces (e.g. `Talent`, `Group`, `Venue`, `Schedule`, `DutySwapRequest`, etc.) imported by both `@talent/web` and `@talent/api`.

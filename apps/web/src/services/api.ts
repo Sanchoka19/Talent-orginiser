@@ -3,6 +3,15 @@
  * Default Base URL: http://localhost:3000/api/v1
  */
 
+import type {
+  Talent,
+  Group,
+  Venue,
+  Schedule,
+  DutySwapRequest,
+  FairnessScoreResponse,
+} from '@talent/types';
+
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1';
 
@@ -54,12 +63,12 @@ export const api = {
       if (params?.status) query.set('status', params.status);
       if (params?.isArchived !== undefined) query.set('isArchived', String(params.isArchived));
       const qs = query.toString() ? `?${query.toString()}` : '';
-      return fetchJson<any[]>(`/talents${qs}`);
+      return fetchJson<Talent[]>(`/talents${qs}`);
     },
-    getById: (id: string) => fetchJson<any>(`/talents/${id}`),
-    create: (data: any) => fetchJson<any>('/talents', { method: 'POST', body: JSON.stringify(data) }),
-    update: (id: string, data: any) => fetchJson<any>(`/talents/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
-    delete: (id: string) => fetchJson<any>(`/talents/${id}`, { method: 'DELETE' }),
+    getById: (id: string) => fetchJson<Talent>(`/talents/${id}`),
+    create: (data: Partial<Talent>) => fetchJson<Talent>('/talents', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id: string, data: Partial<Talent>) => fetchJson<Talent>(`/talents/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    delete: (id: string) => fetchJson<{ message: string }>(`/talents/${id}`, { method: 'DELETE' }),
     addContract: (talentId: string, data: any) =>
       fetchJson<any>(`/talents/${talentId}/contracts`, { method: 'POST', body: JSON.stringify(data) }),
     getArchiveDossiers: (params?: { organizationId?: string; year?: number; contractStatus?: string; rehireStatus?: string }) => {
@@ -77,12 +86,12 @@ export const api = {
   groups: {
     getAll: (organizationId?: string) => {
       const qs = organizationId ? `?organizationId=${organizationId}` : '';
-      return fetchJson<any[]>(`/groups${qs}`);
+      return fetchJson<Group[]>(`/groups${qs}`);
     },
-    getById: (id: string) => fetchJson<any>(`/groups/${id}`),
-    create: (data: any) => fetchJson<any>('/groups', { method: 'POST', body: JSON.stringify(data) }),
-    update: (id: string, data: any) => fetchJson<any>(`/groups/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
-    delete: (id: string) => fetchJson<any>(`/groups/${id}`, { method: 'DELETE' }),
+    getById: (id: string) => fetchJson<Group>(`/groups/${id}`),
+    create: (data: Partial<Group>) => fetchJson<Group>('/groups', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id: string, data: Partial<Group>) => fetchJson<Group>(`/groups/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    delete: (id: string) => fetchJson<{ message: string }>(`/groups/${id}`, { method: 'DELETE' }),
     addMember: (groupId: string, talentId: string, roleNote?: string) =>
       fetchJson<any>(`/groups/${groupId}/members/${talentId}`, { method: 'POST', body: JSON.stringify({ roleNote }) }),
     removeMember: (groupId: string, talentId: string) =>
@@ -93,12 +102,12 @@ export const api = {
   venues: {
     getAll: (organizationId?: string) => {
       const qs = organizationId ? `?organizationId=${organizationId}` : '';
-      return fetchJson<any[]>(`/venues${qs}`);
+      return fetchJson<Venue[]>(`/venues${qs}`);
     },
-    getById: (id: string) => fetchJson<any>(`/venues/${id}`),
-    create: (data: any) => fetchJson<any>('/venues', { method: 'POST', body: JSON.stringify(data) }),
-    update: (id: string, data: any) => fetchJson<any>(`/venues/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
-    delete: (id: string) => fetchJson<any>(`/venues/${id}`, { method: 'DELETE' }),
+    getById: (id: string) => fetchJson<Venue>(`/venues/${id}`),
+    create: (data: Partial<Venue>) => fetchJson<Venue>('/venues', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id: string, data: Partial<Venue>) => fetchJson<Venue>(`/venues/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    delete: (id: string) => fetchJson<{ message: string }>(`/venues/${id}`, { method: 'DELETE' }),
   },
 
   // ─── Schedules ────────────────────────────────────────────────────────────
@@ -109,26 +118,20 @@ export const api = {
       if (params?.groupId) query.set('groupId', params.groupId);
       if (params?.hotelId) query.set('hotelId', params.hotelId);
       const qs = query.toString() ? `?${query.toString()}` : '';
-      return fetchJson<any[]>(`/schedules${qs}`);
+      return fetchJson<Schedule[]>(`/schedules${qs}`);
     },
-    getById: (id: string) => fetchJson<any>(`/schedules/${id}`),
-    create: (data: any) => fetchJson<any>('/schedules', { method: 'POST', body: JSON.stringify(data) }),
-    update: (id: string, data: any) => fetchJson<any>(`/schedules/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
-    delete: (id: string) => fetchJson<any>(`/schedules/${id}`, { method: 'DELETE' }),
+    getById: (id: string) => fetchJson<Schedule>(`/schedules/${id}`),
+    create: (data: Partial<Schedule>) => fetchJson<Schedule>('/schedules', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id: string, data: Partial<Schedule>) => fetchJson<Schedule>(`/schedules/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    delete: (id: string) => fetchJson<{ message: string }>(`/schedules/${id}`, { method: 'DELETE' }),
     regenerateDuties: (id: string) => fetchJson<any>(`/schedules/${id}/regenerate-duties`, { method: 'POST' }),
   },
 
   // ─── Duties & Fairness ────────────────────────────────────────────────────
   duties: {
-    swap: (data: {
-      showEventId: string;
-      dutyAssignmentId: string;
-      originalTalentId: string;
-      replacementTalentId: string;
-      reason?: string;
-    }) => fetchJson<any>('/duties/swap', { method: 'POST', body: JSON.stringify(data) }),
+    swap: (data: DutySwapRequest) => fetchJson<any>('/duties/swap', { method: 'POST', body: JSON.stringify(data) }),
     getFairnessScore: (groupId: string, cycleWeeks: number = 1) =>
-      fetchJson<{ groupId: string; cycleKey: string; score: number }>(
+      fetchJson<FairnessScoreResponse>(
         `/duties/fairness-score/${groupId}?cycleWeeks=${cycleWeeks}`,
       ),
     getLedger: (params?: { groupId?: string; talentId?: string; cycleKey?: string }) => {

@@ -1,0 +1,543 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// -----------------------------------------------------------------------------
+// ENUMS
+// -----------------------------------------------------------------------------
+
+enum UserRoleType {
+  ADMIN
+  DIRECTOR
+  STAGE_MANAGER
+  OPERATIONS
+  MANAGEMENT
+  CUSTOM
+}
+
+enum UserStatus {
+  ACTIVE
+  INVITED
+  SUSPENDED
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum TalentStatus {
+  ACTIVE
+  REST
+  SICK_INJURED
+  TERMINATED
+}
+
+enum DocumentType {
+  PASSPORT
+  VISA
+  ID_CARD
+  CONTRACT
+  MEDICAL
+  OTHER
+}
+
+enum ContractStatus {
+  ACTIVE
+  COMPLETED
+  TERMINATED
+}
+
+enum RehireStatus {
+  ELIGIBLE
+  NEUTRAL
+  DO_NOT_REHIRE
+  UNDER_REVIEW
+}
+
+enum ContractInitiator {
+  MUTUAL
+  ADMIN
+  TALENT
+}
+
+enum ReviewType {
+  END_OF_SEASON
+  MID_SEASON_REVIEW
+  EARLY_TERMINATION
+}
+
+enum RotationCycleType {
+  EVERY_SHOW
+  WEEKLY
+  MONTHLY
+  CUSTOM
+}
+
+enum CustomRotationUnit {
+  SHOW
+  DAY
+  WEEK
+}
+
+enum TaskRotationCycle {
+  EVERY_SHOW
+  WEEKLY
+  MONTHLY
+  FIXED
+  CUSTOM
+}
+
+enum DutyCategory {
+  INVENTORY
+  SPECIAL_TASK
+}
+
+enum DutyGenderRequirement {
+  MALE_ONLY
+  FEMALE_ONLY
+  ANY
+}
+
+enum ShowStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  EXCUSED
+  LATE
+}
+
+// -----------------------------------------------------------------------------
+// WORKSPACE & MULTI-TENANCY
+// -----------------------------------------------------------------------------
+
+model Organization {
+  id                    String                 @id @default(cuid())
+  name                  String
+  slug                  String                 @unique
+  logoUrl               String?
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+
+  users                 User[]
+  roles                 Role[]
+  talents               Talent[]
+  groups                Group[]
+  venues                HotelVenue[]
+  shows                 ShowEvent[]
+  dutyShiftLedgers      DutyShiftLedger[]
+  inventoryRequirements InventoryRequirement[]
+
+  @@map("organizations")
+}
+
+// -----------------------------------------------------------------------------
+// AUTHENTICATION & ACCESS CONTROL (RBAC)
+// -----------------------------------------------------------------------------
+
+model User {
+  id                String           @id @default(cuid())
+  organizationId    String
+  email             String
+  passwordHash      String?
+  fullName          String
+  phone             String?
+  avatarUrl         String?
+  status            UserStatus       @default(ACTIVE)
+  roleId            String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  organization      Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  role              Role?            @relation(fields: [roleId], references: [id], onDelete: SetNull)
+  sessions          UserSession[]
+  reviewedContracts ContractRecord[] @relation("ReviewedContracts")
+
+  @@unique([organizationId, email])
+  @@index([organizationId])
+  @@map("users")
+}
+
+model UserSession {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("user_sessions")
+}
+
+model Role {
+  id             String       @id @default(cuid())
+  organizationId String
+  key            String       // e.g. "management", "operations", "custom_stage_lead"
+  title          String       // e.g. "Management", "Operations"
+  badge          String
+  badgeColor     String       @default("#0891B2")
+  description    String?
+  permissions    String[]     // Array of permission tokens, e.g. ["talents:view", "schedule:book"]
+  isSystem       Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  users          User[]
+
+  @@unique([organizationId, key])
+  @@index([organizationId])
+  @@map("roles")
+}
+
+// -----------------------------------------------------------------------------
+// TALENT / PERFORMER MANAGEMENT
+// -----------------------------------------------------------------------------
+
+model Talent {
+  id                 String                    @id @default(cuid())
+  organizationId     String
+  firstName          String
+  lastName           String
+  email              String
+  phone              String
+  gender             Gender
+  heightCm           Int
+  weightKg           Int?
+  status             TalentStatus              @default(ACTIVE)
+  primarySkill       String                    // e.g., 'Aerialist & Silk Performer'
+  secondarySkills    String[]                  // e.g., ['Contortion', 'Lyrical Dance']
+  avatarUrl          String?
+  notes              String?
+  rehireStatus       RehireStatus              @default(ELIGIBLE)
+  contractExpiryDate DateTime?
+  contractStatus     ContractStatus            @default(ACTIVE)
+  isArchived         Boolean                   @default(false)
+  terminationReason  String?
+  terminationDate    DateTime?
+  createdAt          DateTime                  @default(now())
+  updatedAt          DateTime                  @updatedAt
+
+  organization       Organization              @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  documents          TalentDocument[]
+  contracts          ContractRecord[]
+  groupMemberships   GroupMember[]
+  pinnedRequirements RequirementPinnedTalent[]
+  dutyAssignments    DutyAssignmentPerformer[]
+  dutyOverridesFrom  DutyOverride[]            @relation("OriginalTalent")
+  dutyOverridesTo    DutyOverride[]            @relation("ReplacementTalent")
+  dutyShiftLedgers   DutyShiftLedger[]
+
+  @@index([organizationId])
+  @@index([organizationId, status])
+  @@index([organizationId, isArchived])
+  @@map("talents")
+}
+
+model TalentDocument {
+  id         String       @id @default(cuid())
+  talentId   String
+  name       String
+  type       DocumentType
+  fileSize   String?
+  url        String       // Path or secure object storage link
+  expiryDate DateTime?
+  uploadedAt DateTime     @default(now())
+
+  talent     Talent       @relation(fields: [talentId], references: [id], onDelete: Cascade)
+
+  @@index([talentId])
+  @@map("talent_documents")
+}
+
+model ContractRecord {
+  id                String            @id @default(cuid())
+  talentId          String
+  reviewedById      String?
+  projectName       String            // e.g., "Summer Palace Gala 2025"
+  location          String            // e.g., "Monte Carlo Grand Hall"
+  period            String            // e.g., "May 2025 - September 2025"
+  startDate         DateTime
+  endDate           DateTime
+  contractStatus    ContractStatus    @default(COMPLETED)
+  rating            Decimal           @db.Decimal(2, 1) // 1.0 - 5.0
+  rehireStatus      RehireStatus      @default(ELIGIBLE)
+  terminationReason String?
+  initiator         ContractInitiator @default(MUTUAL)
+  internalNote      String?
+  reviewType        ReviewType        @default(END_OF_SEASON)
+  reviewDate        DateTime          @default(now())
+
+  // Granular Evaluation Scores (1 to 5)
+  scorePunctuality  Int?
+  scorePerformance  Int?
+  scoreTeamwork     Int?
+  scoreGearCare     Int?
+
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  talent            Talent            @relation(fields: [talentId], references: [id], onDelete: Cascade)
+  reviewedBy        User?             @relation("ReviewedContracts", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@index([talentId])
+  @@index([contractStatus])
+  @@index([reviewDate])
+  @@map("contract_records")
+}
+
+// -----------------------------------------------------------------------------
+// GROUPS / TROUPES / CASTS
+// -----------------------------------------------------------------------------
+
+model Group {
+  id                  String                 @id @default(cuid())
+  organizationId      String
+  name                String                 // e.g., "Solaris Cirque Troupe"
+  description         String?
+  colorAccent         String                 @default("#FF6C41")
+  rotationCycleWeeks  Int                    @default(1)
+  rotationCycleType   RotationCycleType      @default(WEEKLY)
+  customRotationValue Int?
+  customRotationUnit  CustomRotationUnit?
+  fairnessPoolEnabled Boolean                @default(true)
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
+
+  organization        Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  members             GroupMember[]
+  requirements        InventoryRequirement[]
+  shows               ShowEvent[]
+
+  @@index([organizationId])
+  @@map("groups")
+}
+
+model GroupMember {
+  id       String   @id @default(cuid())
+  groupId  String
+  talentId String
+  roleNote String?  // e.g. "Lead Soloist", "Troupe Captain"
+  joinedAt DateTime @default(now())
+
+  group    Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  talent   Talent   @relation(fields: [talentId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, talentId])
+  @@index([groupId])
+  @@index([talentId])
+  @@map("group_members")
+}
+
+// -----------------------------------------------------------------------------
+// VENUES / HOTELS / ARENAS
+// -----------------------------------------------------------------------------
+
+model HotelVenue {
+  id                String       @id @default(cuid())
+  organizationId    String
+  name              String       // e.g., "The Venetian Resort & Casino"
+  address           String
+  city              String
+  country           String
+  contactName       String
+  contactPhone      String
+  contactEmail      String
+  roomOrBallroom    String?
+  travelTimeMinutes Int?         @default(0)
+  photoUrl          String?
+  notes             String?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  shows             ShowEvent[]
+
+  @@index([organizationId])
+  @@map("hotel_venues")
+}
+
+// -----------------------------------------------------------------------------
+// INVENTORY REQUIREMENTS & SPECIAL DUTIES (TEMPLATES)
+// -----------------------------------------------------------------------------
+
+model InventoryRequirement {
+  id                  String                    @id @default(cuid())
+  organizationId      String
+  groupId             String
+  parentTaskId        String?                   // For multi-slot tasks
+  itemName            String                    // e.g., "Heavy Audio Rig", "Stage Left Curtain"
+  category            DutyCategory              @default(INVENTORY)
+  assignedGender      DutyGenderRequirement     @default(ANY)
+  requiredHeadcount   Int                       @default(1)
+  position            String?                   // e.g., "Stage Left", "FOH Audio"
+  notes               String?
+  rotationCycle       TaskRotationCycle         @default(EVERY_SHOW)
+  customRotationValue Int?
+  customRotationUnit  CustomRotationUnit?
+  createdAt           DateTime                  @default(now())
+  updatedAt           DateTime                  @updatedAt
+
+  organization        Organization              @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  group               Group                     @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  parentTask          InventoryRequirement?    @relation("SubSlots", fields: [parentTaskId], references: [id], onDelete: Cascade)
+  subSlots            InventoryRequirement[]    @relation("SubSlots")
+  pinnedTalents       RequirementPinnedTalent[]
+  dutyAssignments     DutyAssignment[]
+  dutyShiftLedgers    DutyShiftLedger[]
+
+  @@index([groupId])
+  @@index([organizationId])
+  @@map("inventory_requirements")
+}
+
+model RequirementPinnedTalent {
+  id            String                @id @default(cuid())
+  requirementId String
+  talentId      String
+  isExclusive   Boolean               @default(true) // true: fixed performer; false: restricted sub-pool member
+
+  requirement   InventoryRequirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+  talent        Talent                @relation(fields: [talentId], references: [id], onDelete: Cascade)
+
+  @@unique([requirementId, talentId])
+  @@index([requirementId])
+  @@index([talentId])
+  @@map("requirement_pinned_talents")
+}
+
+// -----------------------------------------------------------------------------
+// SHOW EVENTS & SCHEDULING
+// -----------------------------------------------------------------------------
+
+model ShowEvent {
+  id               String            @id @default(cuid())
+  organizationId   String
+  groupId          String
+  hotelId          String
+  title            String            // e.g., "Solaris: Golden Odyssey Premiere"
+  startDateTime    DateTime
+  endDateTime      DateTime
+  lobbyDateTime    DateTime?
+  lobbyTime        String?           // e.g. "18:15"
+  status           ShowStatus        @default(SCHEDULED)
+  notes            String?
+  recurringGroupId String?           // UUID identifier grouping recurring series
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  organization     Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  group            Group             @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  venue            HotelVenue        @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+  dutyAssignments  DutyAssignment[]
+  dutyShiftLedgers DutyShiftLedger[]
+
+  @@index([organizationId])
+  @@index([groupId, startDateTime, endDateTime])
+  @@index([hotelId, startDateTime, endDateTime])
+  @@index([recurringGroupId])
+  @@map("show_events")
+}
+
+// -----------------------------------------------------------------------------
+// DUTY ASSIGNMENTS (PER-SHOW INSTANCES)
+// -----------------------------------------------------------------------------
+
+model DutyAssignment {
+  id                String                    @id @default(cuid())
+  showEventId       String
+  requirementId     String
+  itemName          String
+  category          DutyCategory              @default(INVENTORY)
+  position          String?
+  assignedGender    DutyGenderRequirement     @default(ANY)
+  requiredHeadcount Int                       @default(1)
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
+
+  showEvent         ShowEvent                 @relation(fields: [showEventId], references: [id], onDelete: Cascade)
+  requirement       InventoryRequirement     @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+  assignedTalents   DutyAssignmentPerformer[]
+  overrides         DutyOverride[]
+
+  @@unique([showEventId, requirementId])
+  @@index([showEventId])
+  @@index([requirementId])
+  @@map("duty_assignments")
+}
+
+model DutyAssignmentPerformer {
+  id               String           @id @default(cuid())
+  dutyAssignmentId String
+  talentId         String
+  attendance       AttendanceStatus @default(PRESENT)
+  assignedAt       DateTime         @default(now())
+
+  dutyAssignment   DutyAssignment   @relation(fields: [dutyAssignmentId], references: [id], onDelete: Cascade)
+  talent           Talent           @relation(fields: [talentId], references: [id], onDelete: Cascade)
+
+  @@unique([dutyAssignmentId, talentId])
+  @@index([dutyAssignmentId])
+  @@index([talentId])
+  @@map("duty_assignment_performers")
+}
+
+model DutyOverride {
+  id                  String         @id @default(cuid())
+  dutyAssignmentId    String
+  originalTalentId    String
+  replacementTalentId String
+  reason              String?
+  createdAt           DateTime       @default(now())
+
+  dutyAssignment      DutyAssignment @relation(fields: [dutyAssignmentId], references: [id], onDelete: Cascade)
+  originalTalent      Talent         @relation("OriginalTalent", fields: [originalTalentId], references: [id], onDelete: Cascade)
+  replacementTalent   Talent         @relation("ReplacementTalent", fields: [replacementTalentId], references: [id], onDelete: Cascade)
+
+  @@index([dutyAssignmentId])
+  @@map("duty_overrides")
+}
+
+// -----------------------------------------------------------------------------
+// DUTY SHIFT HISTORICAL LEDGER (INDEXED FOR FAIRNESS METRICS)
+// -----------------------------------------------------------------------------
+
+model DutyShiftLedger {
+  id               String                @id @default(cuid())
+  organizationId   String
+  showEventId      String
+  groupId          String
+  talentId         String
+  requirementId    String
+  cyclePeriodKey   String                // e.g. "2026-C38_W1" (matches rotationEngine getCycleKey)
+  isManualOverride Boolean               @default(false)
+  attendance       AttendanceStatus      @default(PRESENT)
+  assignedAt       DateTime              @default(now())
+
+  organization     Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  showEvent        ShowEvent             @relation(fields: [showEventId], references: [id], onDelete: Cascade)
+  talent           Talent                @relation(fields: [talentId], references: [id], onDelete: Cascade)
+  requirement      InventoryRequirement  @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, groupId, cyclePeriodKey])
+  @@index([talentId, cyclePeriodKey])
+  @@index([showEventId])
+  @@map("duty_shift_ledgers")
+}

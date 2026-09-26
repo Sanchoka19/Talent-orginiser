@@ -1,4 +1,4 @@
-# Talent Organiser Monorepo
+# Talent  Organiser Monorepo
 
 Turborepo and pnpm workspaces monorepo containing the Next.js frontend, NestJS backend API, and shared types.
 

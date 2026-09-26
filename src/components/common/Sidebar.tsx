@@ -70,7 +70,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       onTabChange(tab);
     } else {
       const tabPaths: Record<NavTab, string> = {
-        dashboard: '/',
+        dashboard: '/dashboard',
         talents: '/talents',
         groups: '/groups',
         venues: '/venues',
@@ -79,7 +79,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         '/settings/profile': '/settings/profile',
         '/settings/roles': '/settings/roles'
       };
-      router.push(tabPaths[tab] || '/');
+      router.push(tabPaths[tab] || '/dashboard');
     }
     if (onClose) onClose();
   };

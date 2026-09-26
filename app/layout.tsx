@@ -1,8 +1,6 @@
 import type { Metadata } from 'next';
 import localFont from 'next/font/local';
 import './globals.css';
-import { Providers } from './providers';
-import { AppShell } from '../src/components/common/AppShell';
 
 const firaGO = localFont({
   src: [
@@ -37,8 +35,11 @@ const firaGO = localFont({
 });
 
 export const metadata: Metadata = {
-  title: 'ArtistePulse - Talent & Show Organiser',
-  description: 'Manage artists, groups, hotel venues, contracts, and daily show rotations.',
+  title: {
+    default: 'ArtistePulse | Talent & Show Organiser',
+    template: '%s | ArtistePulse',
+  },
+  description: 'Manage artists, groups, venues, contracts, and show schedules in one place.',
   icons: {
     icon: '/favicon.svg',
   },
@@ -50,11 +51,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="ka" className={firaGO.variable} suppressHydrationWarning>
+    <html lang="en" className={firaGO.variable} suppressHydrationWarning>
       <body className={`${firaGO.variable} font-sans`} suppressHydrationWarning>
-        <Providers>
-          <AppShell>{children}</AppShell>
-        </Providers>
+        {children}
       </body>
     </html>
   );

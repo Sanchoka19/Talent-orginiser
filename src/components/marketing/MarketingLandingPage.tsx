@@ -233,23 +233,38 @@ export function MarketingLandingPage() {
         )}
       </header>
 
-      <section id="top" className="relative isolate overflow-hidden px-5 pb-16 pt-12 sm:px-8 sm:pb-24 sm:pt-18 lg:px-10 lg:pb-28 lg:pt-20">
-        <div className="absolute inset-x-0 top-0 -z-10 h-[700px] bg-[radial-gradient(ellipse_75%_52%_at_51%_35%,rgba(214,225,255,0.9),rgba(249,251,255,0.4)_47%,transparent_74%)]" />
-        <div className="absolute -right-36 top-28 -z-10 h-72 w-72 rounded-full bg-[#e7efff] blur-3xl" />
-        <div className="mx-auto max-w-[1200px]">
-          <div className="mx-auto max-w-3xl text-center">
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#dce6ff] bg-white/80 px-3.5 py-1.5 text-xs font-semibold text-[#2858ca] shadow-sm backdrop-blur">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#1e5eff]" /> Built for the people behind great shows
+      <section id="top" className="relative isolate overflow-hidden px-5 pb-16 pt-10 sm:px-8 sm:pb-24 sm:pt-16 lg:px-10 lg:pb-28 lg:pt-20">
+        <div className="absolute inset-x-0 top-0 -z-10 h-[760px] bg-[radial-gradient(ellipse_66%_62%_at_62%_38%,rgba(211,224,255,0.92),rgba(249,251,255,0.44)_48%,transparent_76%)]" />
+        <div className="absolute -left-24 top-44 -z-10 h-64 w-64 rounded-full bg-[#eff4ff] blur-3xl" />
+        <div className="absolute -right-32 top-20 -z-10 h-80 w-80 rounded-full bg-[#dce8ff] blur-3xl" />
+        <div className="mx-auto grid max-w-[1200px] items-center gap-12 lg:grid-cols-[0.88fr_1.12fr] lg:gap-10 xl:gap-16">
+          <div className="max-w-[560px]">
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#dce6ff] bg-white/80 px-3.5 py-1.5 text-xs font-semibold text-[#2858ca] shadow-sm backdrop-blur">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#1e5eff]" /> Live performance operations
             </div>
-            <h1 className="font-display text-balance text-[43px] font-bold leading-[1.05] tracking-[-0.052em] text-[#101828] sm:text-[60px] lg:text-[74px]">Great talent.<br /><span className="text-[#1e5eff]">Seamless shows.</span></h1>
-            <p className="mx-auto mt-6 max-w-xl text-pretty text-base leading-7 text-slate-600 sm:text-lg">One place to organise artists, groups, venues, and every moving part of your live programme.</p>
-            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <a href="/sign-up" className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#1e5eff] px-5 py-3.5 text-sm font-semibold text-white shadow-[0_12px_24px_rgba(30,94,255,0.25)] transition hover:-translate-y-0.5 hover:bg-[#164bd7] sm:w-auto">Start organising <ArrowRight size={17} /></a>
-              <a href="#features" className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3.5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 sm:w-auto">Explore the platform <ChevronDown size={17} /></a>
+            <h1 className="font-display mt-6 text-balance text-[46px] font-bold leading-[1.02] tracking-[-0.058em] text-[#101828] sm:text-[62px] xl:text-[72px]">Make every show <span className="text-[#1e5eff]">run on cue.</span></h1>
+            <p className="mt-6 max-w-[510px] text-pretty text-base leading-7 text-slate-600 sm:text-lg sm:leading-8">A calm control room for your talent, venues, groups, and schedules—so every person knows where they need to be.</p>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <a href="/sign-up" className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#1e5eff] px-5 py-3.5 text-sm font-semibold text-white shadow-[0_12px_24px_rgba(30,94,255,0.25)] transition hover:-translate-y-0.5 hover:bg-[#164bd7] sm:w-auto">Create your workspace <ArrowRight size={17} /></a>
+              <a href="#features" className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white/90 px-5 py-3.5 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-white sm:w-auto">See how it works <ChevronDown size={17} /></a>
             </div>
-            <p className="mt-4 text-xs text-slate-500">Bring clarity to every performance, from the first booking to the final bow.</p>
+            <div className="mt-9 grid max-w-[480px] grid-cols-3 gap-3 border-t border-[#dce6f7] pt-5">
+              {[
+                [UsersRound, 'Talent', 'ready'],
+                [Building2, 'Venues', 'connected'],
+                [CalendarDays, 'Schedules', 'clear'],
+              ].map(([Icon, label, detail]) => {
+                const HeroIcon = Icon as typeof UsersRound;
+                return <div key={label as string} className="flex items-center gap-2"><span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-white text-[#3869dc] shadow-sm"><HeroIcon size={15} /></span><span className="text-[11px] leading-4 text-slate-500"><strong className="block text-xs text-slate-800">{label as string}</strong>{detail as string}</span></div>;
+              })}
+            </div>
           </div>
-          <div className="mt-14 sm:mt-16"><ProductPreview /></div>
+          <div className="relative mx-auto w-full max-w-[690px] lg:ml-auto">
+            <ProductPreview />
+            <div className="absolute -right-2 -top-5 hidden rounded-2xl border border-[#dce6fa] bg-white px-3.5 py-3 shadow-[0_14px_36px_rgba(29,67,153,0.15)] sm:block lg:-right-7">
+              <div className="flex items-center gap-2.5"><span className="flex size-8 items-center justify-center rounded-full bg-[#eaf7f2] text-[#078169]"><ShieldCheck size={17} /></span><span><span className="block text-[10px] font-bold text-slate-800">All clear for tonight</span><span className="block text-[9px] text-slate-500">No schedule conflicts</span></span></div>
+            </div>
+          </div>
         </div>
       </section>
 

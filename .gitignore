@@ -1,5 +1,26 @@
+# Dependencies
+node_modules/
+**/node_modules/
+.pnpm-store/
+**/pnpm-store/
+
+# Build & Production outputs
+dist/
+**/dist/
+dist-ssr/
+build/
+**/build/
+out/
+**/out/
+.next/
+**/.next/
+.turbo/
+**/.turbo/
+*.tsbuildinfo
+**/*.tsbuildinfo
+
 # Logs
-logs
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
@@ -7,30 +28,21 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-.pnpm-store
-dist
-dist-ssr
-*.local
-
-# Next.js
-.next/
-out/
-build/
-.turbo/
-*.tsbuildinfo
-
 # Environment files
-.env*.local
 .env
+.env*.local
+**/.env
+**/.env*.local
 
-# Editor directories and files
+# Editor & OS files
+.DS_Store
+Thumbs.db
 .vscode/*
 !.vscode/extensions.json
-.idea
-.DS_Store
+.idea/
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+*.local

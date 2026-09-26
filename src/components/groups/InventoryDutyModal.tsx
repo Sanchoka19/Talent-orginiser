@@ -8,11 +8,12 @@ import {
   COMMON_INVENTORY_ITEMS
 } from '../../types/inventory';
 import {
-  Package,
+  Boxes,
   Plus,
   Trash2,
   X,
   Clock,
+  User,
   Users
 } from 'lucide-react';
 
@@ -25,7 +26,9 @@ interface InventoryDutyModalProps {
   onSaveInventory: (
     items: Array<{ itemName: string; assignedGender: DutyGenderRequirement; requiredHeadcount: number }>,
     cycle: RotationCycleType,
-    performerId?: string
+    performerId?: string,
+    customRotationValue?: number,
+    customRotationUnit?: 'show' | 'day' | 'week'
   ) => void;
   dict: any;
   isKa: boolean;
@@ -51,6 +54,8 @@ export const InventoryDutyModal: React.FC<InventoryDutyModalProps> = ({
     { id: 'inv-1', itemName: '', assignedGender: 'Any', requiredHeadcount: 2 }
   ]);
   const [inventoryRotationCycle, setInventoryRotationCycle] = useState<RotationCycleType>('every_show');
+  const [customRotationValue, setCustomRotationValue] = useState<number | ''>(2);
+  const [customRotationUnit, setCustomRotationUnit] = useState<'show' | 'day' | 'week'>('week');
 
   useEffect(() => {
     if (isOpen) {
@@ -58,6 +63,8 @@ export const InventoryDutyModal: React.FC<InventoryDutyModalProps> = ({
         { id: `inv_${Date.now()}_1`, itemName: '', assignedGender: 'Any', requiredHeadcount: 2 }
       ]);
       setInventoryRotationCycle('every_show');
+      setCustomRotationValue(2);
+      setCustomRotationUnit('week');
     }
   }, [isOpen]);
 
@@ -95,13 +102,22 @@ export const InventoryDutyModal: React.FC<InventoryDutyModalProps> = ({
       ...item,
       requiredHeadcount: Math.max(1, Number(item.requiredHeadcount) || 1)
     }));
-    onSaveInventory(sanitizedItems, inventoryRotationCycle, undefined);
+    onSaveInventory(
+      sanitizedItems,
+      inventoryRotationCycle,
+      undefined,
+      inventoryRotationCycle === 'custom'
+        ? Math.max(1, Number(customRotationValue) || 2)
+        : undefined,
+      inventoryRotationCycle === 'custom' ? customRotationUnit : undefined
+    );
   };
 
   const rotationCycles: { id: RotationCycleType; label: string }[] = [
     { id: 'every_show', label: dict.cycleEveryShow },
     { id: 'weekly', label: dict.cycleWeekly },
-    { id: 'monthly', label: dict.cycleMonthly }
+    { id: 'monthly', label: dict.cycleMonthly },
+    { id: 'custom', label: dict.cycleCustom || (isKa ? 'მორგებული (Custom)' : 'Custom') }
   ];
 
   return (
@@ -117,7 +133,7 @@ export const InventoryDutyModal: React.FC<InventoryDutyModalProps> = ({
         <div className="p-4 sm:p-5 border-b border-border-subtle flex items-start justify-between gap-3 bg-surface shrink-0">
           <div className="flex items-center gap-3 w-full">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-blue-500/10 text-brand-primary">
-              <Package size={20} />
+              <Boxes size={20} />
             </div>
             <div className="flex-1 min-w-0 mr-4">
               <h3 className="text-base font-bold text-text-primary leading-tight">
@@ -163,13 +179,68 @@ export const InventoryDutyModal: React.FC<InventoryDutyModalProps> = ({
                   </button>
                 ))}
               </div>
+
+              {/* Custom Cycle Duration Input Row */}
+              {inventoryRotationCycle === 'custom' && (
+                <div className="mt-2.5 p-2.5 sm:px-3.5 sm:py-2.5 rounded-lg bg-brand-primary/5 border border-brand-primary/20 flex items-center gap-2 flex-wrap text-xs text-text-primary animate-in fade-in slide-in-from-top-1 duration-150">
+                  <span className="font-semibold text-text-secondary">
+                    {isKa ? 'ციკლის ხანგრძლივობა:' : 'Cycle Duration:'}
+                  </span>
+
+                  <input
+                    type="number"
+                    min={1}
+                    max={99}
+                    value={customRotationValue}
+                    onChange={(e) =>
+                      setCustomRotationValue(
+                        e.target.value === ''
+                          ? ''
+                          : Math.max(1, Math.min(99, Number(e.target.value)))
+                      )
+                    }
+                    onBlur={() => {
+                      if (customRotationValue === '' || Number(customRotationValue) < 1) {
+                        setCustomRotationValue(2);
+                      }
+                    }}
+                    className="w-14 px-2 py-1 text-center font-bold rounded-md border border-border-medium bg-surface text-text-primary outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20"
+                    placeholder="2"
+                    required
+                  />
+
+                  <select
+                    value={customRotationUnit}
+                    onChange={(e) =>
+                      setCustomRotationUnit(e.target.value as 'show' | 'day' | 'week')
+                    }
+                    className="text-xs font-semibold px-2.5 py-1 rounded-md border border-border-medium bg-surface text-text-primary outline-none focus:border-brand-primary cursor-pointer"
+                  >
+                    <option value="week">{isKa ? 'კვირა' : 'week(s)'}</option>
+                    <option value="show">{isKa ? 'შოუ' : 'show(s)'}</option>
+                    <option value="day">{isKa ? 'დღე' : 'day(s)'}</option>
+                  </select>
+
+                  <span className="ml-auto text-[11px] text-text-tertiary hidden sm:inline-block font-normal">
+                    {isKa
+                      ? `(როტაცია ყოველ ${customRotationValue || 2} ${
+                          customRotationUnit === 'week'
+                            ? 'კვირაში ერთხელ'
+                            : customRotationUnit === 'day'
+                            ? 'დღეში ერთხელ'
+                            : 'შოუზე'
+                        })`
+                      : `(Rotates every ${customRotationValue || 2} ${customRotationUnit})`}
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Items List */}
             <div className="flex flex-col gap-3 pt-3 border-t border-slate-200/80 dark:border-border-subtle">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Package size={15} className="text-brand-primary" />
+                  <Boxes size={15} className="text-brand-primary" />
                   <span className="text-xs font-bold text-text-primary">
                     {dict.inventoryItemsList}
                   </span>
@@ -229,7 +300,11 @@ export const InventoryDutyModal: React.FC<InventoryDutyModalProps> = ({
                       </div>
 
                       <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-                        <div className="flex-1 min-w-[140px]">
+                        <div className="flex-1 min-w-[140px] relative">
+                          <User
+                            size={14}
+                            className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary pointer-events-none"
+                          />
                           <select
                             value={item.assignedGender}
                             onChange={(e) =>
@@ -237,7 +312,7 @@ export const InventoryDutyModal: React.FC<InventoryDutyModalProps> = ({
                                 assignedGender: e.target.value as DutyGenderRequirement
                               })
                             }
-                            className="w-full text-xs font-semibold px-2.5 py-2 rounded-lg border border-border-medium bg-surface text-text-primary outline-none focus:border-brand-primary cursor-pointer"
+                            className="w-full text-xs font-semibold pl-8 pr-2.5 py-2 rounded-lg border border-border-medium bg-surface text-text-primary outline-none focus:border-brand-primary cursor-pointer"
                           >
                             <option value="Any">{dict.genderAny}</option>
                             <option value="Female Only">{dict.genderFemaleOnly}</option>
@@ -245,8 +320,11 @@ export const InventoryDutyModal: React.FC<InventoryDutyModalProps> = ({
                           </select>
                         </div>
 
-                        <div className="w-28 shrink-0 flex items-center gap-1.5">
-                          <Users size={14} className="text-text-secondary shrink-0" />
+                        <div className="w-32 shrink-0 relative flex items-center">
+                          <Users
+                            size={14}
+                            className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary pointer-events-none"
+                          />
                           <input
                             type="number"
                             min={1}
@@ -262,10 +340,13 @@ export const InventoryDutyModal: React.FC<InventoryDutyModalProps> = ({
                                 handleUpdateInventoryItem(item.id, { requiredHeadcount: 1 });
                               }
                             }}
-                            className="w-full text-xs font-bold px-2 py-2 rounded-lg border border-border-medium bg-surface text-text-primary text-center outline-none focus:border-brand-primary"
+                            className="w-full text-xs font-bold pl-8 pr-12 py-2 rounded-lg border border-border-medium bg-surface text-text-primary text-center outline-none focus:border-brand-primary [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                             title={dict.headcount}
                             required
                           />
+                          <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] font-medium text-text-secondary pointer-events-none select-none">
+                            {isKa ? 'შემსრ.' : 'prs.'}
+                          </span>
                         </div>
                       </div>
                     </div>

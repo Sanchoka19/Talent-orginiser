@@ -10,7 +10,6 @@ import {
   ClipboardList,
   Check,
   CheckCheck,
-  Sparkles,
   Info
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
@@ -510,7 +509,7 @@ export const CreateRoleModal: React.FC<CreateRoleModalProps> = ({
               disabled={isSubmitDisabled}
               className="inline-flex items-center gap-2 px-5 py-2 rounded-md text-sm font-semibold text-text-inverse bg-brand-primary shadow-xs hover:bg-brand-primary-hover transition-all duration-150 cursor-pointer outline-none disabled:opacity-45 disabled:cursor-not-allowed disabled:shadow-none"
             >
-              <Sparkles className="w-4 h-4" />
+              <ShieldCheck className="w-4 h-4" />
               <span>
                 {isSubmitting
                   ? isKa

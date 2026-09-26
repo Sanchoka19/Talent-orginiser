@@ -59,7 +59,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
       {/* Main Workspace with Sticky TopBar */}
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
         <TopBar onMenuToggle={() => setIsSidebarOpen((v) => !v)} />
-        <main className="flex-1 w-full max-w-none p-6 sm:px-8 overflow-y-auto min-w-0 flex flex-col">
+        <main className="flex-1 w-full max-w-none p-3.5 sm:p-6 lg:px-8 overflow-y-auto min-w-0 flex flex-col">
           {children}
         </main>
       </div>

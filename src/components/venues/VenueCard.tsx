@@ -38,7 +38,7 @@ export const VenueCard: React.FC<VenueCardProps> = ({
     return (
       <div
         onClick={handleClick}
-        className="group relative bg-surface rounded-md border border-border-subtle px-5 py-3.5 shadow-sm grid grid-cols-[minmax(240px,2fr)_minmax(200px,1.8fr)_minmax(180px,1.5fr)_minmax(180px,1.4fr)_140px] items-center gap-4 cursor-pointer transition-all duration-150 hover:border-border-medium hover:shadow-md hover:-translate-y-0.5"
+        className="group relative bg-surface rounded-md border border-border-subtle px-4 sm:px-5 py-3.5 shadow-sm grid grid-cols-[minmax(180px,2fr)_minmax(140px,1.5fr)_minmax(140px,1.3fr)_minmax(110px,1fr)_90px] items-center gap-3 sm:gap-4 cursor-pointer transition-all duration-150 hover:border-border-medium hover:shadow-md hover:-translate-y-0.5"
       >
         {/* Col 1: Icon & Venue Name */}
         <div className="flex items-center gap-3 min-w-0">

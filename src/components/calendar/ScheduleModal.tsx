@@ -6,6 +6,8 @@ import { useApp } from '../../context/AppContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useToast } from '../../context/ToastContext';
 import { AlertTriangle, Calendar, Clock, Repeat, Check, Bus } from 'lucide-react';
+import { DatePicker } from '../common/DatePicker';
+import { TimePickerInput } from '../common/TimePickerInput';
 import { toLocalDateStr, todayLocalStr } from '../../utils/dateUtils';
 
 interface ScheduleModalProps {
@@ -41,7 +43,7 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
   onClose,
   defaultDate
 }) => {
-  const { groups, venues, addShowEvent, validateConflict } = useApp();
+  const { groups, venues, addShowEvent, validateConflict, formatTime } = useApp();
   const { t, language } = useLanguage();
   const toast = useToast();
   const isKa = language === 'ka';
@@ -132,19 +134,106 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
     const dates: string[] = [];
     const current = new Date(startDate + 'T00:00:00');
     const end = new Date(endDate + 'T23:59:59');
+    const now = new Date();
 
     let loopSafety = 0;
     while (current <= end && loopSafety < 366) {
       const dayOfWeek = current.getDay();
       if (selectedDays.includes(dayOfWeek)) {
-        dates.push(toLocalDateStr(current));
+        const dateStr = toLocalDateStr(current);
+        // If the recurring date is today, only include if the show start time is in the future
+        if (dateStr === todayStr && startTime) {
+          const showTimeToday = new Date(`${dateStr}T${startTime}:00`);
+          if (showTimeToday > now) {
+            dates.push(dateStr);
+          }
+        } else if (dateStr > todayStr) {
+          dates.push(dateStr);
+        }
       }
       current.setDate(current.getDate() + 1);
       loopSafety++;
     }
 
     return dates;
-  }, [isRecurring, startDate, endDate, selectedDays]);
+  }, [isRecurring, startDate, endDate, selectedDays, todayStr, startTime]);
+
+  // Real-time Business Logic Validation: Past hours, days, duration, etc.
+  const timeValidationError = useMemo(() => {
+    if (!startDate || !startTime || !endTime) return null;
+    const now = new Date();
+
+    // 1. Past day check
+    if (startDate < todayStr) {
+      return isKa
+        ? 'წარსული თარიღის არჩევა შეუძლებელია.'
+        : 'Cannot schedule on a past date.';
+    }
+
+    // 2. End time check (disallow exact same start and end time)
+    if (endTime === startTime) {
+      return isKa
+        ? 'შოუს დასრულების დრო უნდა განსხვავდებოდეს დაწყების დროსგან.'
+        : 'Show end time must differ from start time.';
+    }
+
+    // 3. Lobby gathering time check: must not exceed show start time
+    if (lobbyTime && startTime) {
+      const [startH, startM] = startTime.split(':').map(Number);
+      const [lobbyH, lobbyM] = lobbyTime.split(':').map(Number);
+      const startTotalMin = startH * 60 + startM;
+      const lobbyTotalMin = lobbyH * 60 + lobbyM;
+
+      // Wrap-around: If show starts early morning (before 06:00) and lobby is previous evening (after 18:00)
+      const isLobbyPreviousNight = startTotalMin < 360 && lobbyTotalMin > 1080;
+
+      if (!isLobbyPreviousNight && lobbyTotalMin > startTotalMin) {
+        return isKa
+          ? `შეკრების დრო (${formatTime(lobbyTime)}) არ უნდა აღემატებოდეს შოუს დაწყების დროს (${formatTime(startTime)}).`
+          : `Lobby gathering time (${formatTime(lobbyTime)}) cannot exceed show start time (${formatTime(startTime)}).`;
+      }
+    }
+
+    // 3. For single show: check if start time or lobby gathering has already passed today
+    if (!isRecurring) {
+      if (startDate === todayStr) {
+        const showStart = new Date(`${startDate}T${startTime}:00`);
+        if (showStart <= now) {
+          return isKa
+            ? `მითითებული დაწყების დრო (${formatTime(startTime)}) უკვე გასულია დღევანდელი დღისთვის.`
+            : `Start time (${formatTime(startTime)}) has already passed for today.`;
+        }
+
+        if (lobbyTime) {
+          const lobbyStart = new Date(`${startDate}T${lobbyTime}:00`);
+          if (lobbyStart <= now) {
+            return isKa
+              ? `შეკრების დრო (Lobby time: ${formatTime(lobbyTime)}) უკვე გასულია დღევანდელი დღისთვის. გთხოვთ მიუთითოთ მოგვიანებითი დრო.`
+              : `Lobby gathering time (${formatTime(lobbyTime)}) has already passed for today.`;
+          }
+        }
+      }
+    } else {
+      // 4. Recurring validations
+      if (selectedDays.length === 0) {
+        return isKa
+          ? 'გთხოვთ აირჩიოთ კვირის მინიმუმ ერთი დღე.'
+          : 'Please select at least one day of the week.';
+      }
+      if (endDate && endDate < startDate) {
+        return isKa
+          ? 'განმეორების დასრულების თარიღი უნდა აღემატებოდეს დაწყების თარიღს.'
+          : 'End date must be after start date.';
+      }
+      if (occurrences.length === 0) {
+        return isKa
+          ? 'შერჩეულ პერიოდში შოუს ყველა დრო უკვე გასულია. მიუთითეთ მომავალი დრო ან თარიღები.'
+          : 'All occurrences in the selected period have already passed.';
+      }
+    }
+
+    return null;
+  }, [startDate, startTime, endTime, lobbyTime, isRecurring, selectedDays, endDate, todayStr, occurrences.length, isKa]);
 
   // Dynamic live summary text
   const liveSummaryText = useMemo(() => {
@@ -176,8 +265,18 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
     const warnings: { date: string; reason: string }[] = [];
 
     occurrences.forEach((dateStr) => {
+      const [startH, startM] = startTime.split(':').map(Number);
+      const [endH, endM] = endTime.split(':').map(Number);
+      const isOvernight = (endH * 60 + endM) < (startH * 60 + startM);
+      let endDayStr = dateStr;
+      if (isOvernight) {
+        const dObj = new Date(`${dateStr}T12:00:00`);
+        dObj.setDate(dObj.getDate() + 1);
+        endDayStr = dObj.toISOString().split('T')[0];
+      }
+
       const start = `${dateStr}T${startTime}:00`;
-      const end = `${dateStr}T${endTime}:00`;
+      const end = `${endDayStr}T${endTime}:00`;
       const lobby = lobbyTime ? `${dateStr}T${lobbyTime}:00` : undefined;
 
       const res = validateConflict({
@@ -212,17 +311,10 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
       return;
     }
 
-    // Validate that the show start date+time is not in the past
-    if (startDate && startTime) {
-      const showStart = new Date(`${startDate}T${startTime}:00`);
-      if (showStart <= new Date()) {
-        const msg = isKa
-          ? 'გასულ თარიღსა და დროზე შოუს დაჯავშნა შეუძლებელია'
-          : 'Cannot schedule a show in the past';
-        setSubmitError(msg);
-        toast.error(msg);
-        return;
-      }
+    if (timeValidationError) {
+      setSubmitError(timeValidationError);
+      toast.error(timeValidationError);
+      return;
     }
 
     if (hasBlockingConflict) {
@@ -242,13 +334,23 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
           ? `${baseTitle} (${index + 1})`
           : baseTitle;
 
+      const [startH, startM] = startTime.split(':').map(Number);
+      const [endH, endM] = endTime.split(':').map(Number);
+      const isOvernight = (endH * 60 + endM) < (startH * 60 + startM);
+      let endDayStr = dateStr;
+      if (isOvernight) {
+        const dObj = new Date(`${dateStr}T12:00:00`);
+        dObj.setDate(dObj.getDate() + 1);
+        endDayStr = dObj.toISOString().split('T')[0];
+      }
+
       addShowEvent(
         {
           title: showTitle,
           groupId,
           hotelId,
           startDateTime: `${dateStr}T${startTime}:00`,
-          endDateTime: `${dateStr}T${endTime}:00`,
+          endDateTime: `${endDayStr}T${endTime}:00`,
           lobbyTime: lobbyTime || undefined,
           lobbyDateTime: lobbyTime ? `${dateStr}T${lobbyTime}:00` : undefined,
           status: 'Scheduled',
@@ -308,9 +410,9 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
             <button
               type="submit"
               form="schedule-form"
-              disabled={hasBlockingConflict || occurrences.length === 0}
+              disabled={hasBlockingConflict || occurrences.length === 0 || !!timeValidationError}
               className="inline-flex items-center justify-center gap-2 px-5 py-2 rounded-pill text-sm font-medium bg-brand-primary text-text-inverse shadow-glow hover:bg-brand-primary-hover hover:-translate-y-0.5 active:translate-y-0 transition-all duration-150 cursor-pointer outline-none disabled:opacity-45 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:shadow-none"
-              title={hasBlockingConflict ? t('booking_blocked_hint') : undefined}
+              title={hasBlockingConflict ? t('booking_blocked_hint') : (timeValidationError || undefined)}
             >
               {t('btn_book_show')}
             </button>
@@ -361,13 +463,11 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
               <Calendar className="w-3.5 h-3.5 shrink-0 text-text-secondary" strokeWidth={2} />
               <span>{t('show_date')} *</span>
             </label>
-            <input
-              type="date"
-              required
-              className="w-full text-sm px-3.5 py-2.5 rounded-sm border border-border-subtle bg-surface-secondary text-text-primary outline-none transition-all duration-150 focus:bg-surface focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10"
+            <DatePicker
               value={startDate}
               min={todayStr}
-              onChange={(e) => setStartDate(e.target.value)}
+              onChange={setStartDate}
+              required
             />
           </div>
 
@@ -376,12 +476,9 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
               <Bus className="w-3.5 h-3.5 shrink-0 text-text-secondary" strokeWidth={2} />
               <span>{t('lobby_gathering_time')}</span>
             </label>
-            <input
-              type="time"
-              required
-              className="w-full text-sm px-3.5 py-2.5 rounded-sm border border-border-subtle bg-surface-secondary text-text-primary outline-none transition-all duration-150 focus:bg-surface focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10"
+            <TimePickerInput
               value={lobbyTime}
-              onChange={(e) => setLobbyTime(e.target.value)}
+              onChange={setLobbyTime}
               title={t('lobby_gathering_time')}
             />
           </div>
@@ -394,12 +491,10 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
               <Clock className="w-3.5 h-3.5 shrink-0 text-text-secondary" strokeWidth={2} />
               <span>{t('start_time')} *</span>
             </label>
-            <input
-              type="time"
-              required
-              className="w-full text-sm px-3.5 py-2.5 rounded-sm border border-border-subtle bg-surface-secondary text-text-primary outline-none transition-all duration-150 focus:bg-surface focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10"
+            <TimePickerInput
               value={startTime}
-              onChange={(e) => setStartTime(e.target.value)}
+              onChange={setStartTime}
+              required
             />
           </div>
 
@@ -408,18 +503,16 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
               <Clock className="w-3.5 h-3.5 shrink-0 text-text-secondary" strokeWidth={2} />
               <span>{t('end_time')} *</span>
             </label>
-            <input
-              type="time"
-              required
-              className="w-full text-sm px-3.5 py-2.5 rounded-sm border border-border-subtle bg-surface-secondary text-text-primary outline-none transition-all duration-150 focus:bg-surface focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10"
+            <TimePickerInput
               value={endTime}
-              onChange={(e) => setEndTime(e.target.value)}
+              onChange={setEndTime}
+              required
             />
           </div>
         </div>
 
         {/* Recurrence Schedule Builder Container */}
-        <div className="p-4 rounded-md bg-surface-secondary border border-border-subtle transition-all duration-150">
+        <div className="p-4 rounded-md bg-surface-secondary border border-border-subtle transition-all duration-300 ease-in-out">
           {/* iOS-Style Toggle Switch Header */}
           <div
             className="flex items-center justify-between cursor-pointer select-none"
@@ -427,11 +520,11 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
           >
             <div className="flex items-center gap-2">
               <Repeat
-                className={`w-4 h-4 ${isRecurring ? 'text-text-primary' : 'text-text-secondary'}`}
+                className={`w-4 h-4 transition-colors duration-200 ${isRecurring ? 'text-text-primary' : 'text-text-secondary'}`}
                 strokeWidth={isRecurring ? 2.2 : 2}
               />
               <span
-                className={`text-sm font-semibold ${
+                className={`text-sm font-semibold transition-colors duration-200 ${
                   isRecurring ? 'text-text-primary' : 'text-text-secondary'
                 }`}
               >
@@ -453,83 +546,89 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
             </div>
           </div>
 
-          {/* Recurrence Options Panel */}
-          {isRecurring && (
-            <div className="mt-4 pt-3.5 border-t border-border-subtle flex flex-col gap-3.5">
-              {/* Day Picker */}
-              <div>
-                <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-2">
-                  {t('days_of_week')}
-                </label>
-                <div className="flex gap-1.5 flex-wrap">
-                  {DAYS.map((d) => {
-                    const isSelected = selectedDays.includes(d.id);
-                    return (
-                      <button
-                        key={d.id}
-                        type="button"
-                        onClick={() => handleToggleDay(d.id)}
-                        className={`flex-1 min-w-[40px] py-2 px-1.5 rounded-pill text-xs font-semibold cursor-pointer flex items-center justify-center gap-1 transition-all duration-150 outline-none ${
-                          isSelected
-                            ? 'border border-brand-navy bg-brand-navy text-text-inverse'
-                            : 'border border-border-subtle bg-surface text-text-secondary hover:border-border-medium'
-                        }`}
-                      >
-                        {isSelected && <Check className="w-3 h-3" strokeWidth={3} />}
-                        <span>{language === 'ka' ? d.labelKa : d.labelEn}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Recurrence End Date & Quick Presets */}
-              <div>
-                <label className="flex items-center gap-1.5 text-xs font-semibold text-text-secondary uppercase tracking-wider mb-2">
-                  <Calendar className="w-3.5 h-3.5 text-text-secondary" />
-                  <span>{t('repeat_until')}</span>
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2.5 items-center">
-                  <input
-                    type="date"
-                    required={isRecurring}
-                    min={startDate}
-                    className="w-full text-sm px-3.5 py-2.5 rounded-sm border border-border-subtle bg-surface text-text-primary outline-none transition-all duration-150 focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                  />
-                  {/* Quick Preset Buttons */}
-                  <div className="flex gap-1.5">
-                    {[
-                      { label: language === 'ka' ? '2 კვ' : '2 wks', weeks: 2 },
-                      { label: language === 'ka' ? '4 კვ' : '4 wks', weeks: 4 },
-                      { label: language === 'ka' ? '8 კვ' : '8 wks', weeks: 8 }
-                    ].map((preset) => (
-                      <button
-                        key={preset.weeks}
-                        type="button"
-                        onClick={() => {
-                          const base = new Date((startDate || todayLocalStr()) + 'T00:00:00');
-                          base.setDate(base.getDate() + preset.weeks * 7);
-                          setEndDate(toLocalDateStr(base));
-                        }}
-                        className="px-2.5 py-1.5 text-xs font-semibold rounded-pill border border-border-subtle bg-surface text-text-secondary hover:bg-surface-tertiary hover:text-text-primary hover:border-border-medium transition-all duration-150 cursor-pointer outline-none"
-                      >
-                        +{preset.label}
-                      </button>
-                    ))}
+          {/* Recurrence Options Panel with Smooth Accordion Expansion */}
+          <div
+            className={`grid transition-all duration-300 ease-in-out ${
+              isRecurring
+                ? 'grid-rows-[1fr] opacity-100 mt-4'
+                : 'grid-rows-[0fr] opacity-0 mt-0 pointer-events-none'
+            }`}
+          >
+            <div className="overflow-hidden">
+              <div className="pt-3.5 border-t border-border-subtle flex flex-col gap-3.5">
+                {/* Day Picker */}
+                <div>
+                  <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-2">
+                    {t('days_of_week')}
+                  </label>
+                  <div className="flex gap-1.5 flex-wrap">
+                    {DAYS.map((d) => {
+                      const isSelected = selectedDays.includes(d.id);
+                      return (
+                        <button
+                          key={d.id}
+                          type="button"
+                          onClick={() => handleToggleDay(d.id)}
+                          className={`flex-1 min-w-[40px] py-2 px-1.5 rounded-pill text-xs font-semibold cursor-pointer flex items-center justify-center gap-1 transition-all duration-150 outline-none ${
+                            isSelected
+                              ? 'border border-brand-navy bg-brand-navy text-text-inverse'
+                              : 'border border-border-subtle bg-surface text-text-secondary hover:border-border-medium'
+                          }`}
+                        >
+                          {isSelected && <Check className="w-3 h-3" strokeWidth={3} />}
+                          <span>{language === 'ka' ? d.labelKa : d.labelEn}</span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
-              </div>
 
-              {liveSummaryText && (
-                <div className="p-2.5 sm:p-3 rounded-md bg-tag-male-bg border border-tag-male-text/20 text-tag-male-text text-xs font-medium leading-relaxed flex items-center gap-2">
-                  <Repeat className="w-3.5 h-3.5 shrink-0 text-brand-primary" />
-                  <span>{liveSummaryText}</span>
+                {/* Recurrence End Date & Quick Presets */}
+                <div>
+                  <label className="flex items-center gap-1.5 text-xs font-semibold text-text-secondary uppercase tracking-wider mb-2">
+                    <Calendar className="w-3.5 h-3.5 text-text-secondary" />
+                    <span>{t('repeat_until')}</span>
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2.5 items-center">
+                    <DatePicker
+                      value={endDate}
+                      min={startDate}
+                      onChange={setEndDate}
+                      required={isRecurring}
+                    />
+                    {/* Quick Preset Buttons */}
+                    <div className="flex gap-1.5">
+                      {[
+                        { label: language === 'ka' ? '2 კვ' : '2 wks', weeks: 2 },
+                        { label: language === 'ka' ? '4 კვ' : '4 wks', weeks: 4 },
+                        { label: language === 'ka' ? '8 კვ' : '8 wks', weeks: 8 }
+                      ].map((preset) => (
+                        <button
+                          key={preset.weeks}
+                          type="button"
+                          onClick={() => {
+                            const base = new Date((startDate || todayLocalStr()) + 'T00:00:00');
+                            base.setDate(base.getDate() + preset.weeks * 7);
+                            setEndDate(toLocalDateStr(base));
+                          }}
+                          className="px-2.5 py-1.5 text-xs font-semibold rounded-pill border border-border-subtle bg-surface text-text-secondary hover:bg-surface-tertiary hover:text-text-primary hover:border-border-medium transition-all duration-150 cursor-pointer outline-none"
+                        >
+                          +{preset.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-              )}
+
+                {liveSummaryText && (
+                  <div className="p-2.5 sm:p-3 rounded-md bg-tag-male-bg border border-tag-male-text/20 text-tag-male-text text-xs font-medium leading-relaxed flex items-center gap-2">
+                    <Repeat className="w-3.5 h-3.5 shrink-0 text-brand-primary" />
+                    <span>{liveSummaryText}</span>
+                  </div>
+                )}
+              </div>
             </div>
-          )}
+          </div>
         </div>
 
         {/* Show Notes */}
@@ -543,6 +642,19 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
             placeholder={isKa ? 'დამატებითი შენიშვნები...' : 'Additional notes...'}
           />
         </div>
+
+        {/* Time / Past Date Validation Error Banner */}
+        {timeValidationError && (
+          <div className="flex items-start gap-2.5 p-3 rounded-md bg-amber-500/10 border border-amber-500/25 text-amber-700 dark:text-amber-400 text-xs leading-relaxed">
+            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
+            <div>
+              <div className="font-semibold mb-0.5 text-amber-800 dark:text-amber-300">
+                {isKa ? 'დროის შემოწმება' : 'Time Validation'}
+              </div>
+              <div>{timeValidationError}</div>
+            </div>
+          </div>
+        )}
 
         {/* Compact & Refined Conflict Alert Card */}
         {hasBlockingConflict && (

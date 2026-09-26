@@ -1,6 +1,8 @@
 import { ShowEvent, ConflictCheckResult, ScheduleConflict } from '../types/schedule';
 import { Group } from '../types/group';
 import { HotelVenue } from '../types/venue';
+import { getStoredTimeFormat } from './storage';
+import { formatTimeRangeWithFormat } from '../utils/timeFormat';
 
 /**
  * Checks if two time intervals overlap.
@@ -81,14 +83,12 @@ export function checkScheduleConflicts(
       const groupName = groupMap.get(candidate.groupId) || 'Group';
       const venueName = venueMap.get(event.hotelId) || 'Hotel';
       const existingLobby = event.lobbyTime ? ` (Lobby: ${event.lobbyTime})` : '';
+      const timeFormat = getStoredTimeFormat();
+      const timeRangeStr = formatTimeRangeWithFormat(event.startDateTime, event.endDateTime, timeFormat);
       blockingConflicts.push({
         type: 'GROUP_DOUBLE_BOOKED',
         conflictingEvent: event,
-        reason: `Group "${groupName}" is already booked at "${venueName}" during this timeframe${existingLobby} (${new Date(
-          event.startDateTime
-        ).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${new Date(
-          event.endDateTime
-        ).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}). Double-booking is strictly prohibited.`
+        reason: `Group "${groupName}" is already booked at "${venueName}" during this timeframe${existingLobby} (${timeRangeStr}). Double-booking is strictly prohibited.`
       });
     }
 

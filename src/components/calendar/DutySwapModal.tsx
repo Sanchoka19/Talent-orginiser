@@ -9,6 +9,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { useToast } from '../../context/ToastContext';
 import { StatusBadge, GenderBadge } from '../common/Badge';
 import { RefreshCw, AlertTriangle, Info } from 'lucide-react';
+import { getTalentAvatar } from '../../utils/avatarUtils';
 
 interface DutySwapModalProps {
   isOpen: boolean;
@@ -40,9 +41,12 @@ export const DutySwapModal: React.FC<DutySwapModalProps> = ({
   // Find candidate members in the group
   const memberTalents = talents.filter((t) => group.memberTalentIds.includes(t.id));
 
-  // Eligible replacement candidates:
+  // Eligible replacement candidates: Active-only, not already assigned, not the original
   const candidateTalents = memberTalents.filter(
-    (t) => t.id !== originalTalentId && !duty.assignedTalentIds.includes(t.id)
+    (t) =>
+      t.id !== originalTalentId &&
+      !duty.assignedTalentIds.includes(t.id) &&
+      t.status === 'Active'
   );
 
   const handleSwap = (e: React.FormEvent) => {
@@ -64,7 +68,6 @@ export const DutySwapModal: React.FC<DutySwapModalProps> = ({
   };
 
   const selectedCandidate = talents.find((t) => t.id === replacementTalentId);
-  const isCandidateNonActive = selectedCandidate && selectedCandidate.status !== 'Active';
   const isCandidateGenderMismatch =
     selectedCandidate &&
     ((duty.assignedGender === 'Male Only' && selectedCandidate.gender !== 'Male') ||
@@ -110,10 +113,7 @@ export const DutySwapModal: React.FC<DutySwapModalProps> = ({
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div className="flex items-center gap-2.5">
               <img
-                src={
-                  originalTalent.avatarUrl ||
-                  `https://api.dicebear.com/7.x/avataaars/svg?seed=${originalTalent.firstName}`
-                }
+                src={getTalentAvatar(originalTalent)}
                 alt={originalTalent.firstName}
                 className="w-9 h-9 rounded-full object-cover shrink-0 border border-border-subtle"
               />
@@ -143,33 +143,31 @@ export const DutySwapModal: React.FC<DutySwapModalProps> = ({
           <label className="text-xs font-semibold text-text-secondary">
             {t('select_replacement')}
           </label>
-          <select
-            className="w-full text-sm px-3.5 py-2.5 rounded-sm border border-border-subtle bg-surface-secondary text-text-primary outline-none transition-all duration-150 focus:bg-surface focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10 cursor-pointer"
-            value={replacementTalentId}
-            onChange={(e) => setReplacementTalentId(e.target.value)}
-            required
-          >
-            <option value="">{t('choose_active_replacement')}</option>
-            {candidateTalents.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.firstName} {c.lastName} ({c.gender}, {c.status})
-              </option>
-            ))}
-          </select>
+          {candidateTalents.length === 0 ? (
+            <div className="p-3 rounded-sm bg-surface-secondary border border-dashed border-border-medium text-text-secondary text-xs flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 shrink-0 text-text-tertiary" />
+              <span>
+                {isKa
+                  ? 'ჯგუფში ხელმისაწვდომი აქტიური შემცვლელი არ არის.'
+                  : 'No active replacement available in this group.'}
+              </span>
+            </div>
+          ) : (
+            <select
+              className="w-full text-sm px-3.5 py-2.5 rounded-sm border border-border-subtle bg-surface-secondary text-text-primary outline-none transition-all duration-150 focus:bg-surface focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10 cursor-pointer"
+              value={replacementTalentId}
+              onChange={(e) => setReplacementTalentId(e.target.value)}
+              required
+            >
+              <option value="">{t('choose_active_replacement')}</option>
+              {candidateTalents.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.firstName} {c.lastName} ({c.gender})
+                </option>
+              ))}
+            </select>
+          )}
         </div>
-
-        {/* Warning if candidate is on rest or sick */}
-        {isCandidateNonActive && (
-          <div className="p-3 rounded-sm bg-status-rest-bg border border-status-rest-dot/30 text-status-rest-text text-xs flex items-center gap-2 mb-3">
-            <AlertTriangle className="w-4 h-4 shrink-0 text-status-rest-dot" />
-            <span>
-              {t('warning_candidate_status', {
-                name: selectedCandidate?.firstName || '',
-                status: selectedCandidate?.status || ''
-              })}
-            </span>
-          </div>
-        )}
 
         {/* Warning if gender mismatch */}
         {isCandidateGenderMismatch && (

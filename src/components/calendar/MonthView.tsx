@@ -1,11 +1,12 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShowEvent } from '../../types/schedule';
 import { Group } from '../../types/group';
 import { HotelVenue } from '../../types/venue';
 import { useLanguage } from '../../context/LanguageContext';
-import { Users, Bus, Sparkles, Building, Check } from 'lucide-react';
+import { useApp } from '../../context/AppContext';
+import { Check, X, CalendarDays } from 'lucide-react';
 
 interface MonthViewProps {
   currentDate: Date;
@@ -25,8 +26,26 @@ export const MonthView: React.FC<MonthViewProps> = ({
   onSelectDate
 }) => {
   const { language, t } = useLanguage();
+  const { formatTime } = useApp();
+  const isKa = language === 'ka';
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
+
+  // State to track if the "+ კიდევ X" Popover modal is open for a specific date
+  const [popoverDate, setPopoverDate] = useState<string | null>(null);
+
+  // Close popover on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setPopoverDate(null);
+    };
+    if (popoverDate) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [popoverDate]);
 
   // First day of month (0 = Sun, 1 = Mon, ...)
   const firstDayOfMonth = new Date(year, month, 1);
@@ -111,8 +130,89 @@ export const MonthView: React.FC<MonthViewProps> = ({
       ? ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz']
       : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
+  // Helper to format popover header title (e.g. „26 სექტემბერი — 4 შოუ“)
+  const formatPopoverTitle = (dateStr: string, count: number) => {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const dateObj = new Date(y, m - 1, d);
+    const formattedDay = dateObj.toLocaleDateString(isKa ? 'ka-GE' : 'en-US', {
+      day: 'numeric',
+      month: 'long'
+    });
+    return `${formattedDay} — ${count} ${isKa ? 'შოუ' : count > 1 ? 'shows' : 'show'}`;
+  };
+
+  // Reusable compact 2-line event card
+  const renderEventCard = (ev: ShowEvent, isCellPast: boolean, inPopover = false) => {
+    const evGroup = groupMap.get(ev.groupId);
+    const evVenue = venueMap.get(ev.hotelId);
+    const startTime = formatTime(ev.startDateTime);
+    const isEventPast = isCellPast || new Date(ev.endDateTime || ev.startDateTime).getTime() < Date.now();
+    const groupName = evGroup?.name || ev.title;
+
+    return (
+      <div
+        key={ev.id}
+        onClick={(e) => {
+          e.stopPropagation();
+          if (inPopover) setPopoverDate(null);
+          onSelectEvent(ev);
+        }}
+        className={`px-2.5 py-2 rounded-r-md border border-l-4 text-xs leading-tight flex flex-col gap-1 shrink-0 cursor-pointer transition-all duration-150 group ${
+          isEventPast
+            ? 'bg-slate-100 dark:bg-surface-secondary border-border-subtle border-l-slate-400 dark:border-l-slate-500 opacity-80 hover:opacity-100 text-text-secondary'
+            : 'bg-brand-primary/10 dark:bg-blue-500/15 border-blue-500/20 dark:border-blue-500/30 border-l-brand-primary hover:bg-brand-primary/15 text-text-primary shadow-2xs hover:shadow-xs'
+        }`}
+        title={`${ev.title}\n${t('group_label')}: ${groupName}\n${t('hotel_label')}: ${
+          evVenue?.name || ev.hotelId
+        }\n${t('show_time_label')}: ${startTime}${
+          isEventPast ? `\n[${isKa ? 'დასრულებული' : 'Completed'}]` : ''
+        }`}
+      >
+        {/* Line 1: Time (text-xs, bold) + Status Indicator */}
+        {isEventPast ? (
+          <div className="flex items-center gap-1.5 text-xs leading-none">
+            <span className="inline-flex items-center gap-1 font-bold text-text-secondary">
+              <Check size={11} className="text-emerald-600 dark:text-emerald-400 shrink-0" strokeWidth={2.5} />
+              <span>{startTime}</span>
+            </span>
+            <span className="text-text-tertiary">•</span>
+            <span className="text-[11px] font-medium text-text-tertiary">
+              {isKa ? 'დასრ.' : 'Past'}
+            </span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1.5 text-xs leading-none">
+            <span className="font-bold text-brand-primary dark:text-blue-400">
+              {startTime}
+            </span>
+            <span className="text-text-tertiary">•</span>
+            <span className="text-[11px] font-semibold text-brand-primary dark:text-blue-300">
+              {isKa ? 'შოუ' : 'Show'}
+            </span>
+          </div>
+        )}
+
+        {/* Line 2: Troupe / Group Name (text-[13px], font-semibold, clear contrast) */}
+        <div
+          className={`truncate text-[13px] font-semibold leading-snug ${
+            isEventPast
+              ? 'text-slate-600 dark:text-slate-300'
+              : 'text-slate-800 dark:text-slate-100 group-hover:text-brand-primary dark:group-hover:text-blue-400 transition-colors'
+          }`}
+        >
+          {groupName}
+        </div>
+      </div>
+    );
+  };
+
+  // Events for active popover date
+  const popoverEvents = popoverDate
+    ? events.filter((ev) => ev.startDateTime.startsWith(popoverDate))
+    : [];
+
   return (
-    <div className="w-full overflow-x-auto pb-2">
+    <div className="w-full overflow-x-auto pb-2 relative">
       <div className="min-w-[920px] flex flex-col border border-border-subtle rounded-lg overflow-hidden bg-surface shadow-sm">
         {/* Day Names Header */}
         <div className="grid grid-cols-7 bg-surface-secondary border-b border-border-subtle py-2.5 text-center text-xs font-bold text-text-secondary tracking-wider">
@@ -127,12 +227,16 @@ export const MonthView: React.FC<MonthViewProps> = ({
         </div>
 
         {/* 42 Calendar Cells Grid */}
-        <div className="grid grid-cols-7 auto-rows-[140px]">
+        <div className="grid grid-cols-7 auto-rows-[minmax(145px,auto)]">
           {calendarCells.map((cell, idx) => {
             // Find events on this date
             const dayEvents = events.filter((ev) => ev.startDateTime.startsWith(cell.dateStr));
             const isLastInRow = (idx + 1) % 7 === 0;
             const isBottomRow = idx >= 35;
+
+            // Maximum 2 cards in cell
+            const visibleEvents = dayEvents.slice(0, 2);
+            const remainingCount = dayEvents.length - 2;
 
             return (
               <div
@@ -180,96 +284,76 @@ export const MonthView: React.FC<MonthViewProps> = ({
                   )}
                 </div>
 
-                {/* Event Bars / Pills — scrollable after 2 cards */}
+                {/* Event Bars / Pills — Max 2 items + '+ კიდევ X' button */}
                 <div
-                  className="flex flex-col gap-1 overflow-y-auto flex-1"
+                  className="flex flex-col gap-1 flex-1 min-h-0"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  {dayEvents.map((ev) => {
-                    const evGroup = groupMap.get(ev.groupId);
-                    const evVenue = venueMap.get(ev.hotelId);
-                    const startTime = new Date(ev.startDateTime).toLocaleTimeString([], {
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    });
+                  {visibleEvents.map((ev) => renderEventCard(ev, cell.isPast))}
 
-                    const effectiveLobby =
-                      ev.lobbyTime ||
-                      (() => {
-                        const d = new Date(ev.startDateTime);
-                        const travel = evVenue?.travelTimeMinutes ?? 45;
-                        const totalM = (d.getHours() * 60 + d.getMinutes() - travel + 1440) % 1440;
-                        return `${String(Math.floor(totalM / 60)).padStart(2, '0')}:${String(
-                          totalM % 60
-                        ).padStart(2, '0')}`;
-                      })();
-
-                    const isEventPast = cell.isPast || new Date(ev.endDateTime).getTime() < Date.now();
-
-                    return (
-                      <div
-                        key={ev.id}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onSelectEvent(ev);
-                        }}
-                        className={`p-1.5 rounded-xs text-[11px] font-semibold leading-tight flex flex-col gap-0.5 shrink-0 border cursor-pointer transition-all duration-150 ${
-                          isEventPast
-                            ? 'bg-surface-secondary text-text-secondary border-border-medium opacity-85 hover:opacity-100'
-                            : 'bg-brand-primary text-text-inverse border-brand-primary-hover shadow-sm hover:shadow-glow hover:-translate-y-0.5 active:translate-y-0'
-                        }`}
-                        title={`${ev.title}\n${t('group_label')}: ${evGroup?.name || ev.groupId}\n${t('hotel_label')}: ${
-                          evVenue?.name || ev.hotelId
-                        }\n${t('gathering_label')}: ${effectiveLobby}\n${t('show_time_label')}: ${startTime}${
-                          isEventPast ? `\n[${language === 'ka' ? 'დასრულებული' : 'Completed'}]` : ''
-                        }`}
-                      >
-                        {/* Group Name */}
-                        <div className="font-bold text-xs truncate flex items-center gap-1">
-                          <Users
-                            className={`w-3 h-3 shrink-0 ${isEventPast ? 'opacity-65' : 'opacity-100'}`}
-                            strokeWidth={2}
-                          />
-                          <span className="truncate">{evGroup?.name || ev.title}</span>
-                        </div>
-
-                        {/* Times: Lobby & Show */}
-                        <div
-                          className={`flex items-center gap-1.5 text-[10px] font-semibold ${
-                            isEventPast ? 'text-text-tertiary' : 'text-white/95'
-                          }`}
-                        >
-                          <span className="inline-flex items-center gap-0.5">
-                            <Bus className="w-2.5 h-2.5 shrink-0" strokeWidth={2} />
-                            <span>{effectiveLobby}</span>
-                          </span>
-                          <span>•</span>
-                          <span className="inline-flex items-center gap-0.5">
-                            <Sparkles className="w-2.5 h-2.5 shrink-0" strokeWidth={2} />
-                            <span>{startTime}</span>
-                          </span>
-                        </div>
-
-                        {/* Hotel Venue */}
-                        {evVenue && (
-                          <div
-                            className={`text-[10px] font-medium truncate flex items-center gap-1 ${
-                              isEventPast ? 'text-text-tertiary' : 'text-white/85'
-                            }`}
-                          >
-                            <Building className="w-2.5 h-2.5 shrink-0" strokeWidth={2} />
-                            <span className="truncate">{evVenue.name}</span>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
+                  {/* + კიდევ X შოუ badge/button */}
+                  {remainingCount > 0 && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPopoverDate(cell.dateStr);
+                      }}
+                      className="w-full text-center py-1 px-1.5 rounded-md bg-surface-secondary/90 hover:bg-brand-primary/10 border border-border-subtle hover:border-brand-primary/30 text-[10px] font-bold text-brand-primary dark:text-blue-400 transition-all cursor-pointer flex items-center justify-center gap-1 shrink-0 mt-auto shadow-2xs hover:scale-[1.01] active:scale-95"
+                    >
+                      <span>
+                        {isKa ? `+ კიდევ ${remainingCount} შოუ` : `+${remainingCount} more`}
+                      </span>
+                    </button>
+                  )}
                 </div>
               </div>
             );
           })}
         </div>
       </div>
+
+      {/* ──────────────────────────────────────────────────────────────────
+          Popover Modal (Variant A: Shows all events on clicking '+ კიდევ X')
+         ────────────────────────────────────────────────────────────────── */}
+      {popoverDate && (
+        <div
+          className="fixed inset-0 z-[1200] flex items-center justify-center p-4 bg-surface-overlay/50 backdrop-blur-xs animate-in fade-in duration-150"
+          onClick={() => setPopoverDate(null)}
+        >
+          <div
+            className="bg-surface border border-border-subtle rounded-2xl shadow-modal w-full max-w-sm overflow-hidden flex flex-col animate-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Popover Header */}
+            <div className="px-4 py-3 border-b border-border-subtle flex items-center justify-between bg-surface-secondary/50">
+              <div className="flex items-center gap-2">
+                <CalendarDays size={16} className="text-brand-primary" />
+                <h4 className="text-sm font-bold text-text-primary m-0">
+                  {formatPopoverTitle(popoverDate, popoverEvents.length)}
+                </h4>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPopoverDate(null)}
+                aria-label="Close"
+                className="w-7 h-7 rounded-full inline-flex items-center justify-center text-text-secondary hover:text-text-primary hover:bg-surface border border-transparent hover:border-border-subtle transition-all cursor-pointer"
+              >
+                <X size={15} />
+              </button>
+            </div>
+
+            {/* Popover Scrollable Shows List */}
+            <div className="p-3 flex flex-col gap-2 max-h-[380px] overflow-y-auto">
+              {popoverEvents.map((ev) => {
+                const [y, m, d] = popoverDate.split('-').map(Number);
+                const isCellPast = new Date(y, m - 1, d) < new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                return renderEventCard(ev, isCellPast, true);
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -5,11 +5,12 @@ import { ShowEvent } from '../../types/schedule';
 import { Group } from '../../types/group';
 import { HotelVenue } from '../../types/venue';
 import { useLanguage } from '../../context/LanguageContext';
+import { useApp } from '../../context/AppContext';
 import {
   Calendar,
   MapPin,
   Users,
-  Sparkles,
+  Clock,
   ChevronRight,
   Building2,
   Bus
@@ -33,6 +34,7 @@ export const YearView: React.FC<YearViewProps> = ({
   onSelectMonth
 }) => {
   const { language, t } = useLanguage();
+  const { formatTime, formatTimeRange } = useApp();
   const year = currentDate.getFullYear();
   const localeStr = language === 'ka' ? 'ka-GE' : 'en-US';
 
@@ -185,10 +187,7 @@ export const YearView: React.FC<YearViewProps> = ({
                       day: 'numeric',
                       weekday: 'short'
                     });
-                    const timeFormatted = dateObj.toLocaleTimeString([], {
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    });
+                    const timeFormatted = formatTime(dateObj);
 
                     const effectiveLobby =
                       ev.lobbyTime ||
@@ -220,7 +219,7 @@ export const YearView: React.FC<YearViewProps> = ({
                             </span>
                             <span>•</span>
                             <span className="inline-flex items-center gap-0.5">
-                              <Sparkles className="w-3 h-3 shrink-0" strokeWidth={2} />
+                              <Clock className="w-3 h-3 shrink-0" strokeWidth={2} />
                               <span>{timeFormatted}</span>
                             </span>
                           </span>
@@ -287,10 +286,7 @@ export const YearView: React.FC<YearViewProps> = ({
                   day: 'numeric',
                   year: 'numeric'
                 });
-                const timeStr = `${start.toLocaleTimeString([], {
-                  hour: '2-digit',
-                  minute: '2-digit'
-                })} - ${end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+                const timeStr = formatTimeRange(start, end);
 
                 const effectiveLobby =
                   ev.lobbyTime ||
@@ -315,11 +311,11 @@ export const YearView: React.FC<YearViewProps> = ({
                       <div className="text-xs text-text-primary font-semibold flex items-center gap-1.5 mt-0.5">
                         <Bus className="w-3 h-3 shrink-0" strokeWidth={2} />
                         <span>
-                          {t('gathering_label')}: {effectiveLobby}
+                          {t('gathering_label')}: {formatTime(effectiveLobby)}
                         </span>
                       </div>
                       <div className="text-xs text-text-secondary flex items-center gap-1.5 mt-0.5">
-                        <Sparkles className="w-3 h-3 shrink-0" strokeWidth={2} />
+                        <Clock className="w-3 h-3 shrink-0" strokeWidth={2} />
                         <span>{timeStr}</span>
                       </div>
                     </div>

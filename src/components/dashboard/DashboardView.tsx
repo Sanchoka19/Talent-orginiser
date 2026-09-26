@@ -10,7 +10,7 @@ import { EventDetailModal } from '../calendar/EventDetailModal';
 import { TalentDetailDrawer } from '../talent/TalentDetailDrawer';
 import { ShowEventCard } from '../common/ShowEventCard';
 import {
-  Sparkles,
+  CalendarCheck,
   Calendar,
   Users,
   AlertTriangle,
@@ -435,7 +435,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <div className="flex items-center justify-between pb-3.5 mb-4 border-b border-border-subtle">
                 <div>
                   <h2 className="text-base sm:text-lg font-bold text-text-primary m-0 flex items-center gap-2">
-                    <Sparkles size={18} className="text-brand-primary shrink-0" />
+                    <CalendarCheck size={18} className="text-brand-primary shrink-0" />
                     <span>{t('todays_agenda')}</span>
                   </h2>
                   <p className="text-xs text-text-secondary mt-0.5 m-0">

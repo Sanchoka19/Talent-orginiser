@@ -7,6 +7,7 @@ import { useApp } from '../../context/AppContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useToast } from '../../context/ToastContext';
 import { Search, Check, X, UserPlus, Users } from 'lucide-react';
+import { getTalentAvatar } from '../../utils/avatarUtils';
 
 interface AddMemberModalProps {
   isOpen: boolean;
@@ -216,10 +217,7 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
                       <img
-                        src={
-                          talent.avatarUrl ||
-                          `https://api.dicebear.com/7.x/avataaars/svg?seed=${talent.firstName}${talent.lastName}`
-                        }
+                        src={getTalentAvatar(talent)}
                         alt={talent.firstName}
                         className="w-9 h-9 rounded-full object-cover shrink-0 border border-border-subtle"
                       />
@@ -267,10 +265,7 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({
                   className="inline-flex items-center gap-1.5 pl-1.5 pr-2 py-0.5 rounded-full bg-brand-primary/10 border border-brand-primary/20 text-xs font-semibold text-brand-primary"
                 >
                   <img
-                    src={
-                      talent.avatarUrl ||
-                      `https://api.dicebear.com/7.x/avataaars/svg?seed=${talent.firstName}${talent.lastName}`
-                    }
+                    src={getTalentAvatar(talent)}
                     alt={talent.firstName}
                     className="w-4 h-4 rounded-full object-cover"
                   />

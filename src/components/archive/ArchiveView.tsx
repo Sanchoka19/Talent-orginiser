@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { useToast } from '../../context/ToastContext';
 import {
   ContractRecord,
   ArchiveRecord,
@@ -25,7 +26,6 @@ import {
   Building,
   Calendar,
   ChevronRight,
-  Eye,
   X,
   FileSpreadsheet,
   Layers,
@@ -36,6 +36,7 @@ import {
 export const ArchiveView: React.FC = () => {
   const { talents, updateTalent } = useApp();
   const { t, language } = useLanguage();
+  const toast = useToast();
   const isKa = language === 'ka';
 
   // Filters state
@@ -53,11 +54,14 @@ export const ArchiveView: React.FC = () => {
     const list: ContractRecord[] = [];
 
     talents.forEach((talent) => {
+      let hasArchivedReview = false;
+
       if (talent.reviews && talent.reviews.length > 0) {
         talent.reviews.forEach((review) => {
+          hasArchivedReview = true;
           // Extract year from period, reviewDate or createdAt
           let year = 2026;
-          const match = review.period.match(/\b(202\d)\b/);
+          const match = review.period?.match(/\b(202\d)\b/);
           if (match) {
             year = parseInt(match[1], 10);
           } else if (review.reviewDate) {
@@ -83,6 +87,37 @@ export const ArchiveView: React.FC = () => {
             reviewedBy: review.reviewedBy ?? review.reviewerName ?? 'Administrator',
             reviewDate: review.reviewDate ?? (review.createdAt ? review.createdAt.split('T')[0] : '2026-01-01')
           });
+        });
+      }
+
+      // If talent is terminated or archived but had no reviews, synthesize their archive contract record:
+      if ((talent.isArchived || talent.contractStatus === 'terminated' || talent.status === 'Terminated') && !hasArchivedReview) {
+        const termDate = talent.terminationDate || new Date().toISOString().split('T')[0];
+        list.push({
+          id: `ctr-term-${talent.id}`,
+          talentId: talent.id,
+          talentName: `${talent.firstName} ${talent.lastName}`,
+          talentRole: talent.primarySkill,
+          avatarUrl: talent.avatarUrl,
+          talentAvatar: talent.avatarUrl,
+          talentEmail: talent.email,
+          talentPhone: talent.phone,
+          projectName: isKa ? 'სეზონი 2026' : 'Season 2026',
+          location: isKa ? 'თბილისი' : 'Tbilisi',
+          period: isKa ? '2026 წლის სეზონი' : 'Season 2026',
+          startDate: '2026-01-01',
+          endDate: termDate,
+          contractStatus: 'terminated',
+          rating: 3.0,
+          rehireStatus: (talent.rehireStatus as any) || 'do_not_rehire',
+          terminationReason: talent.terminationReason || (isKa ? 'კონტრაქტის შეწყვეტა ადმინისტრატორის მიერ' : 'Terminated by administrator'),
+          initiator: 'admin',
+          internalNote: talent.notes || '',
+          reviewedBy: 'Administrator',
+          reviewDate: termDate,
+          completionStatus: 'Terminated Early',
+          reviewType: 'Early Termination',
+          year: new Date(termDate).getFullYear()
         });
       }
     });
@@ -187,6 +222,21 @@ export const ArchiveView: React.FC = () => {
     }
   };
 
+  // Restore talent back to active roster
+  const handleRestoreTalent = (talentId: string) => {
+    updateTalent(talentId, {
+      isArchived: false,
+      contractStatus: 'active',
+      status: 'Active'
+    });
+    setIsDrawerOpen(false);
+    toast.success(
+      isKa
+        ? 'კონტრაქტი აღდგა — ტალანტი დაბრუნდა აქტიურ სიაში'
+        : 'Contract restored — performer returned to active roster'
+    );
+  };
+
   const getTerminationReasonBadge = (reason?: string) => {
     switch (reason) {
       case 'Discipline':
@@ -201,7 +251,7 @@ export const ArchiveView: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col gap-6 w-full max-w-none pb-16">
+    <div className="flex flex-col gap-6 w-full max-w-full min-w-0 pb-16">
       {/* 1. Header & Summary KPI Cards */}
       <div className="flex flex-col gap-5 w-full">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -369,9 +419,9 @@ export const ArchiveView: React.FC = () => {
       </div>
 
       {/* 3. Archive Data Table */}
-      <div className="rounded-xl bg-surface border border-border-subtle shadow-xs overflow-hidden flex flex-col w-full">
-        <div className="overflow-x-auto w-full">
-          <table className="w-full text-left border-collapse table-auto">
+      <div className="rounded-xl bg-surface border border-border-subtle shadow-xs overflow-hidden flex flex-col w-full max-w-full">
+        <div className="overflow-x-auto w-full max-w-full pb-2 overscroll-x-contain">
+          <table className="min-w-[900px] w-full text-left border-collapse table-auto">
             <thead>
               <tr className="border-b border-border-subtle bg-surface-secondary/50 text-[11px] font-bold uppercase tracking-wider text-text-tertiary">
                 <th className="py-3.5 px-5">{t('archive_col_talent')}</th>
@@ -380,7 +430,6 @@ export const ArchiveView: React.FC = () => {
                 <th className="py-3.5 px-5">{t('archive_col_status')}</th>
                 <th className="py-3.5 px-5">{t('archive_col_score')}</th>
                 <th className="py-3.5 px-5">{t('archive_col_rehire')}</th>
-                <th className="py-3.5 px-5 text-right">{t('archive_col_actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border-subtle text-xs">
@@ -471,27 +520,12 @@ export const ArchiveView: React.FC = () => {
                       <td className="py-3.5 px-5 whitespace-nowrap">
                         <RehireBadge status={record.rehireStatus} />
                       </td>
-
-                      {/* Column 7: Actions */}
-                      <td className="py-3.5 px-5 text-right whitespace-nowrap">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleOpenDossier(record);
-                          }}
-                          className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-md text-xs font-medium bg-surface-secondary hover:bg-brand-primary hover:text-white text-text-primary border border-border-subtle transition-all cursor-pointer shadow-xs"
-                        >
-                          <Eye size={12} />
-                          <span>{t('archive_btn_details')}</span>
-                        </button>
-                      </td>
                     </tr>
                   );
                 })
               ) : (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center">
+                  <td colSpan={6} className="py-12 text-center">
                     <div className="flex flex-col items-center justify-center gap-2">
                       <div className="w-10 h-10 rounded-full bg-surface-secondary flex items-center justify-center text-text-tertiary">
                         <Archive size={18} />
@@ -539,6 +573,7 @@ export const ArchiveView: React.FC = () => {
         isOpen={isDrawerOpen}
         onClose={() => setIsDrawerOpen(false)}
         onUpdateRehireStatus={handleUpdateRehireStatus}
+        onRestoreTalent={handleRestoreTalent}
       />
     </div>
   );

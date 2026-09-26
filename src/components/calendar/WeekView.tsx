@@ -5,7 +5,8 @@ import { ShowEvent } from '../../types/schedule';
 import { Group } from '../../types/group';
 import { HotelVenue } from '../../types/venue';
 import { useLanguage } from '../../context/LanguageContext';
-import { MapPin, Users, Bus, Sparkles, Check } from 'lucide-react';
+import { useApp } from '../../context/AppContext';
+import { MapPin, Users, Bus, Clock, Check } from 'lucide-react';
 
 interface WeekViewProps {
   currentDate: Date;
@@ -25,6 +26,7 @@ export const WeekView: React.FC<WeekViewProps> = ({
   onSelectDate
 }) => {
   const { language, t } = useLanguage();
+  const { formatTime } = useApp();
   const groupMap = new Map(groups.map((g) => [g.id, g]));
   const venueMap = new Map(venues.map((v) => [v.id, v]));
 
@@ -117,14 +119,8 @@ export const WeekView: React.FC<WeekViewProps> = ({
                   dayEvents.map((ev) => {
                     const group = groupMap.get(ev.groupId);
                     const venue = venueMap.get(ev.hotelId);
-                    const startTime = new Date(ev.startDateTime).toLocaleTimeString([], {
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    });
-                    const endTime = new Date(ev.endDateTime).toLocaleTimeString([], {
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    });
+                    const startTime = formatTime(ev.startDateTime);
+                    const endTime = formatTime(ev.endDateTime);
 
                     const effectiveLobby =
                       ev.lobbyTime ||
@@ -162,7 +158,7 @@ export const WeekView: React.FC<WeekViewProps> = ({
                           >
                             <Bus className="w-3 h-3 shrink-0" strokeWidth={2} />
                             <span>
-                              {t('gathering_label')}: {effectiveLobby}
+                              {t('gathering_label')}: {formatTime(effectiveLobby)}
                             </span>
                           </div>
                           <div
@@ -170,7 +166,7 @@ export const WeekView: React.FC<WeekViewProps> = ({
                               isEventPast ? 'text-text-tertiary' : 'text-inherit'
                             }`}
                           >
-                            <Sparkles className="w-3 h-3 shrink-0" strokeWidth={2} />
+                            <Clock className="w-3 h-3 shrink-0" strokeWidth={2} />
                             <span>
                               {startTime} - {endTime}
                             </span>

@@ -4,7 +4,7 @@ import React from 'react';
 import { InventoryRequirement, TaskRotationCycle } from '../../../types/inventory';
 import { Talent } from '../../../types/talent';
 import {
-  Sparkles,
+  ListTodo,
   Plus,
   Users,
   MapPin,
@@ -12,13 +12,15 @@ import {
   Trash2,
   Info
 } from 'lucide-react';
+import { getTalentAvatar } from '../../../utils/avatarUtils';
 
 interface GroupTasksTabProps {
   specialTasks: InventoryRequirement[];
   talents: Talent[];
   onAddTask: () => void;
   onDeleteTask: (taskId: string, parentTaskId?: string, e?: React.MouseEvent) => void;
-  getCycleLabel: (cycle?: TaskRotationCycle) => string;
+  onSelectTask?: (task: InventoryRequirement) => void;
+  getCycleLabel: (cycle?: TaskRotationCycle, customVal?: number, customUnit?: any) => string;
   dict: any;
   isKa: boolean;
 }
@@ -28,6 +30,7 @@ export const GroupTasksTab: React.FC<GroupTasksTabProps> = ({
   talents,
   onAddTask,
   onDeleteTask,
+  onSelectTask,
   getCycleLabel,
   dict,
   isKa
@@ -61,7 +64,7 @@ export const GroupTasksTab: React.FC<GroupTasksTabProps> = ({
       {specialTasks.length === 0 ? (
         <div className="p-12 text-center bg-surface rounded-xl border border-dashed border-border-medium flex flex-col items-center justify-center gap-3">
           <div className="w-12 h-12 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-600 dark:text-purple-400">
-            <Sparkles size={24} />
+            <ListTodo size={24} />
           </div>
           <div>
             <h4 className="text-base font-bold text-text-primary">
@@ -94,16 +97,17 @@ export const GroupTasksTab: React.FC<GroupTasksTabProps> = ({
             return (
               <div
                 key={task.id}
-                className="bg-surface border border-border-subtle rounded-xl p-4 sm:p-5 flex flex-col justify-between gap-4 shadow-xs hover:border-border-medium transition-all"
+                onClick={() => onSelectTask?.(task)}
+                className="bg-surface border border-border-subtle rounded-xl p-4 sm:p-5 flex flex-col justify-between gap-4 shadow-xs hover:border-purple-500/50 hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group"
               >
                 {/* Top: Task Name and Badges */}
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-start gap-3 min-w-0">
-                    <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center text-purple-600 dark:text-purple-400 shrink-0 mt-0.5">
-                      <Sparkles size={18} />
+                    <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center text-purple-600 dark:text-purple-400 shrink-0 mt-0.5 group-hover:scale-105 transition-transform duration-200">
+                      <ListTodo size={18} />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <h4 className="text-sm sm:text-base font-bold text-text-primary truncate">
+                      <h4 className="text-sm sm:text-base font-bold text-text-primary group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors truncate">
                         {task.itemName}
                       </h4>
 
@@ -117,7 +121,7 @@ export const GroupTasksTab: React.FC<GroupTasksTabProps> = ({
 
                         <span className="inline-flex items-center gap-1 text-[0.725rem] font-medium px-2 py-0.5 rounded-md bg-slate-100 dark:bg-surface-secondary border border-border-subtle text-text-secondary">
                           <Clock size={11} className="text-text-primary" />
-                          <span>{getCycleLabel(task.rotationCycle)}</span>
+                          <span>{getCycleLabel(task.rotationCycle, task.customRotationValue, task.customRotationUnit)}</span>
                         </span>
                       </div>
                     </div>
@@ -126,7 +130,10 @@ export const GroupTasksTab: React.FC<GroupTasksTabProps> = ({
                   {/* Delete Button */}
                   <button
                     type="button"
-                    onClick={(e) => onDeleteTask(task.id, task.parentTaskId, e)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDeleteTask(task.id, task.parentTaskId, e);
+                    }}
                     title={dict.delete}
                     className="w-8 h-8 rounded-lg inline-flex items-center justify-center text-text-secondary hover:text-danger hover:bg-danger/10 transition-colors cursor-pointer shrink-0"
                   >
@@ -143,10 +150,7 @@ export const GroupTasksTab: React.FC<GroupTasksTabProps> = ({
                   {singleMember ? (
                     <div className="flex items-center gap-2.5 bg-slate-50 dark:bg-surface-secondary px-3 py-1.5 rounded-lg border border-border-subtle">
                       <img
-                        src={
-                          singleMember.avatarUrl ||
-                          `https://api.dicebear.com/7.x/avataaars/svg?seed=${singleMember.firstName}${singleMember.lastName}`
-                        }
+                        src={getTalentAvatar(singleMember)}
                         alt={singleMember.firstName}
                         className="w-7 h-7 rounded-full object-cover border border-border-subtle shrink-0"
                       />
@@ -165,10 +169,7 @@ export const GroupTasksTab: React.FC<GroupTasksTabProps> = ({
                         {assignedMembers.slice(0, 3).map((m) => (
                           <img
                             key={m.id}
-                            src={
-                              m.avatarUrl ||
-                              `https://api.dicebear.com/7.x/avataaars/svg?seed=${m.firstName}${m.lastName}`
-                            }
+                            src={getTalentAvatar(m)}
                             alt={m.firstName}
                             className="inline-block w-6 h-6 rounded-full ring-2 ring-surface object-cover shrink-0"
                           />

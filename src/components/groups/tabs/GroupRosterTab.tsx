@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Talent } from '../../../types/talent';
 import { Group } from '../../../types/group';
 import {
@@ -9,18 +8,19 @@ import {
   CheckCircle2,
   AlertTriangle,
   MoreVertical,
-  User,
-  Sparkles,
+  ListTodo,
   Trash2
 } from 'lucide-react';
 
 import { useLanguage } from '../../../context/LanguageContext';
+import { getTalentAvatar } from '../../../utils/avatarUtils';
 
 interface GroupRosterTabProps {
   members: Talent[];
   currentGroup: Group;
   onAssignTask: (performerId: string) => void;
   onRemoveMember: (talentId: string) => void;
+  onSelectTalent: (talent: Talent) => void;
   dict: any;
   isKa: boolean;
 }
@@ -29,10 +29,10 @@ export const GroupRosterTab: React.FC<GroupRosterTabProps> = ({
   members,
   onAssignTask,
   onRemoveMember,
+  onSelectTalent,
   dict,
   isKa
 }) => {
-  const router = useRouter();
   const { t } = useLanguage();
   const [openMemberMenuId, setOpenMemberMenuId] = useState<string | null>(null);
 
@@ -61,19 +61,17 @@ export const GroupRosterTab: React.FC<GroupRosterTabProps> = ({
             return (
               <div
                 key={member.id}
-                className="bg-surface border border-border-subtle rounded-xl p-4 sm:p-5 flex items-center justify-between gap-4 shadow-xs hover:border-border-medium hover:shadow-sm transition-all"
+                onClick={() => onSelectTalent(member)}
+                className="bg-surface border border-border-subtle rounded-xl p-4 sm:p-5 flex items-center justify-between gap-4 shadow-xs hover:border-brand-primary/50 hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group"
               >
                 <div className="flex items-center gap-3.5 min-w-0">
                   <img
-                    src={
-                      member.avatarUrl ||
-                      `https://api.dicebear.com/7.x/avataaars/svg?seed=${member.firstName}${member.lastName}`
-                    }
+                    src={getTalentAvatar(member)}
                     alt={member.firstName}
-                    className="w-12 h-12 rounded-full object-cover border-2 border-border-subtle shrink-0 shadow-xs"
+                    className="w-12 h-12 rounded-full object-cover border-2 border-border-subtle shrink-0 shadow-xs group-hover:scale-105 transition-transform duration-200"
                   />
                   <div className="min-w-0">
-                    <h4 className="text-sm sm:text-base font-bold text-text-primary truncate">
+                    <h4 className="text-sm sm:text-base font-bold text-text-primary group-hover:text-brand-primary transition-colors truncate">
                       {member.firstName} {member.lastName}
                     </h4>
                     <p className="text-xs text-brand-primary font-medium truncate mt-0.5">
@@ -98,10 +96,13 @@ export const GroupRosterTab: React.FC<GroupRosterTabProps> = ({
                   </span>
 
                   {/* 3-dots Menu Button */}
-                  <div className="relative">
+                  <div className="relative" onClick={(e) => e.stopPropagation()}>
                     <button
                       type="button"
-                      onClick={() => setOpenMemberMenuId(openMemberMenuId === member.id ? null : member.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setOpenMemberMenuId(openMemberMenuId === member.id ? null : member.id);
+                      }}
                       className="w-8 h-8 rounded-lg inline-flex items-center justify-center text-text-secondary hover:text-text-primary hover:bg-slate-100 dark:hover:bg-surface-secondary border border-transparent hover:border-border-subtle transition-all cursor-pointer"
                       title={isKa ? 'მოქმედებები' : 'Actions'}
                     >
@@ -112,30 +113,22 @@ export const GroupRosterTab: React.FC<GroupRosterTabProps> = ({
                       <>
                         <div
                           className="fixed inset-0 z-30"
-                          onClick={() => setOpenMemberMenuId(null)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setOpenMemberMenuId(null);
+                          }}
                         />
                         <div className="absolute right-0 top-full mt-1 w-48 bg-surface border border-border-subtle rounded-xl shadow-lg z-40 py-1.5 animate-in fade-in zoom-in-95 duration-150">
                           <button
                             type="button"
-                            onClick={() => {
-                              setOpenMemberMenuId(null);
-                              router.push(`/talents/${member.id}`);
-                            }}
-                            className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-text-primary hover:bg-slate-50 dark:hover:bg-surface-secondary transition-colors cursor-pointer text-left"
-                          >
-                            <User size={14} className="text-text-secondary shrink-0" />
-                            <span>{isKa ? 'პროფილის ნახვა' : 'View Profile'}</span>
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
                               setOpenMemberMenuId(null);
                               onAssignTask(member.id);
                             }}
                             className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-text-primary hover:bg-slate-50 dark:hover:bg-surface-secondary transition-colors cursor-pointer text-left"
                           >
-                            <Sparkles size={14} className="text-purple-600 dark:text-purple-400 shrink-0" />
+                            <ListTodo size={14} className="text-purple-600 dark:text-purple-400 shrink-0" />
                             <span>{isKa ? 'დავალების გაცემა' : 'Assign Task'}</span>
                           </button>
 
@@ -143,7 +136,8 @@ export const GroupRosterTab: React.FC<GroupRosterTabProps> = ({
 
                           <button
                             type="button"
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
                               setOpenMemberMenuId(null);
                               onRemoveMember(member.id);
                             }}

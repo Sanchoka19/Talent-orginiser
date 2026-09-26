@@ -1,5 +1,5 @@
 export type Gender = 'Male' | 'Female';
-export type TalentStatus = 'Active' | 'Rest' | 'Sick/Injured';
+export type TalentStatus = 'Active' | 'Rest' | 'Sick/Injured' | 'Terminated';
 
 export interface TalentDocument {
   id: string;
@@ -80,5 +80,9 @@ export interface Talent {
   rehireStatus?: RehireStatus;
   contractExpiryDate?: string; // ISO date string e.g. '2026-09-20'
   createdAt: string;
+  isArchived?: boolean;
+  contractStatus?: 'active' | 'terminated' | 'completed';
+  terminationReason?: string;
+  terminationDate?: string;
 }
 

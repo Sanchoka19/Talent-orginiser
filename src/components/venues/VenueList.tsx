@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { useApp } from '../../context/AppContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { HotelVenue } from '../../types/venue';
 import { VenueCard } from './VenueCard';
-import { Plus, Building, Search, List, LayoutGrid } from 'lucide-react';
+import { Plus, Building, Search, List, LayoutGrid, MapPin, User, Calendar, ChevronRight, Phone } from 'lucide-react';
 
 const VenueFormModal = dynamic(
   () => import('./VenueFormModal').then((mod) => mod.VenueFormModal),
@@ -19,13 +19,25 @@ const VenueDetailModal = dynamic(
 );
 
 export const VenueList: React.FC = () => {
-  const { venues, deleteVenue } = useApp();
-  const { t } = useLanguage();
+  const { venues, deleteVenue, schedule } = useApp();
+  const { t, language } = useLanguage();
+  const isKa = language === 'ka';
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingVenue, setEditingVenue] = useState<HotelVenue | null>(null);
   const [selectedVenueForDetail, setSelectedVenueForDetail] = useState<HotelVenue | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 768) {
+        setViewMode('grid');
+      }
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const handleCreate = () => {
     setEditingVenue(null);
@@ -79,13 +91,13 @@ export const VenueList: React.FC = () => {
           />
         </div>
 
-        {/* Right: Counter and View Mode Toggle Pill */}
+        {/* Right: Counter and View Mode Toggle Pill (hidden on mobile) */}
         <div className="flex items-center gap-3.5">
           <div className="text-xs text-text-secondary">
             {t('showing')} <strong className="font-semibold text-text-primary">{filteredVenues.length}</strong> {t('of')} {venues.length}
           </div>
 
-          <div className="flex items-center bg-surface-secondary rounded-pill border border-border-subtle p-0.5 gap-0.5">
+          <div className="hidden md:flex items-center bg-surface-secondary rounded-pill border border-border-subtle p-0.5 gap-0.5">
             <button
               onClick={() => setViewMode('list')}
               className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-pill text-xs font-semibold cursor-pointer transition-all duration-150 ${
@@ -147,30 +159,109 @@ export const VenueList: React.FC = () => {
           ))}
         </div>
       ) : (
-        /* LIST VIEW */
-        <div className="w-full overflow-x-auto">
-          <div className="min-w-[920px] flex flex-col">
-            {/* Table Header Row */}
-            <div className="grid grid-cols-[minmax(240px,2fr)_minmax(200px,1.8fr)_minmax(180px,1.5fr)_minmax(180px,1.4fr)_140px] items-center gap-4 px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-text-secondary mb-1.5">
-              <div>{t('venue_name')}</div>
-              <div>{t('location')}</div>
-              <div>{t('contact_person')}</div>
-              <div>{t('status')}</div>
-              <div className="text-right">{t('actions')}</div>
-            </div>
+        /* LIST VIEW: Identical to Archive Table design with responsive scroll */
+        <div className="rounded-xl bg-surface border border-border-subtle shadow-xs overflow-hidden flex flex-col w-full max-w-full">
+          <div className="overflow-x-auto w-full max-w-full pb-2 overscroll-x-contain">
+            <table className="min-w-[850px] w-full text-left border-collapse table-auto">
+              <thead>
+                <tr className="border-b border-border-subtle bg-surface-secondary/50 text-[11px] font-bold uppercase tracking-wider text-text-tertiary">
+                  <th className="py-3.5 px-5">{t('venue_name')}</th>
+                  <th className="py-3.5 px-5">{t('location')}</th>
+                  <th className="py-3.5 px-5">{t('contact_person')}</th>
+                  <th className="py-3.5 px-5">{t('status')}</th>
+                  <th className="py-3.5 px-5 text-right">{t('actions')}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border-subtle text-xs">
+                {filteredVenues.map((venue) => {
+                  const scheduledShows = (schedule || []).filter(
+                    (e) => e.hotelId === venue.id && e.status !== 'Cancelled'
+                  );
 
-            <div className="flex flex-col gap-2">
-              {filteredVenues.map((venue) => (
-                <VenueCard
-                  key={venue.id}
-                  venue={venue}
-                  onSelect={(v) => setSelectedVenueForDetail(v)}
-                  onEdit={handleEdit}
-                  onDelete={deleteVenue}
-                  viewMode="list"
-                />
-              ))}
-            </div>
+                  return (
+                    <tr
+                      key={venue.id}
+                      onClick={() => setSelectedVenueForDetail(venue)}
+                      className="hover:bg-surface-secondary/40 transition-colors cursor-pointer group"
+                    >
+                      {/* Column 1: Venue Name */}
+                      <td className="py-3.5 px-5">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-sm bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20 flex items-center justify-center shrink-0">
+                            <Building size={18} strokeWidth={2} />
+                          </div>
+                          <div className="min-w-0">
+                            <span className="font-semibold text-sm text-text-primary block truncate group-hover:text-brand-primary transition-colors">
+                              {venue.name}
+                            </span>
+                            {venue.roomOrBallroom && (
+                              <span className="text-xs text-text-secondary truncate block mt-0.5">
+                                {venue.roomOrBallroom}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Column 2: Location */}
+                      <td className="py-3.5 px-5 whitespace-nowrap">
+                        <div className="flex items-center gap-1.5 text-xs text-text-secondary" title={`${venue.address}, ${venue.city}`}>
+                          <MapPin size={14} className="shrink-0 text-text-tertiary" />
+                          <span className="truncate max-w-[220px]">
+                            {venue.address}, {venue.city}
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* Column 3: Contact Person */}
+                      <td className="py-3.5 px-5 whitespace-nowrap">
+                        <div className="flex flex-col gap-0.5 text-xs">
+                          <span className="font-medium text-text-primary flex items-center gap-1.5">
+                            <User size={12} className="shrink-0 text-text-tertiary" />
+                            <span>{venue.contactName || t('none')}</span>
+                          </span>
+                          {venue.contactPhone && (
+                            <span className="text-text-tertiary text-[11px] flex items-center gap-1.5">
+                              <Phone size={11} className="shrink-0" />
+                              <span>{venue.contactPhone}</span>
+                            </span>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* Column 4: Status */}
+                      <td className="py-3.5 px-5 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`text-xs px-2.5 py-0.5 rounded-md font-medium border ${
+                              scheduledShows.length > 0
+                                ? 'bg-brand-primary/10 text-brand-primary border-brand-primary/20'
+                                : 'bg-surface-secondary text-text-secondary border-border-subtle'
+                            }`}
+                          >
+                            {scheduledShows.length > 0 ? t('active_venue') : t('available_venue')}
+                          </span>
+                          {scheduledShows.length > 0 && (
+                            <span className="text-xs text-text-tertiary flex items-center gap-1">
+                              <Calendar size={12} />
+                              <span>{scheduledShows.length}</span>
+                            </span>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* Column 5: Action */}
+                      <td className="py-3.5 px-5 whitespace-nowrap text-right">
+                        <span className="text-xs font-semibold text-text-primary group-hover:text-brand-primary inline-flex items-center gap-1 transition-colors">
+                          {isKa ? 'დეტალები' : 'View Details'}
+                          <ChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         </div>
       )}

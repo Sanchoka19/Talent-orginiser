@@ -4,6 +4,7 @@ import React from 'react';
 import { Talent } from '../../types/talent';
 import { StatusBadge, GenderBadge } from '../common/Badge';
 import { useLanguage } from '../../context/LanguageContext';
+import { getTalentAvatar } from '../../utils/avatarUtils';
 
 interface TalentCardProps {
   talent: Talent;
@@ -18,11 +19,10 @@ export const TalentCard: React.FC<TalentCardProps> = ({
   onSelect,
   viewMode = 'list'
 }) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const isKa = language === 'ka';
 
-  const avatarSrc =
-    talent.avatarUrl ||
-    `https://api.dicebear.com/7.x/avataaars/svg?seed=${talent.firstName}${talent.lastName}`;
+  const avatarSrc = getTalentAvatar(talent);
 
   // GRID VIEW CARD (Poster Layout)
   if (viewMode === 'grid') {
@@ -71,12 +71,21 @@ export const TalentCard: React.FC<TalentCardProps> = ({
             {talent.primarySkill}
           </div>
 
-          {/* Gender */}
+          {/* Gender & Height / Weight */}
           <div
-            className={`flex items-center gap-2 mt-1.5 pt-2 border-t text-xs ${isSelected ? 'border-white/20 text-white/90' : 'border-border-subtle text-text-tertiary'
+            className={`flex items-center justify-between gap-2 mt-1.5 pt-2 border-t text-xs ${isSelected ? 'border-white/20 text-white/90' : 'border-border-subtle text-text-secondary'
               }`}
           >
             <GenderBadge gender={talent.gender} />
+            {(talent.heightCm || talent.weightKg) && (
+              <span
+                className={`text-[11px] font-medium whitespace-nowrap truncate ${isSelected ? 'text-white/90' : 'text-text-secondary'}`}
+              >
+                {talent.heightCm ? `${talent.heightCm} ${isKa ? 'სმ' : 'cm'}` : ''}
+                {talent.heightCm && talent.weightKg ? ' • ' : ''}
+                {talent.weightKg ? `${talent.weightKg} ${isKa ? 'კგ' : 'kg'}` : ''}
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -87,28 +96,28 @@ export const TalentCard: React.FC<TalentCardProps> = ({
   return (
     <div
       onClick={() => onSelect(talent)}
-      className={`grid grid-cols-[minmax(240px,2fr)_minmax(140px,1fr)_120px] items-center px-5 py-3.5 rounded-md cursor-pointer transition-all duration-150 ${isSelected
+      className={`grid grid-cols-[minmax(0,1fr)_auto_auto] sm:grid-cols-[1fr_100px_220px] md:grid-cols-[1fr_120px_240px] items-center gap-3 sm:gap-4 px-3.5 sm:px-5 py-3 rounded-md cursor-pointer transition-all duration-150 ${isSelected
         ? 'bg-brand-primary text-white border border-brand-primary-hover shadow-glow'
         : 'bg-surface text-text-primary border border-border-subtle shadow-sm hover:shadow-md hover:border-border-medium hover:-translate-y-0.5'
         }`}
     >
       {/* Col 1: Avatar & Name + Specialty */}
-      <div className="flex items-center gap-3.5 min-w-0 pr-3">
+      <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0 pr-1.5 sm:pr-3">
         <img
           src={avatarSrc}
           alt={`${talent.firstName} ${talent.lastName}`}
-          className={`w-10 h-10 rounded-full object-cover shrink-0 ${isSelected ? 'border-2 border-white' : 'border-2 border-border-subtle'
+          className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full object-cover shrink-0 ${isSelected ? 'border-2 border-white' : 'border-2 border-border-subtle'
             }`}
         />
         <div className="min-w-0 overflow-hidden">
           <div
-            className="font-semibold text-sm truncate"
+            className="font-semibold text-xs sm:text-sm truncate"
             title={`${talent.firstName} ${talent.lastName}`}
           >
             {talent.firstName} {talent.lastName}
           </div>
           <div
-            className={`text-xs truncate mt-0.5 ${isSelected ? 'text-white/85' : 'text-text-secondary'
+            className={`text-[11px] sm:text-xs truncate mt-0.5 ${isSelected ? 'text-white/85' : 'text-text-secondary'
               }`}
             title={talent.primarySkill}
           >
@@ -117,9 +126,18 @@ export const TalentCard: React.FC<TalentCardProps> = ({
         </div>
       </div>
 
-      {/* Col 2: Gender */}
-      <div className="flex items-center gap-2.5 min-w-0 pr-2.5">
+      {/* Col 2: Gender & Height & Weight */}
+      <div className="flex items-center gap-2 min-w-0">
         <GenderBadge gender={talent.gender} />
+        {(talent.heightCm || talent.weightKg) && (
+          <span
+            className={`text-xs whitespace-nowrap truncate ${isSelected ? 'text-white/85' : 'text-text-secondary'}`}
+          >
+            {talent.heightCm ? `${talent.heightCm} ${isKa ? 'სმ' : 'cm'}` : ''}
+            {talent.heightCm && talent.weightKg ? ' • ' : ''}
+            {talent.weightKg ? `${talent.weightKg} ${isKa ? 'კგ' : 'kg'}` : ''}
+          </span>
+        )}
       </div>
 
       {/* Col 3: Availability Status */}

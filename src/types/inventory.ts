@@ -1,6 +1,7 @@
 export type DutyGenderRequirement = 'Male Only' | 'Female Only' | 'Any';
 export type DutyCategory = 'inventory' | 'special_task';
-export type TaskRotationCycle = 'every_show' | 'weekly' | 'monthly' | 'fixed';
+export type CustomRotationUnit = 'show' | 'day' | 'week';
+export type TaskRotationCycle = 'every_show' | 'weekly' | 'monthly' | 'fixed' | 'custom';
 
 export interface DutySlot {
   id: string;
@@ -8,12 +9,16 @@ export interface DutySlot {
   assignedGender: DutyGenderRequirement;
   headcount: number;
   rotationCycle?: TaskRotationCycle;
+  customRotationValue?: number;
+  customRotationUnit?: CustomRotationUnit;
 }
 
 export interface SpecialDutyTask {
   id: string;
   name: string;
   rotationCycle: TaskRotationCycle;
+  customRotationValue?: number;
+  customRotationUnit?: CustomRotationUnit;
   slots: DutySlot[]; // Multi-slot stage positions array
   assignedTalentIds?: string[];
   assignedTalentId?: string;
@@ -28,6 +33,8 @@ export interface InventoryRequirement {
   notes?: string;
   position?: string;
   rotationCycle?: TaskRotationCycle;
+  customRotationValue?: number;
+  customRotationUnit?: CustomRotationUnit;
   assignedTalentId?: string;
   assignedTalentIds?: string[];
   parentTaskId?: string;

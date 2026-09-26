@@ -8,8 +8,10 @@ import { useApp } from '../../context/AppContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useToast } from '../../context/ToastContext';
 import { useConfirm } from '../../context/ConfirmContext';
-import { Plus, Trash2, FileText, ChevronDown, Check, X, UploadCloud, Calendar, Sparkles, Loader2 } from 'lucide-react';
+import { Plus, Trash2, FileText, ChevronDown, Check, X, UploadCloud, Calendar, CheckCircle2, Loader2, Camera, User } from 'lucide-react';
+import { DatePicker } from '../common/DatePicker';
 import { extractContractExpiryDate } from '../../utils/contractParser';
+import { getTalentAvatar } from '../../utils/avatarUtils';
 
 interface TalentFormModalProps {
   isOpen: boolean;
@@ -79,6 +81,8 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
 
   const [notes, setNotes] = useState('');
   const [documents, setDocuments] = useState<FormDocItem[]>([]);
+  const [avatarUrl, setAvatarUrl] = useState<string>('');
+  const avatarFileInputRef = useRef<HTMLInputElement>(null);
 
   // Aggregate all unique specializations: defaults + existing talents' skills + dynamically added
   const allSpecializations = useMemo(() => {
@@ -123,6 +127,7 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
       setStatus(editingTalent.status);
       setPrimarySkill(editingTalent.primarySkill);
       setNotes(editingTalent.notes || '');
+      setAvatarUrl(editingTalent.avatarUrl || '');
       setDocuments(
         editingTalent.documents.map((d) => ({
           id: d.id,
@@ -144,7 +149,11 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
       setStatus('Active');
       setPrimarySkill('');
       setNotes('');
+      setAvatarUrl('');
       setDocuments([]);
+    }
+    if (avatarFileInputRef.current) {
+      avatarFileInputRef.current.value = '';
     }
     setIsSpecDropdownOpen(false);
     setIsFiltering(false);
@@ -257,6 +266,37 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
     }
   };
 
+  const handleAvatarFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error(isKa ? 'გთხოვთ აირჩიოთ სურათის ფორმატის ფაილი (PNG, JPG, WEBP)' : 'Please select a valid image file');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error(isKa ? 'ფაილის ზომა არ უნდა აღემატებოდეს 5MB-ს' : 'Image file size must be less than 5MB');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        setAvatarUrl(reader.result);
+        toast.success(isKa ? 'ავატარი წარმატებით განახლდა' : 'Avatar updated successfully');
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveAvatar = () => {
+    setAvatarUrl('');
+    if (avatarFileInputRef.current) {
+      avatarFileInputRef.current.value = '';
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!firstName.trim() || !lastName.trim() || !primarySkill.trim()) {
@@ -285,6 +325,7 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
         status,
         primarySkill: primarySkill.trim(),
         notes: notes.trim(),
+        avatarUrl: avatarUrl.trim() || undefined,
         documents: payloadDocs
       });
       toast.success(
@@ -304,6 +345,7 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
         status,
         primarySkill: primarySkill.trim(),
         notes: notes.trim(),
+        avatarUrl: avatarUrl.trim() || undefined,
         documents: payloadDocs
       });
       toast.success(
@@ -343,6 +385,116 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
       }
     >
       <form id="talent-form" onSubmit={handleSubmit} className="flex flex-col gap-4">
+        {/* Avatar Upload / Change Section */}
+        {(() => {
+          const displayAvatar =
+            avatarUrl ||
+            getTalentAvatar({
+              avatarUrl,
+              firstName: firstName.trim(),
+              lastName: lastName.trim(),
+              gender
+            });
+
+          return (
+            <div className="flex items-center gap-4 p-3.5 rounded-xl border border-border-subtle bg-surface-secondary/50 transition-all duration-200 hover:border-border-medium">
+              {/* Avatar circle with hover overlay */}
+              <div className="relative group shrink-0">
+                <div
+                  onClick={() => avatarFileInputRef.current?.click()}
+                  className="relative w-18 h-18 sm:w-20 sm:h-20 rounded-full overflow-hidden border-2 border-border-subtle bg-surface shadow-xs cursor-pointer group-hover:border-brand-primary group-hover:shadow-md transition-all duration-200"
+                  title={isKa ? 'დააჭირეთ ავატარის ასატვირთად ან შესაცვლელად' : 'Click to upload or change avatar'}
+                >
+                  {displayAvatar ? (
+                    <img
+                      src={displayAvatar}
+                      alt="Avatar"
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-surface-tertiary text-text-tertiary">
+                      <User size={30} className="text-text-tertiary/60 transition-transform duration-200 group-hover:scale-110" />
+                    </div>
+                  )}
+
+                  {/* Hover Overlay with Change Icon and Label */}
+                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white transition-opacity duration-200 backdrop-blur-[1px]">
+                    <Camera size={20} className="mb-0.5 transform group-hover:scale-110 transition-transform duration-200" />
+                    <span className="text-[10px] font-semibold tracking-wide">
+                      {avatarUrl || editingTalent ? (isKa ? 'შეცვლა' : 'Change') : (isKa ? 'ატვირთვა' : 'Upload')}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Badge button in corner */}
+                <button
+                  type="button"
+                  onClick={() => avatarFileInputRef.current?.click()}
+                  className="absolute bottom-0 right-0 w-6.5 h-6.5 rounded-full bg-brand-primary text-white border-2 border-surface flex items-center justify-center cursor-pointer shadow-sm hover:bg-brand-primary-hover hover:scale-105 active:scale-95 transition-all duration-150"
+                  title={isKa ? 'ავატარის შეცვლა' : 'Change avatar'}
+                >
+                  <Camera size={12} />
+                </button>
+
+                {/* Hidden File Input */}
+                <input
+                  ref={avatarFileInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/gif"
+                  onChange={handleAvatarFileChange}
+                  className="hidden"
+                />
+              </div>
+
+              {/* Avatar Info & Actions */}
+              <div className="flex flex-col justify-center flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs sm:text-sm font-semibold text-text-primary">
+                    {isKa ? 'პროფილის ავატარი' : 'Profile Avatar'}
+                  </span>
+                  {editingTalent && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded font-medium bg-brand-primary/10 text-brand-primary border border-brand-primary/20">
+                      {isKa ? 'რედაქტირება' : 'Edit Mode'}
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] text-text-secondary mt-0.5">
+                  {isKa
+                    ? 'დააჭირეთ ფოტოს ან გადაატარეთ კურსორი შესაცვლელად (PNG, JPG, WEBP)'
+                    : 'Click photo or hover to change profile picture (PNG, JPG, WEBP)'}
+                </p>
+
+                <div className="flex items-center gap-2 mt-2">
+                  <button
+                    type="button"
+                    onClick={() => avatarFileInputRef.current?.click()}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold border border-border-subtle bg-surface text-text-primary hover:bg-surface-secondary hover:border-brand-primary hover:text-brand-primary transition-all duration-150 cursor-pointer shadow-2xs"
+                  >
+                    <UploadCloud size={13} />
+                    <span>
+                      {avatarUrl
+                        ? (isKa ? 'ფოტოს შეცვლა' : 'Change Photo')
+                        : (isKa ? 'ფოტოს ატვირთვა' : 'Upload Photo')}
+                    </span>
+                  </button>
+
+                  {avatarUrl && (
+                    <button
+                      type="button"
+                      onClick={handleRemoveAvatar}
+                      className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium text-status-critical-text hover:bg-status-critical-bg transition-colors duration-150 cursor-pointer"
+                      title={isKa ? 'ფოტოს წაშლა' : 'Remove photo'}
+                    >
+                      <Trash2 size={12} />
+                      <span>{isKa ? 'წაშლა' : 'Remove'}</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Name Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
           <div className="flex flex-col gap-1.5">
@@ -735,17 +887,15 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
                         )}
                         {!doc.isParsing && doc.parseDetected === true && (
                           <span className="text-[11px] text-status-active-text font-semibold flex items-center gap-1">
-                            <Sparkles size={11} />
+                            <CheckCircle2 size={11} />
                             <span>{t('auto_detected_date')}</span>
                           </span>
                         )}
                       </div>
 
-                      <input
-                        type="date"
-                        className="text-xs px-2.5 py-1.5 rounded-md border border-border-subtle bg-surface text-text-primary outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20 font-medium"
+                      <DatePicker
                         value={doc.expiryDate || ''}
-                        onChange={(e) => handleDocChange(doc.id, 'expiryDate', e.target.value)}
+                        onChange={(val) => handleDocChange(doc.id, 'expiryDate', val)}
                         required
                       />
 

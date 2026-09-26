@@ -24,7 +24,6 @@ import {
   Check,
   ExternalLink,
   Search,
-  Sparkles,
   Info,
   Navigation,
   MessageSquare
@@ -270,7 +269,7 @@ export const VenueDetailModal: React.FC<VenueDetailModalProps> = ({
   onDelete
 }) => {
   const { t, language } = useLanguage();
-  const { schedule, groups } = useApp();
+  const { schedule, groups, formatTime } = useApp();
   const { confirm } = useConfirm();
   const toast = useToast();
   const dict = DICT[(language as 'ka' | 'en' | 'tr')] || DICT.en;
@@ -558,16 +557,8 @@ export const VenueDetailModal: React.FC<VenueDetailModalProps> = ({
                     day: 'numeric',
                     year: 'numeric'
                   });
-                  const startTime = startDate.toLocaleTimeString(localeStr, {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: false
-                  });
-                  const endTime = endDate.toLocaleTimeString(localeStr, {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: false
-                  });
+                  const startTime = formatTime(startDate);
+                  const endTime = formatTime(endDate);
 
                   return (
                     <div

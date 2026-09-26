@@ -5,6 +5,8 @@ import { Talent, TalentStatus, TalentDocument, TalentReview, RehireStatus, Revie
 import { Drawer } from '../common/Drawer';
 import { StatusBadge, GenderBadge, RehireBadge } from '../common/Badge';
 import { SplitProgressBar } from '../common/ProgressBar';
+import { DatePicker } from '../common/DatePicker';
+import { getTalentAvatar } from '../../utils/avatarUtils';
 import { useApp } from '../../context/AppContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useConfirm } from '../../context/ConfirmContext';
@@ -22,7 +24,8 @@ import {
   BarChart3,
   Calendar,
   Clock,
-  Sparkles,
+  RotateCw,
+  CalendarCheck,
   Info,
   AlertTriangle,
   MessageSquare,
@@ -39,11 +42,24 @@ import {
   UserX,
   Lock,
   ShieldCheck,
-  MoreVertical
+  MoreVertical,
+  Ruler,
+  Scale,
+  BookMarked,
+  Globe,
+  CreditCard,
+  Stethoscope,
+  FileCheck2,
+  FolderOpen
 } from 'lucide-react';
 import { extractContractExpiryDate } from '../../utils/contractParser';
 import { getCountryFromPhone } from '../common/PhoneInput';
 import { TalentReviewModal } from './TalentReviewModal';
+import {
+  computeHistoricalDutyCounts,
+  computeFairnessScore,
+  getCycleKey
+} from '../../services/rotationEngine';
 
 interface TalentDetailDrawerProps {
   talent: Talent | null;
@@ -53,6 +69,15 @@ interface TalentDetailDrawerProps {
 }
 
 type DrawerTab = 'info' | 'docs' | 'stats' | 'reviews';
+
+export const DOCUMENT_TYPE_ICON: Record<string, React.ElementType> = {
+  Passport: BookMarked,
+  Visa: Globe,
+  'ID Card': CreditCard,
+  Medical: Stethoscope,
+  Contract: FileCheck2,
+  Other: FolderOpen,
+};
 
 export const DOCUMENT_TYPES: {
   value: TalentDocument['type'];
@@ -75,7 +100,7 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
   onClose,
   onEdit
 }) => {
-  const { updateTalent, deleteTalent, groups, schedule } = useApp();
+  const { updateTalent, deleteTalent, groups, schedule, formatTimeRange } = useApp();
   const { t, language } = useLanguage();
   const { confirm } = useConfirm();
   const toast = useToast();
@@ -140,39 +165,103 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
     contentScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  if (!talent) return null;
-
-  // Calculate duty shifts served by this talent & collect shift history
+  // Safe collections
   const servedShifts: {
     eventId: string;
     eventTitle: string;
     eventDate: string;
     itemName: string;
-  }[] = [];
+  }[] = useMemo(() => {
+    if (!talent || !schedule) return [];
+    const shifts: {
+      eventId: string;
+      eventTitle: string;
+      eventDate: string;
+      itemName: string;
+    }[] = [];
 
-  for (const ev of schedule) {
-    for (const d of ev.dutyAssignments) {
-      if (d.assignedTalentIds.includes(talent.id)) {
-        servedShifts.push({
-          eventId: ev.id,
-          eventTitle: ev.title,
-          eventDate: ev.startDateTime,
-          itemName: d.itemName
-        });
+    for (const ev of schedule) {
+      if (!ev.dutyAssignments) continue;
+      for (const d of ev.dutyAssignments) {
+        if (d.assignedTalentIds && d.assignedTalentIds.includes(talent.id)) {
+          shifts.push({
+            eventId: ev.id,
+            eventTitle: ev.title,
+            eventDate: ev.startDateTime,
+            itemName: d.itemName
+          });
+        }
       }
     }
-  }
+    return shifts;
+  }, [talent, schedule]);
 
   const totalDutiesServed = servedShifts.length;
 
-  // Shows where this talent's group participated
-  const talentGroupIds = new Set(groups.filter((g) => g.memberTalentIds.includes(talent.id)).map((g) => g.id));
-  const talentShows = schedule
-    .filter((ev) => talentGroupIds.has(ev.groupId))
-    .sort((a, b) => new Date(b.startDateTime).getTime() - new Date(a.startDateTime).getTime());
-
   // Groups this talent is part of
-  const memberGroups = groups.filter((g) => g.memberTalentIds.includes(talent.id));
+  const memberGroups = useMemo(() => {
+    if (!talent || !groups) return [];
+    return groups.filter((g) => g.memberTalentIds && g.memberTalentIds.includes(talent.id));
+  }, [talent, groups]);
+
+  // Shows where this talent's group participated
+  const talentGroupIds = useMemo(() => new Set(memberGroups.map((g) => g.id)), [memberGroups]);
+  const talentShows = useMemo(() => {
+    if (!schedule) return [];
+    return schedule
+      .filter((ev) => talentGroupIds.has(ev.groupId))
+      .sort((a, b) => new Date(b.startDateTime).getTime() - new Date(a.startDateTime).getTime());
+  }, [schedule, talentGroupIds]);
+
+  // Compute real fairness score + this talent's duty share in current cycles
+  const { fairnessScore, talentDutySharePct } = useMemo(() => {
+    if (!talent || memberGroups.length === 0) {
+      return { fairnessScore: 100, talentDutySharePct: 0 };
+    }
+
+    let lowestScore = 100;
+    let totalTalentDuties = 0;
+    let totalGroupDuties = 0;
+
+    for (const group of memberGroups) {
+      const cycleWeeks = group.rotationCycleWeeks || 1;
+      const cycleKey = getCycleKey(new Date(), cycleWeeks);
+
+      // computeHistoricalDutyCounts(events, groupId, cycleKey, cycleWeeks)
+      const dutyCounts = computeHistoricalDutyCounts(
+        schedule || [],
+        group.id,
+        cycleKey,
+        cycleWeeks
+      );
+
+      // Group-level fairness
+      const score = computeFairnessScore(dutyCounts, group.memberTalentIds || []);
+      if (typeof score === 'number' && !isNaN(score) && score < lowestScore) {
+        lowestScore = score;
+      }
+
+      // Talent's own accumulated duties in this cycle
+      totalTalentDuties += dutyCounts.get(talent.id) || 0;
+
+      // Total duties across all members in this group
+      dutyCounts.forEach((v) => {
+        totalGroupDuties += v;
+      });
+    }
+
+    const sharePct =
+      totalGroupDuties > 0
+        ? Math.round((totalTalentDuties / totalGroupDuties) * 100)
+        : 0;
+
+    return {
+      fairnessScore: isNaN(lowestScore) ? 100 : lowestScore,
+      talentDutySharePct: isNaN(sharePct) ? 0 : sharePct
+    };
+  }, [memberGroups, schedule, talent?.id]);
+
+  if (!talent) return null;
 
   // Check if talent contract is expired
   const contractExpiry = talent.contractExpiryDate || talent.documents?.find((d) => d.type === 'Contract')?.expiryDate;
@@ -192,7 +281,7 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
   };
 
   // Document uniqueness and type helper states
-  const existingDocTypes = new Set(talent.documents.map((d) => d.type));
+  const existingDocTypes = new Set((talent.documents || []).map((d) => d.type));
   const availableDocTypes = DOCUMENT_TYPES.filter((dt) => !existingDocTypes.has(dt.value));
   const allDocTypesUploaded = availableDocTypes.length === 0;
 
@@ -203,7 +292,6 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
     const file = e.target.files?.[0];
     if (file) {
       setSelectedFile(file);
-      // Auto-populate document title input with the selected file name (without extension)
       const nameWithoutExt = file.name.replace(/\.[^/.]+$/, '');
       setNewDocName(nameWithoutExt || file.name);
 
@@ -258,7 +346,6 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
 
   const handleToggleAddDoc = () => {
     if (!showAddDoc) {
-      // Pick first available doc type that hasn't been uploaded yet
       const firstAvailable = availableDocTypes[0]?.value || 'Other';
       setNewDocType(firstAvailable);
       setNewDocName('');
@@ -277,7 +364,6 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
       return;
     }
 
-    // Validate that document type is unique per creator/talent
     if (existingDocTypes.has(newDocType)) {
       toast.error(
         isKa
@@ -307,7 +393,7 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
     };
 
     updateTalent(talent.id, {
-      documents: [...talent.documents, newDoc]
+      documents: [...(talent.documents || []), newDoc]
     });
 
     toast.success(
@@ -334,7 +420,7 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
       variant: 'danger',
       icon: 'trash',
       onConfirm: () => {
-        const updatedDocs = talent.documents.filter((d) => d.id !== docId);
+        const updatedDocs = (talent.documents || []).filter((d) => d.id !== docId);
         updateTalent(talent.id, { documents: updatedDocs });
         toast.success(isKa ? `დოკუმენტი „${docName}“ წაიშალა` : `Document "${docName}" removed`);
       }
@@ -366,16 +452,12 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
 
   return (
     <Drawer isOpen={isOpen} onClose={onClose} width="600px">
-      {/* Fixed Top Header (Non-scrolling: avatar, profile info, status, tabs) */}
+      {/* Fixed Top Header */}
       <div className="shrink-0 bg-surface border-b border-border-subtle relative z-[5]">
-        {/* Hero Banner with Modern Brand Aura */}
         <div className="h-[84px] bg-[radial-gradient(circle_at_75%_20%,#FF6C41_0%,#004F72_55%,#082734_95%)] relative p-5">
           <div className="absolute -bottom-[42px] left-6 flex items-end gap-4">
             <img
-              src={
-                talent.avatarUrl ||
-                `https://api.dicebear.com/7.x/avataaars/svg?seed=${talent.firstName}${talent.lastName}`
-              }
+              src={getTalentAvatar(talent)}
               alt={talent.firstName}
               className="w-[88px] h-[88px] rounded-full object-cover border-4 border-white shadow-lg bg-white"
             />
@@ -400,6 +482,17 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
             </div>
 
             <div className="flex items-center gap-1.5">
+              {/* Terminate Contract Button */}
+              <button
+                type="button"
+                onClick={() => handleOpenReview('Early Termination')}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400 hover:bg-amber-500/20 text-xs font-semibold transition-all duration-150 cursor-pointer outline-none shadow-2xs"
+                title={isKa ? 'კონტრაქტის შეწყვეტა & არქივში გადატანა' : 'Terminate Contract & Archive'}
+              >
+                <AlertTriangle size={13} />
+                <span>{isKa ? 'კონტრაქტის შეწყვეტა' : 'Terminate'}</span>
+              </button>
+
               <button
                 type="button"
                 onClick={() => onEdit(talent)}
@@ -414,9 +507,7 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsActionsMenuOpen((prev) => !prev)}
-                  className={`w-8.5 h-8.5 rounded-full inline-flex items-center justify-center border border-border-subtle bg-surface-secondary text-text-primary hover:bg-surface-tertiary hover:border-border-medium transition-all duration-150 cursor-pointer outline-none ${isActionsMenuOpen
-                      ? 'border-brand-primary text-brand-primary bg-surface-tertiary shadow-xs'
-                      : ''
+                  className={`w-8.5 h-8.5 rounded-full inline-flex items-center justify-center border border-border-subtle bg-surface-secondary text-text-primary hover:bg-surface-tertiary hover:border-border-medium transition-all duration-150 cursor-pointer outline-none ${isActionsMenuOpen ? 'border-brand-primary text-brand-primary bg-surface-tertiary shadow-xs' : ''
                     }`}
                   title={isKa ? 'სხვა მოქმედებები' : 'More Actions'}
                   aria-expanded={isActionsMenuOpen}
@@ -430,7 +521,6 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
                     className="absolute right-0 top-full mt-1.5 z-40 w-64 p-1 rounded-lg bg-surface border border-border-subtle shadow-lg animate-in fade-in zoom-in-95 duration-150"
                     role="menu"
                   >
-                    {/* Action 1: Terminate Contract Early */}
                     <button
                       type="button"
                       onClick={() => {
@@ -451,10 +541,8 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
                       </div>
                     </button>
 
-                    {/* Divider */}
                     <div className="my-1 border-t border-border-subtle" />
 
-                    {/* Action 2: Delete Talent */}
                     <button
                       type="button"
                       onClick={() => {
@@ -480,7 +568,7 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
             </div>
           </div>
 
-          {/* Status Selector Custom Dropdown */}
+          {/* Status Selector Dropdown */}
           <div
             ref={statusDropdownRef}
             className={`relative flex items-center justify-between gap-3 px-3 py-2 rounded-md bg-surface-secondary border border-border-subtle ${talent.status !== 'Active' ? 'mb-2.5' : 'mb-3.5'
@@ -521,7 +609,6 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
               />
             </button>
 
-            {/* Status Dropdown Menu */}
             {isStatusDropdownOpen && (
               <div className="absolute top-[calc(100%+6px)] right-3 min-w-[160px] bg-surface rounded-md border border-border-subtle shadow-modal z-[200] overflow-hidden py-1">
                 {(['Active', 'Rest', 'Sick/Injured'] as TalentStatus[]).map((st) => {
@@ -554,7 +641,6 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
             )}
           </div>
 
-          {/* Compact, Refined Warning Notice */}
           {talent.status !== 'Active' && (
             <div className="mb-3 px-3 py-2 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 text-xs font-medium flex items-center gap-2 leading-relaxed">
               <AlertTriangle size={13} strokeWidth={2} className="shrink-0 text-amber-600" />
@@ -566,7 +652,6 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
             </div>
           )}
 
-          {/* Smart Contract Expiry Banner */}
           {isContractExpired && (
             <div className="mb-3.5 bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 flex items-center justify-between gap-3 animate-in fade-in duration-150">
               <div className="flex items-center gap-2 min-w-0">
@@ -587,13 +672,11 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
             </div>
           )}
 
-          {/* Tab Navigation Buttons - Linear/Vercel Segmented Control */}
+          {/* Segmented Tab Controls */}
           <div className="flex items-center bg-surface-secondary rounded-lg p-0.5 border border-border-subtle gap-0.5 h-[38px] box-border">
-            {/* Tab 1: Info */}
             <button
               type="button"
               onClick={() => handleTabSelect('info')}
-              title={isKa ? 'ინფორმაცია' : 'Personal Information'}
               className={`flex-1 h-[32px] flex items-center justify-center gap-1.5 px-2 rounded-md border-none text-xs cursor-pointer whitespace-nowrap min-w-0 transition-all duration-150 ${activeTab === 'info'
                   ? 'font-semibold bg-surface text-text-primary shadow-xs border border-border-subtle'
                   : 'font-medium bg-transparent text-text-secondary hover:text-text-primary'
@@ -603,11 +686,9 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
               <span className="whitespace-nowrap truncate">{isKa ? 'ინფო' : 'Info'}</span>
             </button>
 
-            {/* Tab 2: Documents */}
             <button
               type="button"
               onClick={() => handleTabSelect('docs')}
-              title={isKa ? 'დოკუმენტები' : 'Documents'}
               className={`flex-1 relative h-[32px] flex items-center justify-center gap-1 px-1.5 rounded-md border-none text-xs cursor-pointer whitespace-nowrap min-w-0 transition-all duration-150 ${activeTab === 'docs'
                   ? 'font-semibold bg-surface text-text-primary shadow-xs border border-border-subtle'
                   : 'font-medium bg-transparent text-text-secondary hover:text-text-primary'
@@ -621,15 +702,13 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
                     : 'bg-surface-secondary text-text-secondary'
                   }`}
               >
-                {talent.documents.length}
+                {(talent.documents || []).length}
               </span>
             </button>
 
-            {/* Tab 3: Statistics */}
             <button
               type="button"
               onClick={() => handleTabSelect('stats')}
-              title={isKa ? 'მორიგეობის სტატისტიკა' : 'Duty Statistics'}
               className={`flex-1 h-[32px] flex items-center justify-center gap-1.5 px-2 rounded-md border-none text-xs cursor-pointer whitespace-nowrap min-w-0 transition-all duration-150 ${activeTab === 'stats'
                   ? 'font-semibold bg-surface text-text-primary shadow-xs border border-border-subtle'
                   : 'font-medium bg-transparent text-text-secondary hover:text-text-primary'
@@ -639,11 +718,9 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
               <span className="whitespace-nowrap truncate">{isKa ? 'სტატისტიკა' : 'Stats'}</span>
             </button>
 
-            {/* Tab 4: Reviews & Contract Archive */}
             <button
               type="button"
               onClick={() => handleTabSelect('reviews')}
-              title={isKa ? 'შეფასება & არქივი' : 'Reviews & Contract Archive'}
               className={`flex-1 relative h-[32px] flex items-center justify-center gap-1 px-1.5 rounded-md border-none text-xs cursor-pointer whitespace-nowrap min-w-0 transition-all duration-150 ${activeTab === 'reviews'
                   ? 'font-semibold bg-surface text-text-primary shadow-xs border border-border-subtle'
                   : 'font-medium bg-transparent text-text-secondary hover:text-text-primary'
@@ -666,7 +743,7 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
         </div>
       </div>
 
-      {/* Dedicated Scrollable Tab Content Container */}
+      {/* Content Container */}
       <div
         ref={contentScrollRef}
         className="thin-scrollbar flex-1 overflow-y-auto min-h-0 px-6 pt-5 pb-7"
@@ -675,7 +752,6 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
         {activeTab === 'info' && (
           <div>
             <div className="flex flex-col gap-0.5">
-              {/* Email */}
               <div className="flex items-center justify-between py-3 border-b border-border-subtle gap-3">
                 <span className="text-sm text-text-secondary flex items-center gap-2 font-medium">
                   <Mail size={16} className="text-text-primary opacity-70" />
@@ -686,7 +762,6 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
                 </span>
               </div>
 
-              {/* Phone */}
               {talent.phone && (
                 <div className="flex items-center justify-between py-3 border-b border-border-subtle gap-3 flex-wrap">
                   <span className="text-sm text-text-secondary flex items-center gap-2 font-medium">
@@ -708,7 +783,6 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
                             <span>{talent.phone}</span>
                           </div>
 
-                          {/* Quick Actions: WhatsApp, Call, Copy */}
                           <div className="flex items-center gap-1">
                             {cleanDigits && (
                               <a
@@ -753,7 +827,6 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
                 </div>
               )}
 
-              {/* Gender */}
               <div className="flex items-center justify-between py-3 border-b border-border-subtle gap-3">
                 <span className="text-sm text-text-secondary font-medium">
                   {t('gender')}
@@ -763,7 +836,26 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
                 </div>
               </div>
 
-              {/* Groups */}
+              <div className="flex items-center justify-between py-3 border-b border-border-subtle gap-3">
+                <span className="text-sm text-text-secondary flex items-center gap-2 font-medium">
+                  <Ruler size={16} className="text-text-primary opacity-70" />
+                  {isKa ? 'სიმაღლე' : 'Height'}
+                </span>
+                <span className="text-[0.9rem] font-semibold text-text-primary">
+                  {talent.heightCm ? `${talent.heightCm} ${isKa ? 'სმ' : 'cm'}` : '—'}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between py-3 border-b border-border-subtle gap-3">
+                <span className="text-sm text-text-secondary flex items-center gap-2 font-medium">
+                  <Scale size={16} className="text-text-primary opacity-70" />
+                  {isKa ? 'წონა' : 'Weight'}
+                </span>
+                <span className="text-[0.9rem] font-semibold text-text-primary">
+                  {talent.weightKg ? `${talent.weightKg} ${isKa ? 'კგ' : 'kg'}` : '—'}
+                </span>
+              </div>
+
               <div className="flex items-center justify-between py-3 border-b border-border-subtle gap-3">
                 <span className="text-sm text-text-secondary flex items-center gap-2 font-medium">
                   <Layers size={16} className="text-text-primary opacity-70" />
@@ -774,7 +866,6 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
                 </span>
               </div>
 
-              {/* Internal Notes Card */}
               {talent.notes && (
                 <div className="mt-4 p-4 rounded-md bg-surface-secondary border border-border-subtle shadow-sm">
                   <div className="flex items-center justify-between mb-2">
@@ -803,7 +894,7 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
           <div>
             <div className="flex items-center justify-between mb-3.5">
               <span className="text-[0.8rem] font-semibold text-text-secondary">
-                {t('docs_and_credentials')} ({talent.documents.length})
+                {t('docs_and_credentials')} ({(talent.documents || []).length})
               </span>
               {allDocTypesUploaded ? (
                 <span className="text-xs text-text-secondary italic">
@@ -825,7 +916,6 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
                 onSubmit={handleAddDocument}
                 className="bg-surface-secondary p-4 rounded-sm mb-4.5 border border-border-subtle flex flex-col gap-3.5"
               >
-                {/* 1. Document Type Selector */}
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
                     <label className="text-[0.785rem] font-semibold text-text-primary">
@@ -835,23 +925,35 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
                       {isKa ? 'უნიკალური ტიპი (1 თითო თანამშრომელზე)' : 'Unique type (1 per talent)'}
                     </span>
                   </div>
-                  <select
-                    value={newDocType}
-                    onChange={(e) => handleDocTypeSelect(e.target.value as TalentDocument['type'])}
-                    className="w-full text-sm px-3.5 py-2.5 rounded-sm border border-border-subtle bg-surface text-text-primary outline-none transition-all duration-150 focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10 cursor-pointer"
-                  >
+                  <div className="grid grid-cols-3 gap-1.5">
                     {DOCUMENT_TYPES.map((dt) => {
                       const isUploaded = existingDocTypes.has(dt.value);
+                      const isSelected = newDocType === dt.value;
+                      const DocIcon = DOCUMENT_TYPE_ICON[dt.value] || FolderOpen;
                       return (
-                        <option key={dt.value} value={dt.value} disabled={isUploaded}>
-                          {isKa ? dt.labelKa : dt.labelEn} {isUploaded ? (isKa ? '— (უკვე ატვირთულია)' : '— (Already uploaded)') : ''}
-                        </option>
+                        <button
+                          key={dt.value}
+                          type="button"
+                          disabled={isUploaded}
+                          onClick={() => !isUploaded && handleDocTypeSelect(dt.value as TalentDocument['type'])}
+                          className={`relative flex flex-col items-center justify-center gap-1 py-2.5 px-1 rounded-lg border text-xs font-semibold transition-all duration-150 ${isUploaded
+                              ? 'opacity-35 cursor-not-allowed border-border-subtle bg-surface-secondary text-text-tertiary'
+                              : isSelected
+                                ? `${dt.badgeClass} border-current shadow-sm cursor-pointer`
+                                : 'border-border-subtle bg-surface text-text-secondary hover:border-border-medium hover:text-text-primary cursor-pointer'
+                            }`}
+                        >
+                          <DocIcon size={16} className={isSelected ? 'text-current' : 'text-text-secondary'} />
+                          <span className="leading-none text-center">{isKa ? dt.labelKa : dt.labelEn}</span>
+                          {isUploaded && (
+                            <span className="absolute top-1 right-1.5 text-[9px] font-bold">✓</span>
+                          )}
+                        </button>
                       );
                     })}
-                  </select>
+                  </div>
                 </div>
 
-                {/* 2. File Upload Dropzone */}
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
                     <label className="text-[0.785rem] font-semibold text-text-primary">
@@ -891,19 +993,15 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
                   ) : (
                     <div className="flex items-center justify-between p-2.5 sm:px-3.5 bg-surface border border-border-medium rounded-sm">
                       <div className="flex items-center gap-2.5 min-w-0">
-                        <div
-                          className={`w-8.5 h-8.5 rounded-xs flex items-center justify-center font-bold text-xs shrink-0 ${currentTypeObj.badgeClass}`}
-                        >
-                          {currentTypeObj.short}
+                        <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${currentTypeObj.badgeClass}`}>
+                          {(() => { const I = DOCUMENT_TYPE_ICON[currentTypeObj.value] || FolderOpen; return <I size={17} />; })()}
                         </div>
                         <div className="min-w-0">
                           <div className="text-[0.825rem] font-semibold text-text-primary truncate">
                             {selectedFile.name}
                           </div>
                           <div className="text-[0.72rem] text-text-secondary flex items-center gap-1.5 mt-0.5">
-                            <span
-                              className={`font-semibold px-1.5 py-0.5 rounded text-[0.675rem] ${currentTypeObj.badgeClass}`}
-                            >
+                            <span className={`font-semibold px-1.5 py-0.5 rounded text-[0.675rem] ${currentTypeObj.badgeClass}`}>
                               {currentTypeLabel}
                             </span>
                             <span>•</span>
@@ -937,7 +1035,6 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
                   )}
                 </div>
 
-                {/* 3. Document Title Input */}
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
                     <label className="text-[0.785rem] font-semibold text-text-primary">
@@ -957,7 +1054,6 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
                   />
                 </div>
 
-                {/* 4. Contract Expiration Date (ONLY shown when newDocType === 'Contract') */}
                 {newDocType === 'Contract' && (
                   <div className="bg-brand-primary/5 border border-brand-primary/20 rounded-sm p-3 flex flex-col gap-1.5">
                     <div className="flex items-center justify-between">
@@ -973,20 +1069,18 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
                       )}
                       {!isParsingDoc && parseDetected === true && (
                         <span className="text-[0.72rem] text-emerald-600 font-semibold flex items-center gap-1">
-                          <Sparkles size={12} />
+                          <CheckCircle2 size={12} />
                           <span>{t('auto_detected_date')}</span>
                         </span>
                       )}
                     </div>
 
-                    <input
-                      type="date"
+                    <DatePicker
                       value={newDocExpiryDate}
-                      onChange={(e) => {
-                        setNewDocExpiryDate(e.target.value);
+                      onChange={(val) => {
+                        setNewDocExpiryDate(val);
                         setParseDetected(null);
                       }}
-                      className="w-full text-xs px-3 py-2 rounded-sm border border-border-subtle bg-surface text-text-primary outline-none transition-all duration-150 focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20"
                       required
                     />
 
@@ -1002,7 +1096,6 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
                   </div>
                 )}
 
-                {/* Actions */}
                 <div className="flex justify-end gap-2 mt-1">
                   <button
                     type="button"
@@ -1027,7 +1120,7 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
             )}
 
             <div className="flex flex-col gap-2">
-              {talent.documents.map((doc) => {
+              {(talent.documents || []).map((doc) => {
                 const docTypeObj = DOCUMENT_TYPES.find((dt) => dt.value === doc.type) || DOCUMENT_TYPES[0];
                 const docTypeLabel = isKa ? docTypeObj.labelKa : docTypeObj.labelEn;
                 const isExpired = doc.expiryDate && new Date(doc.expiryDate).getTime() < Date.now();
@@ -1039,19 +1132,15 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
                     className="flex items-center justify-between p-3 sm:px-3.5 rounded-sm bg-surface-secondary border border-border-subtle hover:border-border-medium transition-all"
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <div
-                        className={`w-8.5 h-8.5 rounded-xs flex items-center justify-center text-xs font-bold shrink-0 ${docTypeObj.badgeClass}`}
-                      >
-                        {docTypeObj.short}
+                      <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${docTypeObj.badgeClass}`}>
+                        {(() => { const I = DOCUMENT_TYPE_ICON[docTypeObj.value] || FolderOpen; return <I size={17} />; })()}
                       </div>
                       <div className="min-w-0">
                         <div className="text-[0.825rem] font-semibold text-text-primary truncate">
                           {doc.name}
                         </div>
                         <div className="text-[0.725rem] text-text-secondary flex items-center gap-1.5 mt-0.5 flex-wrap">
-                          <span
-                            className={`font-semibold px-1.5 py-0.5 rounded text-[0.675rem] ${docTypeObj.badgeClass}`}
-                          >
+                          <span className={`font-semibold px-1.5 py-0.5 rounded text-[0.675rem] ${docTypeObj.badgeClass}`}>
                             {docTypeLabel}
                           </span>
                           <span>•</span>
@@ -1059,8 +1148,7 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
                           {doc.expiryDate && (
                             <>
                               <span>•</span>
-                              <span className={`inline-flex items-center gap-1 font-semibold ${isExpired ? 'text-danger' : isExpiringSoon ? 'text-amber-600' : 'text-emerald-700'
-                                }`}>
+                              <span className={`inline-flex items-center gap-1 font-semibold ${isExpired ? 'text-danger' : isExpiringSoon ? 'text-amber-600' : 'text-emerald-700'}`}>
                                 <Calendar size={11} />
                                 <span>{t('valid_until')} {doc.expiryDate}</span>
                               </span>
@@ -1093,9 +1181,8 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
         {/* TAB 3: DUTY STATISTICS & HISTORY */}
         {activeTab === 'stats' && (
           <div>
-            {/* Overview Card */}
             <div className="bg-surface-secondary rounded-sm p-4 border border-border-subtle mb-4">
-              <div className="flex justify-between items-center mb-2">
+              <div className="flex justify-between items-center mb-1">
                 <span className="text-[0.825rem] text-text-secondary">
                   {t('total_shifts_handled')}:
                 </span>
@@ -1105,15 +1192,21 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
               </div>
 
               <SplitProgressBar
-                yellowPercent={Math.min(100, totalDutiesServed * 20)}
-                darkPercent={25}
-                stripedPercent={15}
+                yellowPercent={talentDutySharePct}
+                darkPercent={Math.max(0, 100 - fairnessScore)}
+                stripedPercent={0}
                 height={10}
               />
 
               <div className="flex justify-between text-[0.725rem] text-text-secondary mt-2.5">
-                <span>{t('round_robin_pool')}</span>
-                <span>{t('fairness_score')}</span>
+                <span>
+                  {isKa ? `პირადი წილი: ${talentDutySharePct}%` : `Duty share: ${talentDutySharePct}%`}
+                </span>
+                <span className={`font-semibold ${fairnessScore >= 85 ? 'text-emerald-600' :
+                    fairnessScore >= 60 ? 'text-amber-600' : 'text-rose-600'
+                  }`}>
+                  {isKa ? 'სამართლ. ქულა:' : 'Fairness:'} {fairnessScore}%
+                </span>
               </div>
             </div>
 
@@ -1123,7 +1216,7 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
                 {
                   key: 'rotation' as const,
                   label: isKa ? 'როტაცია' : 'Rotation',
-                  icon: <Sparkles size={13} strokeWidth={2} />,
+                  icon: <RotateCw size={13} strokeWidth={2} />,
                   count: servedShifts.length
                 },
                 {
@@ -1199,7 +1292,7 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
             {statsSubTab === 'shows' && (
               <div>
                 <div className="text-[0.8rem] font-semibold text-text-secondary mb-2.5 flex items-center gap-1.5">
-                  <Sparkles size={14} />
+                  <CalendarCheck size={14} />
                   <span>{isKa ? 'შოუების ისტორია' : 'Show History'}</span>
                 </div>
 
@@ -1243,7 +1336,7 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
                             </span>
                             <span className="flex items-center gap-1">
                               <Clock size={11} strokeWidth={2} />
-                              {startDt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} – {endDt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              {formatTimeRange(startDt, endDt)}
                             </span>
                           </div>
                         </div>
@@ -1256,7 +1349,7 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
           </div>
         )}
 
-        {/* TAB 4: REVIEWS & CONTRACT HISTORY ARCHIVE */}
+        {/* TAB 4: REVIEWS & ARCHIVE */}
         {activeTab === 'reviews' && (() => {
           const reviewsList = talent.reviews || [];
           const averageRating = reviewsList.length > 0
@@ -1267,9 +1360,7 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
 
           return (
             <div className="flex flex-col gap-3.5 animate-in fade-in duration-150">
-              {/* Unified Status Bar */}
               <div className="p-3 rounded-xl bg-slate-50 dark:bg-surface-secondary/40 border border-slate-100 dark:border-border-subtle flex items-center justify-between gap-3 text-xs">
-                {/* Left: Status */}
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="text-text-secondary font-medium shrink-0">
                     {isKa ? 'სტატუსი:' : 'Status:'}
@@ -1283,7 +1374,6 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
                   )}
                 </div>
 
-                {/* Right: Rating */}
                 <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 font-semibold text-xs shrink-0">
                   <Star
                     size={13}
@@ -1302,7 +1392,6 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
                 </div>
               </div>
 
-              {/* History Section */}
               <div className="flex flex-col gap-2.5">
                 <div className="flex items-center justify-between">
                   <h4 className="text-xs font-bold text-text-primary uppercase tracking-wider m-0">
@@ -1310,7 +1399,6 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
                   </h4>
                 </div>
 
-                {/* Compact Empty State */}
                 {reviewsList.length === 0 ? (
                   <div className="py-7 px-4 rounded-xl bg-slate-50/70 dark:bg-surface-secondary/30 border border-dashed border-border-subtle text-center flex flex-col items-center justify-center gap-2.5">
                     <div className="w-8 h-8 rounded-full bg-surface text-text-secondary flex items-center justify-center border border-border-subtle shadow-xs">
@@ -1330,7 +1418,6 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
                           key={review.id}
                           className="p-3.5 rounded-lg bg-surface border border-border-subtle shadow-xs hover:border-border-medium transition-all flex flex-col gap-2"
                         >
-                          {/* Header: Project name, period, status badge & rating */}
                           <div className="flex items-start justify-between gap-2.5">
                             <div className="min-w-0">
                               <h5 className="text-xs sm:text-[13px] font-semibold text-text-primary m-0 tracking-tight truncate">
@@ -1381,14 +1468,12 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
                             </div>
                           </div>
 
-                          {/* Private Note (plain, in quotes, text-xs text-text-secondary) */}
                           {(review.internalNote || review.privateNote) && (
                             <p className="m-0 text-xs text-text-secondary italic leading-relaxed">
                               "{review.internalNote || review.privateNote}"
                             </p>
                           )}
 
-                          {/* Footer: Reviewer and Date on one line (text-[11px] text-text-tertiary) */}
                           <div className="flex items-center justify-between text-[11px] text-text-tertiary pt-1.5 border-t border-border-subtle/50">
                             <span className="font-medium text-text-secondary">
                               {review.reviewedBy || review.reviewerName}
@@ -1422,22 +1507,35 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
           onSubmit={(newReview) => {
             const currentReviews = talent.reviews || [];
             const updatedReviews = [newReview, ...currentReviews];
-            const isEarlyEnd = newReview.contractStatus === 'terminated' || newReview.completionStatus === 'Terminated Early';
+            const isEarlyEnd =
+              newReview.contractStatus === 'terminated' ||
+              newReview.completionStatus === 'Terminated Early' ||
+              newReview.reviewType === 'Early Termination';
 
             updateTalent(talent.id, {
               reviews: updatedReviews,
               rehireStatus: newReview.rehireStatus,
               contractExpiryDate: undefined,
-              status: 'Rest'
+              status: isEarlyEnd ? 'Terminated' : 'Rest',
+              isArchived: isEarlyEnd,
+              contractStatus: isEarlyEnd ? 'terminated' : 'completed',
+              terminationReason: newReview.terminationReason,
+              terminationDate: newReview.reviewDate || new Date().toISOString().split('T')[0]
             });
+
+            setIsReviewModalOpen(false);
+            if (isEarlyEnd) {
+              onClose();
+            }
+
             toast.success(
               isKa
                 ? isEarlyEnd
-                  ? 'კონტრაქტი ვადაზე ადრე შეწყდა და გადავიდა არქივში'
+                  ? 'კონტრაქტი ვადაზე ადრე შეწყდა — ტალანტი გადავიდა არქივში'
                   : 'სეზონი წარმატებით დაიხურა და გადავიდა არქივში'
                 : isEarlyEnd
-                ? 'Contract terminated early and archived'
-                : 'Season successfully closed and archived'
+                  ? 'Contract terminated early — performer archived'
+                  : 'Season successfully closed and archived'
             );
           }}
         />
@@ -1445,4 +1543,3 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
     </Drawer>
   );
 };
-

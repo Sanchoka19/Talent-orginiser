@@ -10,9 +10,8 @@ import { useApp } from '../../context/AppContext';
 import {
   MapPin,
   Clock,
-  Sparkles,
   ArrowRight,
-  Package,
+  Boxes,
   ChevronDown,
   ChevronUp,
   AlertTriangle,
@@ -39,7 +38,7 @@ export const ShowEventCard: React.FC<ShowEventCardProps> = ({
   defaultExpandedDuties = false
 }) => {
   const { language, t } = useLanguage();
-  const { talents, groups, venues } = useApp();
+  const { talents, groups, venues, formatTime } = useApp();
 
   const [isDutiesExpanded, setIsDutiesExpanded] = useState<boolean>(defaultExpandedDuties);
 
@@ -59,14 +58,10 @@ export const ShowEventCard: React.FC<ShowEventCardProps> = ({
     return venues.find((v) => v.id === event.hotelId);
   }, [venue, venues, event.hotelId]);
 
-  const format24HourTime = (date: Date) => {
-    return date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
-  };
-
   const startDate = new Date(event.startDateTime);
   const endDate = new Date(event.endDateTime);
-  const startTime = format24HourTime(startDate);
-  const endTime = format24HourTime(endDate);
+  const startTime = formatTime(startDate);
+  const endTime = formatTime(endDate);
 
   const effectiveLobby =
     event.lobbyTime ||
@@ -195,7 +190,7 @@ export const ShowEventCard: React.FC<ShowEventCardProps> = ({
               <div className="text-[10px] text-text-tertiary uppercase font-bold tracking-wider">
                 {t('gathering_label')}
               </div>
-              <div className="text-xs font-extrabold text-text-primary">{effectiveLobby}</div>
+              <div className="text-xs font-extrabold text-text-primary">{formatTime(effectiveLobby)}</div>
             </div>
           </div>
 
@@ -203,7 +198,7 @@ export const ShowEventCard: React.FC<ShowEventCardProps> = ({
 
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-md bg-blue-500/10 text-brand-primary flex items-center justify-center shrink-0">
-              <Sparkles size={14} />
+              <Clock size={14} />
             </div>
             <div>
               <div className="text-[10px] text-text-tertiary uppercase font-bold tracking-wider">
@@ -267,7 +262,7 @@ export const ShowEventCard: React.FC<ShowEventCardProps> = ({
           className="flex items-center justify-between w-full px-3.5 py-2 bg-surface border border-border-subtle rounded-lg text-xs font-semibold text-text-primary hover:border-border-medium transition-all cursor-pointer shadow-xs"
         >
           <span className="inline-flex items-center gap-2">
-            <Package size={14} className="text-brand-primary shrink-0" />
+            <Boxes size={14} className="text-brand-primary shrink-0" />
             <span>
               {language === 'ka'
                 ? `ინვენტარისა და პოზიციების მორიგეობა (${dutyCount} ნივთი)`
@@ -309,7 +304,7 @@ export const ShowEventCard: React.FC<ShowEventCardProps> = ({
                     className="flex items-center justify-between text-xs px-3 py-2 bg-surface rounded-lg border border-border-subtle flex-wrap gap-2 shadow-xs"
                   >
                     <div className="flex items-center gap-2">
-                      <Package size={13} className="text-text-tertiary shrink-0" />
+                      <Boxes size={13} className="text-text-tertiary shrink-0" />
                       <span className="font-bold text-text-primary">{duty.itemName}</span>
                       {duty.assignedGender && (
                         <span className="text-[11px] font-medium text-text-tertiary">

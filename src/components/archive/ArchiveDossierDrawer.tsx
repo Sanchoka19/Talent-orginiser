@@ -29,12 +29,14 @@ interface ArchiveDossierDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   onUpdateRehireStatus?: (talentId: string, reviewId: string, newStatus: 'eligible' | 'neutral' | 'do_not_rehire') => void;
+  onRestoreTalent?: (talentId: string) => void;
 }
 
 export const ArchiveDossierDrawer: React.FC<ArchiveDossierDrawerProps> = ({
   record,
   isOpen,
-  onClose
+  onClose,
+  onRestoreTalent
 }) => {
   const { language } = useLanguage();
   const isKa = language === 'ka';
@@ -294,7 +296,20 @@ export const ArchiveDossierDrawer: React.FC<ArchiveDossierDrawerProps> = ({
         </div>
 
         {/* Bottom Drawer Footer */}
-        <div className="p-4 border-t border-border-subtle bg-surface flex items-center justify-end">
+        <div className="p-4 border-t border-border-subtle bg-surface flex items-center justify-between gap-3">
+          {onRestoreTalent && (record.contractStatus === 'terminated' || record.completionStatus === 'Terminated Early') ? (
+            <button
+              type="button"
+              onClick={() => onRestoreTalent(record.talentId)}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-md text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/25 transition-colors cursor-pointer"
+            >
+              <CheckCircle2 size={14} />
+              <span>{isKa ? 'კონტრაქტის აღდგენა (აქტიურ სიაში დაბრუნება)' : 'Restore to Active Roster'}</span>
+            </button>
+          ) : (
+            <div />
+          )}
+
           <button
             type="button"
             onClick={onClose}

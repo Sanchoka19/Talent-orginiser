@@ -870,8 +870,8 @@ export const INITIAL_SCHEDULE: ShowEvent[] = [
     title: 'Solaris: Weekend Matinee',
     groupId: 'g-1',
     hotelId: 'v-1',
-    startDateTime: '2026-09-26T14:00:00',
-    endDateTime: '2026-09-26T17:00:00',
+    startDateTime: '2026-09-28T14:00:00',
+    endDateTime: '2026-09-28T17:00:00',
     lobbyTime: '13:15',
     status: 'Scheduled',
     dutyAssignments: [
@@ -902,6 +902,36 @@ export const INITIAL_SCHEDULE: ShowEvent[] = [
     ],
     notes: 'Family-friendly afternoon showcase.',
     createdAt: '2026-09-17T11:00:00Z'
+  },
+  {
+    id: 'ev-4',
+    title: 'Solaris: Autumn Gala',
+    groupId: 'g-1',
+    hotelId: 'v-1',
+    startDateTime: '2026-10-04T19:30:00',
+    endDateTime: '2026-10-04T22:30:00',
+    lobbyTime: '18:45',
+    status: 'Scheduled',
+    dutyAssignments: [
+      {
+        requirementId: 'ir-1',
+        itemName: 'Heavy Audio Rig',
+        assignedGender: 'Male Only',
+        requiredHeadcount: 2,
+        assignedTalentIds: ['t-2', 't-4'],
+        updatedAt: '2026-09-24T12:00:00Z'
+      },
+      {
+        requirementId: 'ir-2',
+        itemName: 'Costume Bags & Wardrobe',
+        assignedGender: 'Female Only',
+        requiredHeadcount: 2,
+        assignedTalentIds: ['t-1', 't-3'],
+        updatedAt: '2026-09-24T12:00:00Z'
+      }
+    ],
+    notes: 'Autumn premier gala performance.',
+    createdAt: '2026-09-20T10:00:00Z'
   }
 ];
 
@@ -994,7 +1024,32 @@ export function getStoredSchedule(): ShowEvent[] {
     return INITIAL_SCHEDULE;
   }
   try {
-    return JSON.parse(data);
+    const events = JSON.parse(data) as ShowEvent[];
+    let changed = false;
+    let result = events.map((ev) => {
+      if (ev.id === 'ev-3' && ev.startDateTime === '2026-09-26T14:00:00') {
+        changed = true;
+        return {
+          ...ev,
+          startDateTime: '2026-09-28T14:00:00',
+          endDateTime: '2026-09-28T17:00:00'
+        };
+      }
+      return ev;
+    });
+
+    if (!result.some((ev) => ev.id === 'ev-4')) {
+      const ev4 = INITIAL_SCHEDULE.find((ev) => ev.id === 'ev-4');
+      if (ev4) {
+        result.push(ev4);
+        changed = true;
+      }
+    }
+
+    if (changed) {
+      localStorage.setItem(SCHEDULE_KEY, JSON.stringify(result));
+    }
+    return result;
   } catch {
     return INITIAL_SCHEDULE;
   }
@@ -1039,5 +1094,20 @@ export function resetToDemoData(): void {
   localStorage.setItem(VENUES_KEY, JSON.stringify(INITIAL_VENUES));
   localStorage.setItem(SCHEDULE_KEY, JSON.stringify(INITIAL_SCHEDULE));
   localStorage.setItem(USER_PROFILE_KEY, JSON.stringify(INITIAL_USER_PROFILE));
+}
+
+const TIME_FORMAT_KEY = 'talent_organizer_time_format_v1';
+export type TimeFormat = '24h' | '12h';
+
+export function getStoredTimeFormat(): TimeFormat {
+  if (typeof window === 'undefined') return '24h';
+  const val = localStorage.getItem(TIME_FORMAT_KEY);
+  if (val === '12h' || val === '24h') return val;
+  return '24h';
+}
+
+export function saveStoredTimeFormat(format: TimeFormat): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(TIME_FORMAT_KEY, format);
 }
 

@@ -35,7 +35,7 @@ export const StatCard: React.FC<StatCardProps> = ({
     <div
       onClick={onClick}
       title={titleTooltip}
-      className={`bg-surface border rounded-xl p-4 flex items-center justify-between transition-all duration-150 select-none ${
+      className={`bg-surface border rounded-xl p-3 sm:p-4 flex items-center justify-between transition-all duration-150 select-none ${
         isActive
           ? `${activeBorderColor} shadow-xs`
           : 'border-border-subtle shadow-xs'
@@ -46,16 +46,16 @@ export const StatCard: React.FC<StatCardProps> = ({
       } ${className}`}
     >
       {/* Left: Title and Big Number */}
-      <div className="flex flex-col min-w-0 pr-2">
-        <span className="text-xs font-medium text-text-secondary truncate">
+      <div className="flex flex-col min-w-0 pr-1.5 sm:pr-2">
+        <span className="text-[11px] sm:text-xs font-medium text-text-secondary truncate">
           {title}
         </span>
-        <div className="flex items-baseline gap-2 mt-1">
-          <span className="text-2xl font-bold text-text-primary tracking-tight leading-none">
+        <div className="flex items-baseline gap-1.5 sm:gap-2 mt-1">
+          <span className="text-xl sm:text-2xl font-bold text-text-primary tracking-tight leading-none">
             {value}
           </span>
           {subtitle && (
-            <span className={`text-xs font-medium ${subtitleColor}`}>
+            <span className={`text-[11px] sm:text-xs font-medium ${subtitleColor}`}>
               {subtitle}
             </span>
           )}
@@ -64,7 +64,7 @@ export const StatCard: React.FC<StatCardProps> = ({
 
       {/* Right: Colored Icon Container */}
       <div
-        className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${iconBgColor}`}
+        className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center shrink-0 ${iconBgColor}`}
       >
         {icon}
       </div>

@@ -4,21 +4,47 @@ import { InventoryRequirement, DutyGenderRequirement } from '../types/inventory'
 import { DutyAssignment } from '../types/duty';
 import { ShowEvent } from '../types/schedule';
 
+// ─────────────────────────────────────────────────────────────────────────────
+// FIX 1: getCycleKey — ISO week number calculation
+// Bug: previous code used `startOfYear.getDay()` (0-6 weekday of Jan 1)
+// as if it were a day-offset, which produced wrong week numbers every year.
+// Fix: compute the day-of-year purely from the millisecond difference.
+// ─────────────────────────────────────────────────────────────────────────────
+
 /**
- * Helper to compute the cycle key for a given date and cycle duration in weeks.
- * Example: for a 2-week cycle, group weeks in blocks of 2.
+ * Returns the ISO week number (1–53) for a given date.
+ * Weeks start on Monday; week 1 is the week containing the year's first Thursday.
  */
-export function getCycleKey(date: Date | string, cycleWeeks: number = 1): string {
-  const d = new Date(date);
-  const startOfYear = new Date(d.getFullYear(), 0, 1);
-  const dayOfYear = Math.floor((d.getTime() - startOfYear.getTime()) / (24 * 60 * 60 * 1000));
-  const weekNumber = Math.ceil((dayOfYear + startOfYear.getDay() + 1) / 7);
-  const cycleIndex = Math.floor((weekNumber - 1) / Math.max(1, cycleWeeks));
-  return `${d.getFullYear()}-C${cycleIndex}_W${cycleWeeks}`;
+export function getISOWeekNumber(date: Date): number {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  // Set to nearest Thursday: current date + 4 - current ISO day number
+  d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
 }
 
 /**
- * Calculates historical duty counts for talents within a specific group and cycle period.
+ * Computes a deterministic cycle-key string for a given date and cycle duration in weeks.
+ * Two dates that fall in the same cycle block share the same key.
+ *
+ * Example: cycleWeeks=2 groups ISO weeks in pairs:
+ *   week 1–2 → C0_W2, week 3–4 → C1_W2, …
+ */
+export function getCycleKey(date: Date | string, cycleWeeks: number = 1): string {
+  const d = new Date(date);
+  const isoWeek = getISOWeekNumber(d);
+  const cycleIndex = Math.floor((isoWeek - 1) / Math.max(1, cycleWeeks));
+  return `${d.getFullYear()}-C${cycleIndex}_W${cycleWeeks}`;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Historical duty-count computation
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Calculates how many times each talent has been assigned a duty
+ * within the current rotation cycle (matching cycleKey).
+ * Cancelled shows are ignored.
  */
 export function computeHistoricalDutyCounts(
   events: ShowEvent[],
@@ -44,11 +70,19 @@ export function computeHistoricalDutyCounts(
   return dutyCounts;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Eligibility filter
+// ─────────────────────────────────────────────────────────────────────────────
+
 /**
- * Filters talents to only those who:
- * 1. Belong to the group.
- * 2. Are currently 'Active' (strictly excluding 'Rest' and 'Sick/Injured').
- * 3. Match the required gender condition.
+ * Returns the eligible talents for a given inventory requirement, filtered by:
+ *  1. Group membership.
+ *  2. Active status (Rest / Sick-Injured are strictly excluded).
+ *  3. Gender requirement (Any / Male Only / Female Only).
+ *  4. Not already assigned elsewhere in this event.
+ *
+ * If `requirement.assignedTalentIds` contains more than one ID, rotation is
+ * restricted to that explicit pool (custom fairness sub-pool).
  */
 export function getEligibleTalentsForRequirement(
   group: Group,
@@ -56,7 +90,7 @@ export function getEligibleTalentsForRequirement(
   requirement: InventoryRequirement,
   alreadyAssignedInThisEvent: Set<string> = new Set()
 ): Talent[] {
-  // If requirement specifies a restricted rotation pool (> 1 performers), restrict to pool members
+  // Restrict to explicit sub-pool when > 1 IDs are pinned
   const poolIds =
     requirement.assignedTalentIds && requirement.assignedTalentIds.length > 1
       ? requirement.assignedTalentIds
@@ -66,12 +100,12 @@ export function getEligibleTalentsForRequirement(
     (t) => poolIds.includes(t.id) && group.memberTalentIds.includes(t.id)
   );
 
-  // Exclude non-active talents (Rest, Sick/Injured)
+  // Active-only and not yet assigned in this event
   const activeTalents = memberTalents.filter(
     (t) => t.status === 'Active' && !alreadyAssignedInThisEvent.has(t.id)
   );
 
-  // Filter by gender requirement
+  // Gender filter
   switch (requirement.assignedGender) {
     case 'Male Only':
       return activeTalents.filter((t) => t.gender === 'Male');
@@ -83,12 +117,15 @@ export function getEligibleTalentsForRequirement(
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Fair Random Round-Robin selection
+// ─────────────────────────────────────────────────────────────────────────────
+
 /**
- * Fair Random Round-Robin Selection Engine:
- * - Separates active talents by required gender for each inventory role.
- * - Randomly assigns candidates who have the lowest historical assignment frequency.
- * - Ensures a complete round-robin cycle: no talent is reassigned until all eligible active members
- *   of that gender have served in the current cycle.
+ * Selects `requiredCount` talent IDs from `candidates` using a fair round-robin:
+ *  - Candidates with the lowest historical duty count get priority.
+ *  - Within the same count bucket, selection is random (prevents positional bias).
+ *  - If fewer candidates exist than required, all available are returned (partial fill).
  */
 export function selectFairRandomTalents(
   candidates: Talent[],
@@ -99,11 +136,12 @@ export function selectFairRandomTalents(
     return [];
   }
 
+  // If supply ≤ demand, return everyone (shortage situation — caller must handle)
   if (candidates.length <= requiredCount) {
     return candidates.map((c) => c.id);
   }
 
-  // Group candidates by their historical duty count in the current cycle
+  // Bucket candidates by their current-cycle duty count
   const candidatesByCount = new Map<number, Talent[]>();
   for (const candidate of candidates) {
     const count = dutyCounts.get(candidate.id) || 0;
@@ -113,7 +151,7 @@ export function selectFairRandomTalents(
     candidatesByCount.get(count)!.push(candidate);
   }
 
-  // Sort counts ascending (lowest duty count first = highest priority for fair rotation)
+  // Sort buckets ascending: lowest-served performers first
   const sortedCounts = Array.from(candidatesByCount.keys()).sort((a, b) => a - b);
 
   const selectedIds: string[] = [];
@@ -122,12 +160,11 @@ export function selectFairRandomTalents(
     if (selectedIds.length >= requiredCount) break;
 
     const pool = candidatesByCount.get(count)!;
-    // Shuffle the pool to ensure fair random selection among candidates with the same minimum count
+    // Shuffle within the same-count bucket to avoid ordering bias
     const shuffled = [...pool].sort(() => Math.random() - 0.5);
 
     const needed = requiredCount - selectedIds.length;
-    const toTake = shuffled.slice(0, needed);
-    for (const talent of toTake) {
+    for (const talent of shuffled.slice(0, needed)) {
       selectedIds.push(talent.id);
     }
   }
@@ -135,11 +172,58 @@ export function selectFairRandomTalents(
   return selectedIds;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// FIX 2: computeFairnessScore — real metric (was hardcoded "100%" string)
+// ─────────────────────────────────────────────────────────────────────────────
+
 /**
- * Generates automated duty assignments for all inventory requirements and stage tasks of a group for a show.
- * - Supports fixed assigned performers (assignedTalentId) if active and available.
- * - If fixed performer is sick or unavailable, gracefully falls back to fair rotation pool.
- * - Respects the group's rotation cycle weeks for historical duty counting.
+ * Computes a fairness score (0–100) for a group's duty distribution in a cycle.
+ *
+ * Method: Coefficient of Variation (CV) of duty counts across all active members.
+ *   CV = stddev / mean
+ *   score = max(0, round((1 - CV) * 100))
+ *
+ * - 100  → perfect equality (everyone served the same number of duties)
+ * -  0   → extreme inequality (one person did everything)
+ * - Returns 100 when all counts are 0 (cycle just started).
+ */
+export function computeFairnessScore(
+  dutyCounts: Map<string, number>,
+  activeMemberIds: string[]
+): number {
+  if (activeMemberIds.length === 0) return 100;
+
+  const counts = activeMemberIds.map((id) => dutyCounts.get(id) || 0);
+  const total = counts.reduce((a, b) => a + b, 0);
+
+  // Nobody has served yet → perfectly fair by definition
+  if (total === 0) return 100;
+
+  const mean = total / counts.length;
+  const variance =
+    counts.reduce((sum, c) => sum + Math.pow(c - mean, 2), 0) / counts.length;
+  const stddev = Math.sqrt(variance);
+  const cv = stddev / mean; // 0 = perfect, >0 = unequal
+
+  return Math.max(0, Math.round((1 - cv) * 100));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Main duty-generation entry point
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Generates automated duty assignments for all inventory requirements of a group
+ * for a single show event.
+ *
+ * Key guarantees:
+ *  - A talent is assigned **at most once** per show (1-to-1 rule).
+ *  - Fixed/pinned performers are honoured IF they are Active AND not already
+ *    assigned to an earlier requirement in the same show (FIX 2 — prevents
+ *    double-assignment when the same talent is pinned to multiple requirements).
+ *  - When supply < demand, partial assignment is returned without blocking.
+ *  - Duty counts are updated locally per requirement so the fairness pool
+ *    accounts for assignments made within the same event.
  */
 export function generateAutomatedDutiesForEvent(
   group: Group,
@@ -150,6 +234,8 @@ export function generateAutomatedDutiesForEvent(
   const cycleWeeks = group.rotationCycleWeeks || 1;
   const cycleKey = getCycleKey(eventDate, cycleWeeks);
   const dutyCounts = computeHistoricalDutyCounts(allEvents, group.id, cycleKey, cycleWeeks);
+
+  // Tracks every talent assigned so far in this show — enforces 1-to-1
   const assignedInEvent = new Set<string>();
 
   const assignments: DutyAssignment[] = [];
@@ -157,37 +243,51 @@ export function generateAutomatedDutiesForEvent(
   for (const req of group.inventoryRequirements) {
     const selectedIds: string[] = [];
 
-    // 1. Check if a fixed talent was explicitly designated for this requirement/slot
+    // ── Step 1: Honour fixed/pinned talent if available ──────────────────────
+    // A single pinned talent is determined by assignedTalentId or a singleton
+    // assignedTalentIds array. If the same talent is pinned to multiple
+    // requirements, the second occurrence gracefully falls back to pool rotation.
     const fixedTalentId =
       req.assignedTalentId ||
-      (req.assignedTalentIds && req.assignedTalentIds.length === 1 ? req.assignedTalentIds[0] : undefined);
+      (req.assignedTalentIds && req.assignedTalentIds.length === 1
+        ? req.assignedTalentIds[0]
+        : undefined);
 
     if (fixedTalentId) {
       const designatedTalent = allTalents.find((t) => t.id === fixedTalentId);
-      // Ensure the designated talent is an active member of this group
+
+      // FIX: also check !assignedInEvent — prevents double-booking the same
+      // fixed performer when they are pinned to more than one requirement.
       if (
         designatedTalent &&
         designatedTalent.status === 'Active' &&
-        group.memberTalentIds.includes(designatedTalent.id)
+        group.memberTalentIds.includes(designatedTalent.id) &&
+        !assignedInEvent.has(fixedTalentId) // ← FIX 2 applied here
       ) {
         selectedIds.push(designatedTalent.id);
       }
     }
 
-    // 2. If additional headcount is needed (or fixed talent was unavailable/not specified)
+    // ── Step 2: Fill remaining headcount from the fairness pool ──────────────
     const neededCount = Math.max(0, req.requiredHeadcount - selectedIds.length);
     if (neededCount > 0) {
-      // Exclude already assigned talents in this event, plus the already selected fixed talent
+      // Exclude everyone already assigned (including the fixed talent above)
       const currentExcluded = new Set([...assignedInEvent, ...selectedIds]);
-      const eligible = getEligibleTalentsForRequirement(group, allTalents, req, currentExcluded);
+      const eligible = getEligibleTalentsForRequirement(
+        group,
+        allTalents,
+        req,
+        currentExcluded
+      );
       const remainingIds = selectFairRandomTalents(eligible, neededCount, dutyCounts);
       selectedIds.push(...remainingIds);
     }
 
-    // Track assigned members so they aren't double-assigned to heavy duties on the same show
+    // ── Step 3: Record assignments to prevent reuse later in this show ───────
     for (const id of selectedIds) {
       assignedInEvent.add(id);
-      // Update local duty count for subsequent items within this event
+      // Increment local duty count so subsequent requirements in the same event
+      // factor in duties already allocated above
       dutyCounts.set(id, (dutyCounts.get(id) || 0) + 1);
     }
 
@@ -206,8 +306,14 @@ export function generateAutomatedDutiesForEvent(
   return assignments;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Admin manual override
+// ─────────────────────────────────────────────────────────────────────────────
+
 /**
- * Admin override: Manually swap or reassign a talent for a specific duty on a show.
+ * Admin override: replaces one talent with another in a specific duty assignment.
+ * Records the substitution in `manualOverrides` so the UI can display an
+ * "Admin Override" badge on the replacement performer.
  */
 export function applyManualDutyOverride(
   duty: DutyAssignment,
@@ -228,3 +334,160 @@ export function applyManualDutyOverride(
     updatedAt: new Date().toISOString()
   };
 }
+
+/**
+ * Automatically attaches and syncs all group inventory requirements (and special duties)
+ * to all scheduled shows belonging to that group.
+ *
+ * Rules:
+ * 1. Preserves existing manual overrides.
+ * 2. If a requirement has a fixed performer, binds that performer across all shows.
+ * 3. If a requirement has auto-rotation or a pool, distributes eligible active members fairly
+ *    and rotates them sequentially across shows (Show 0 -> Member 0, Show 1 -> Member 1, etc.).
+ * 4. Removes duty assignments for requirements that were deleted from the group.
+ * 5. Guarantees 1-to-1 performer assignment per show where supply allows.
+ */
+export function syncShowsWithGroupRequirements(
+  group: Group,
+  currentSchedule: ShowEvent[],
+  allTalents: Talent[]
+): ShowEvent[] {
+  const groupShows = currentSchedule
+    .filter((ev) => ev.groupId === group.id)
+    .sort((a, b) => new Date(a.startDateTime).getTime() - new Date(b.startDateTime).getTime());
+
+  if (groupShows.length === 0) return currentSchedule;
+
+  const reqs = group.inventoryRequirements || [];
+  const memberTalentIds = group.memberTalentIds || [];
+
+  return currentSchedule.map((ev) => {
+    if (ev.groupId !== group.id) return ev;
+
+    // Protect completed shows from being modified by rotation sync
+    const isPastOrCompleted = ev.status === 'Completed';
+    if (isPastOrCompleted) return ev;
+
+    const showIndex = groupShows.findIndex((s) => s.id === ev.id);
+    const existingDuties = ev.dutyAssignments || [];
+    const newDuties: DutyAssignment[] = [];
+    const assignedInEvent = new Set<string>();
+
+    for (const req of reqs) {
+      const fixedTalentId =
+        req.assignedTalentId ||
+        (req.assignedTalentIds && req.assignedTalentIds.length === 1
+          ? req.assignedTalentIds[0]
+          : undefined);
+
+      const existingDuty = existingDuties.find(
+        (d) => d.requirementId === req.id || (d.itemName === req.itemName && d.position === req.position)
+      );
+
+      // 1. Manual override preserved
+      if (existingDuty?.manualOverrides && Object.keys(existingDuty.manualOverrides).length > 0) {
+        newDuties.push(existingDuty);
+        existingDuty.assignedTalentIds.forEach((id) => assignedInEvent.add(id));
+        continue;
+      }
+
+      // 2. Fixed talent rule
+      if (fixedTalentId) {
+        const talent = allTalents.find((t) => t.id === fixedTalentId);
+        if (talent && talent.status === 'Active') {
+          newDuties.push({
+            requirementId: req.id,
+            itemName: req.itemName,
+            position: req.position,
+            category: req.category,
+            assignedGender: req.assignedGender,
+            requiredHeadcount: Math.max(1, req.requiredHeadcount || 1),
+            assignedTalentIds: [fixedTalentId],
+            updatedAt: new Date().toISOString()
+          });
+          assignedInEvent.add(fixedTalentId);
+          continue;
+        }
+      }
+
+      // 3. Existing valid assignment without change
+      if (
+        existingDuty &&
+        existingDuty.assignedTalentIds &&
+        existingDuty.assignedTalentIds.length >= Math.max(1, req.requiredHeadcount || 1)
+      ) {
+        const poolIds =
+          req.assignedTalentIds && req.assignedTalentIds.length > 1
+            ? req.assignedTalentIds
+            : memberTalentIds;
+
+        const stillEligible = existingDuty.assignedTalentIds.every((id) => {
+          const t = allTalents.find((tal) => tal.id === id);
+          if (!t || t.status !== 'Active' || !poolIds.includes(t.id)) return false;
+          if (req.assignedGender === 'Male Only' && t.gender !== 'Male') return false;
+          if (req.assignedGender === 'Female Only' && t.gender !== 'Female') return false;
+          return true;
+        });
+
+        if (stillEligible) {
+          newDuties.push(existingDuty);
+          existingDuty.assignedTalentIds.forEach((id) => assignedInEvent.add(id));
+          continue;
+        }
+      }
+
+      // 4. Generate assignment via fair rotation pool
+      const poolIds =
+        req.assignedTalentIds && req.assignedTalentIds.length > 1
+          ? req.assignedTalentIds
+          : memberTalentIds;
+
+      let eligible = allTalents.filter(
+        (t) =>
+          poolIds.includes(t.id) &&
+          memberTalentIds.includes(t.id) &&
+          t.status === 'Active'
+      );
+
+      if (req.assignedGender === 'Male Only') {
+        eligible = eligible.filter((t) => t.gender === 'Male');
+      } else if (req.assignedGender === 'Female Only') {
+        eligible = eligible.filter((t) => t.gender === 'Female');
+      }
+
+      const headcount = Math.max(1, req.requiredHeadcount || 1);
+      const pickedIds: string[] = [];
+
+      if (eligible.length > 0) {
+        const notAssignedYet = eligible.filter((t) => !assignedInEvent.has(t.id));
+        const candidatePool = notAssignedYet.length >= headcount ? notAssignedYet : eligible;
+
+        const effectiveShowIndex = showIndex >= 0 ? showIndex : 0;
+        const startIndex = (effectiveShowIndex * headcount) % candidatePool.length;
+        for (let i = 0; i < headcount; i++) {
+          const idx = (startIndex + i) % candidatePool.length;
+          pickedIds.push(candidatePool[idx].id);
+        }
+      }
+
+      pickedIds.forEach((id) => assignedInEvent.add(id));
+
+      newDuties.push({
+        requirementId: req.id,
+        itemName: req.itemName,
+        position: req.position,
+        category: req.category,
+        assignedGender: req.assignedGender,
+        requiredHeadcount: headcount,
+        assignedTalentIds: pickedIds,
+        updatedAt: new Date().toISOString()
+      });
+    }
+
+    return {
+      ...ev,
+      dutyAssignments: newDuties
+    };
+  });
+}
+

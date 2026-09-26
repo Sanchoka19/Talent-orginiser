@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard,
-  Sparkles,
+  Theater,
   Users,
   Layers,
   Building,
@@ -88,6 +88,37 @@ export const Sidebar: React.FC<SidebarProps> = ({
     activeTab === '/settings/profile' || activeTab === '/settings/roles';
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(true);
 
+  // Close on Escape & Lock body scroll on mobile when drawer is open
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (onClose) onClose();
+      }
+    };
+
+    const isMobile = window.innerWidth < 768;
+    if (isMobile) {
+      document.body.style.overflow = 'hidden';
+    }
+
+    const handleResize = () => {
+      if (window.innerWidth >= 768) {
+        document.body.style.overflow = '';
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      document.body.style.overflow = '';
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [isOpen, onClose]);
+
   const todayStr = useMemo(() => {
     const d = new Date();
     const year = d.getFullYear();
@@ -140,21 +171,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Mobile backdrop */}
       <div
         onClick={onClose}
-        className={`fixed inset-0 bg-black/45 z-40 backdrop-blur-xs transition-opacity duration-200 md:hidden ${isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-          }`}
+        aria-hidden="true"
+        className={`fixed inset-0 bg-black/60 z-[70] backdrop-blur-xs transition-opacity duration-300 md:hidden ${
+          isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        }`}
       />
 
       <aside
-        className={`w-[270px] min-w-[270px] h-screen sticky top-0 bg-surface border-r border-border-subtle flex flex-col justify-between p-6 px-4.5 pb-8 z-50 shadow-sm transition-transform duration-200 max-md:fixed max-md:left-0 max-md:top-0 ${isOpen ? 'max-md:translate-x-0' : 'max-md:-translate-x-full'
-          }`}
+        className={`fixed inset-y-0 left-0 z-[80] w-[270px] min-w-[270px] h-screen bg-surface border-r border-border-subtle flex flex-col justify-between p-6 px-4.5 pb-8 transition-transform duration-300 ease-in-out md:sticky md:top-0 md:z-30 md:translate-x-0 md:shadow-none ${
+          isOpen
+            ? 'translate-x-0 shadow-2xl pointer-events-auto'
+            : '-translate-x-full pointer-events-none md:pointer-events-auto'
+        }`}
       >
         {/* Mobile close button – only visible on mobile overlay */}
         <button
           onClick={onClose}
-          className="md:hidden absolute top-3.5 right-3.5 w-8 h-8 rounded-sm bg-surface-secondary text-text-secondary flex items-center justify-center cursor-pointer hover:text-text-primary"
+          className="md:hidden absolute top-3.5 right-3.5 w-8 h-8 rounded-md bg-surface-secondary text-text-secondary flex items-center justify-center cursor-pointer hover:text-text-primary hover:bg-surface-tertiary transition-colors"
           aria-label="Close menu"
         >
-          <X size={16} />
+          <X size={18} />
         </button>
 
         {/* Top Section: Brand & Navigation */}
@@ -162,7 +198,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {/* Brand Header */}
           <div className="flex items-center gap-3 p-2 px-3 mb-3">
             <div className="w-8.5 h-8.5 rounded-full bg-brand-primary flex items-center justify-center text-white shadow-glow shrink-0">
-              <Sparkles size={18} strokeWidth={2.4} />
+              <Theater size={18} strokeWidth={2.2} />
             </div>
             <div className="min-w-0 overflow-hidden">
               <span className="text-lg font-bold tracking-tight text-text-primary truncate block">

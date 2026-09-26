@@ -6,6 +6,7 @@ import { Talent } from '../../types/talent';
 import { useLanguage } from '../../context/LanguageContext';
 import { useApp } from '../../context/AppContext';
 import { Users, ChevronRight, User, ShieldCheck, AlertCircle } from 'lucide-react';
+import { getTalentAvatar } from '../../utils/avatarUtils';
 
 interface GroupCardProps {
   group: Group;
@@ -45,7 +46,7 @@ export const GroupCard: React.FC<GroupCardProps> = ({
     return (
       <div
         onClick={handleClick}
-        className="group relative bg-surface rounded-md border border-border-subtle px-5 py-3.5 shadow-sm grid grid-cols-[minmax(240px,2fr)_minmax(180px,1.4fr)_minmax(160px,1.2fr)_minmax(140px,1.2fr)_140px] items-center gap-4 cursor-pointer transition-all duration-150 hover:border-border-medium hover:shadow-md hover:-translate-y-0.5"
+        className="group relative bg-surface rounded-md border border-border-subtle px-4 sm:px-5 py-3.5 shadow-sm grid grid-cols-[minmax(180px,2fr)_minmax(120px,1.2fr)_minmax(130px,1.2fr)_minmax(120px,1fr)_100px] items-center gap-3 sm:gap-4 cursor-pointer transition-all duration-150 hover:border-border-medium hover:shadow-md hover:-translate-y-0.5"
       >
         {/* Col 1: Group Name & Description */}
         <div className="flex items-center gap-3 min-w-0">
@@ -70,10 +71,7 @@ export const GroupCard: React.FC<GroupCardProps> = ({
             {members.slice(0, 3).map((member, idx) => (
               <img
                 key={member.id}
-                src={
-                  member.avatarUrl ||
-                  `https://api.dicebear.com/7.x/avataaars/svg?seed=${member.firstName}${member.lastName}`
-                }
+                src={getTalentAvatar(member)}
                 alt={member.firstName}
                 className="w-7 h-7 rounded-full object-cover border-2 border-surface -ml-2 first:ml-0 shadow-sm"
               />
@@ -162,10 +160,7 @@ export const GroupCard: React.FC<GroupCardProps> = ({
           {members.slice(0, 5).map((member) => (
             <img
               key={member.id}
-              src={
-                member.avatarUrl ||
-                `https://api.dicebear.com/7.x/avataaars/svg?seed=${member.firstName}${member.lastName}`
-              }
+              src={getTalentAvatar(member)}
               alt={member.firstName}
               className="w-10 h-10 rounded-full object-cover border-2 border-surface -ml-2.5 first:ml-0 shadow-sm shrink-0"
               title={`${member.firstName} ${member.lastName} (${member.status})`}

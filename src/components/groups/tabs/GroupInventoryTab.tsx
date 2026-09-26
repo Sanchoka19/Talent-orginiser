@@ -3,7 +3,7 @@
 import React from 'react';
 import { InventoryRequirement } from '../../../types/inventory';
 import {
-  Package,
+  Boxes,
   Plus,
   Users,
   User,
@@ -15,6 +15,7 @@ interface GroupInventoryTabProps {
   inventoryReqs: InventoryRequirement[];
   onAddInventory: () => void;
   onDeleteInventory: (reqId: string, e: React.MouseEvent) => void;
+  onSelectInventory?: (req: InventoryRequirement) => void;
   dict: any;
   isKa: boolean;
 }
@@ -23,6 +24,7 @@ export const GroupInventoryTab: React.FC<GroupInventoryTabProps> = ({
   inventoryReqs,
   onAddInventory,
   onDeleteInventory,
+  onSelectInventory,
   dict,
   isKa
 }) => {
@@ -55,7 +57,7 @@ export const GroupInventoryTab: React.FC<GroupInventoryTabProps> = ({
       {inventoryReqs.length === 0 ? (
         <div className="p-12 text-center bg-surface rounded-xl border border-dashed border-border-medium flex flex-col items-center justify-center gap-3">
           <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center text-brand-primary">
-            <Package size={24} />
+            <Boxes size={24} />
           </div>
           <div>
             <h4 className="text-base font-bold text-text-primary">
@@ -79,14 +81,15 @@ export const GroupInventoryTab: React.FC<GroupInventoryTabProps> = ({
           {inventoryReqs.map((req) => (
             <div
               key={req.id}
-              className="bg-surface border border-border-subtle rounded-xl p-4 sm:p-5 flex items-center justify-between gap-4 shadow-xs hover:border-border-medium transition-all"
+              onClick={() => onSelectInventory?.(req)}
+              className="bg-surface border border-border-subtle rounded-xl p-4 sm:p-5 flex items-center justify-between gap-4 shadow-xs hover:border-brand-primary/50 hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer group"
             >
               <div className="flex items-center gap-3.5 min-w-0">
-                <div className="w-10 h-10 rounded-lg bg-blue-500/10 text-brand-primary flex items-center justify-center shrink-0">
-                  <Package size={20} />
+                <div className="w-10 h-10 rounded-lg bg-blue-500/10 text-brand-primary flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform duration-200">
+                  <Boxes size={20} />
                 </div>
                 <div className="min-w-0">
-                  <h4 className="text-sm sm:text-base font-bold text-text-primary truncate">
+                  <h4 className="text-sm sm:text-base font-bold text-text-primary group-hover:text-brand-primary transition-colors truncate">
                     {req.itemName}
                   </h4>
                   <p className="text-xs text-text-secondary mt-0.5">
@@ -122,7 +125,10 @@ export const GroupInventoryTab: React.FC<GroupInventoryTabProps> = ({
 
                 <button
                   type="button"
-                  onClick={(e) => onDeleteInventory(req.id, e)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeleteInventory(req.id, e);
+                  }}
                   title={dict.delete}
                   className="w-8 h-8 rounded-lg inline-flex items-center justify-center text-text-secondary hover:text-danger hover:bg-danger/10 transition-colors cursor-pointer shrink-0 ml-1"
                 >

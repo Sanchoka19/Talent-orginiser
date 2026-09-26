@@ -7,7 +7,7 @@ interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   title: string;
-  subtitle?: string;
+  subtitle?: React.ReactNode;
   children: React.ReactNode;
   footer?: React.ReactNode;
   maxWidth?: string;
@@ -52,7 +52,7 @@ export const Modal: React.FC<ModalProps> = ({
       style={zIndex ? { zIndex } : undefined}
     >
       <div
-        className={`bg-surface shadow-modal flex flex-col relative overflow-hidden ${isSide
+        className={`bg-surface shadow-modal flex flex-col relative overflow-hidden transition-all duration-300 ease-in-out ${isSide
             ? 'w-full h-screen max-h-screen border-l border-border-subtle animate-in slide-in-from-right duration-300'
             : 'w-full max-h-[90vh] rounded-xl animate-in zoom-in-95 duration-200'
           }`}
@@ -66,9 +66,9 @@ export const Modal: React.FC<ModalProps> = ({
               {title}
             </h3>
             {subtitle && (
-              <p className="text-xs text-text-secondary mt-1 m-0">
+              <div className="text-xs text-text-secondary mt-1 m-0">
                 {subtitle}
-              </p>
+              </div>
             )}
           </div>
           <button

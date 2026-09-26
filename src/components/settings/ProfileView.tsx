@@ -28,7 +28,7 @@ import { useApp } from '../../context/AppContext';
 type ProfileTab = 'personal' | 'security' | 'notifications' | 'preferences';
 
 export const ProfileView: React.FC = () => {
-  const { currentUser, updateCurrentUser } = useApp();
+  const { currentUser, updateCurrentUser, timeFormat, setTimeFormat } = useApp();
   const { language, setLanguage } = useLanguage();
   const toast = useToast();
   const { confirm } = useConfirm();
@@ -64,7 +64,6 @@ export const ProfileView: React.FC = () => {
   const [notifyDocExpiry, setNotifyDocExpiry] = useState(false);
 
   // ── Tab 4: Preferences State ───────────────────────────────────────────────
-  const [timeFormat, setTimeFormat] = useState<'24h' | '12h'>('24h');
   const [firstDayOfWeek, setFirstDayOfWeek] = useState<'monday' | 'sunday'>('monday');
 
   // ── Handlers ───────────────────────────────────────────────────────────────
@@ -651,15 +650,12 @@ export const ProfileView: React.FC = () => {
                       : 'border-border-subtle bg-surface-secondary text-text-primary hover:border-border-medium'
                   }`}
                 >
-                  <div className="flex items-center gap-2.5">
-                    <span className="text-xl">🇬🇪</span>
-                    <div>
-                      <div className="text-sm font-semibold">
-                        ქართული
-                      </div>
-                      <div className={`text-xs ${language === 'ka' ? 'text-white/85' : 'text-text-secondary'}`}>
-                        Georgian (Default)
-                      </div>
+                  <div>
+                    <div className="text-sm font-semibold">
+                      ქართული
+                    </div>
+                    <div className={`text-xs ${language === 'ka' ? 'text-white/85' : 'text-text-secondary'}`}>
+                      Georgian (Default)
                     </div>
                   </div>
                   {language === 'ka' && <CheckCircle2 className="w-4.5 h-4.5 text-white" />}
@@ -678,15 +674,12 @@ export const ProfileView: React.FC = () => {
                       : 'border-border-subtle bg-surface-secondary text-text-primary hover:border-border-medium'
                   }`}
                 >
-                  <div className="flex items-center gap-2.5">
-                    <span className="text-xl">🇬🇧</span>
-                    <div>
-                      <div className="text-sm font-semibold">
-                        English
-                      </div>
-                      <div className={`text-xs ${language === 'en' ? 'text-white/85' : 'text-text-secondary'}`}>
-                        United Kingdom / International
-                      </div>
+                  <div>
+                    <div className="text-sm font-semibold">
+                      English
+                    </div>
+                    <div className={`text-xs ${language === 'en' ? 'text-white/85' : 'text-text-secondary'}`}>
+                      United Kingdom / International
                     </div>
                   </div>
                   {language === 'en' && <CheckCircle2 className="w-4.5 h-4.5 text-white" />}
@@ -705,15 +698,12 @@ export const ProfileView: React.FC = () => {
                       : 'border-border-subtle bg-surface-secondary text-text-primary hover:border-border-medium'
                   }`}
                 >
-                  <div className="flex items-center gap-2.5">
-                    <span className="text-xl">🇹🇷</span>
-                    <div>
-                      <div className="text-sm font-semibold">
-                        Türkçe
-                      </div>
-                      <div className={`text-xs ${language === 'tr' ? 'text-white/85' : 'text-text-secondary'}`}>
-                        Türkiye / International
-                      </div>
+                  <div>
+                    <div className="text-sm font-semibold">
+                      Türkçe
+                    </div>
+                    <div className={`text-xs ${language === 'tr' ? 'text-white/85' : 'text-text-secondary'}`}>
+                      Türkiye / International
                     </div>
                   </div>
                   {language === 'tr' && <CheckCircle2 className="w-4.5 h-4.5 text-white" />}

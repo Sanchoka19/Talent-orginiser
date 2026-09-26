@@ -17,8 +17,10 @@ import {
   RotateCcw,
   CheckCircle2,
   X,
-  Menu
+  Menu,
+  Search
 } from 'lucide-react';
+import { GlobalSearchModal } from './GlobalSearchModal';
 
 interface TopBarProps {
   activeTab?: NavTab;
@@ -36,9 +38,29 @@ export const TopBar: React.FC<TopBarProps> = ({ onMenuToggle }) => {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isGlobalSearchOpen, setIsGlobalSearchOpen] = useState(false);
+  const [shortcutLabel, setShortcutLabel] = useState('⌘K');
 
   const notifRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
+
+  // Detect platform for shortcut label & bind global keyboard shortcut
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const isMac = /(Mac|iPhone|iPod|iPad)/i.test(navigator.platform || navigator.userAgent);
+      setShortcutLabel(isMac ? '⌘K' : 'Ctrl+K');
+    }
+
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsGlobalSearchOpen((prev) => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, []);
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -110,35 +132,60 @@ export const TopBar: React.FC<TopBarProps> = ({ onMenuToggle }) => {
   };
 
   return (
-    <header className="h-[76px] min-h-[76px] bg-surface border-b border-border-subtle flex items-center justify-between px-6 sm:px-8 z-40 sticky top-0 backdrop-blur-md">
+    <header className="h-[68px] sm:h-[76px] min-h-[68px] sm:min-h-[76px] bg-surface border-b border-border-subtle flex items-center justify-between px-3.5 sm:px-6 lg:px-8 z-30 sticky top-0 backdrop-blur-md">
       {/* Hamburger button – visible only on mobile */}
       <button
         onClick={onMenuToggle}
         aria-label="Open navigation menu"
-        className="md:hidden inline-flex items-center justify-center w-10 h-10 rounded-sm border-none bg-surface-secondary cursor-pointer text-text-primary shrink-0 mr-3"
+        className="md:hidden inline-flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-sm border-none bg-surface-secondary cursor-pointer text-text-primary shrink-0 mr-2 sm:mr-3"
       >
         <Menu size={20} strokeWidth={2} />
       </button>
 
+      {/* Left: Global Command Menu / Search Input Bar */}
+      <div className="flex-1 max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg mr-2 sm:mr-4 min-w-0">
+        <div
+          onClick={() => setIsGlobalSearchOpen(true)}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              setIsGlobalSearchOpen(true);
+            }
+          }}
+          className="group relative flex items-center w-full h-9 sm:h-10 px-3 sm:px-3.5 rounded-lg bg-surface-secondary border border-border-subtle hover:border-border-medium hover:bg-surface-tertiary transition-all duration-150 cursor-pointer shadow-2xs select-none"
+          title={isKa ? 'გლობალური ძებნა' : 'Global Search'}
+        >
+          <Search
+            size={16}
+            className="text-text-secondary group-hover:text-brand-primary transition-colors shrink-0 mr-2 sm:mr-2.5"
+          />
+          <span className="w-full text-xs sm:text-sm text-text-secondary group-hover:text-text-primary truncate">
+            {t('global_search_placeholder').replace(/\s*\(.*\)/, '')}
+          </span>
+        </div>
+      </div>
+
       {/* Right: Actions & Profile */}
-      <div className="flex items-center gap-3.5 sm:gap-4 ml-auto">
+      <div className="flex items-center gap-2 sm:gap-3.5 ml-auto shrink-0">
         {/* Theme Toggle Button */}
         <button
           onClick={toggleTheme}
-          className="w-9 h-9 rounded-md inline-flex items-center justify-center border border-border-subtle bg-surface-secondary text-text-primary hover:bg-surface-tertiary hover:border-border-medium transition-all duration-150 cursor-pointer shrink-0"
+          className="w-8 h-8 sm:w-9 sm:h-9 rounded-md inline-flex items-center justify-center border border-border-subtle bg-surface-secondary text-text-primary hover:bg-surface-tertiary hover:border-border-medium transition-all duration-150 cursor-pointer shrink-0"
           title={isDarkMode ? t('theme_light') : t('theme_dark')}
         >
-          {isDarkMode ? <Sun size={17} /> : <Moon size={17} />}
+          {isDarkMode ? <Sun size={16} /> : <Moon size={16} />}
         </button>
 
         {/* Notification Center Bell */}
         <div ref={notifRef} className="relative">
           <button
             onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-            className="w-9 h-9 rounded-md inline-flex items-center justify-center border border-border-subtle bg-surface-secondary text-text-primary hover:bg-surface-tertiary hover:border-border-medium transition-all duration-150 cursor-pointer shrink-0 relative"
+            className="w-8 h-8 sm:w-9 sm:h-9 rounded-md inline-flex items-center justify-center border border-border-subtle bg-surface-secondary text-text-primary hover:bg-surface-tertiary hover:border-border-medium transition-all duration-150 cursor-pointer shrink-0 relative"
             title={t('btn_notifications')}
           >
-            <Bell size={17} />
+            <Bell size={16} />
             {totalAlertsCount > 0 && (
               <span className="absolute -top-1 -right-1 bg-rose-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full border-2 border-white leading-none shadow-xs">
                 {totalAlertsCount}
@@ -148,7 +195,7 @@ export const TopBar: React.FC<TopBarProps> = ({ onMenuToggle }) => {
 
           {/* Notifications Dropdown Panel */}
           {isNotificationsOpen && (
-            <div className="absolute top-12 right-0 w-[340px] bg-surface rounded-lg border border-border-subtle shadow-xl p-4 z-50 animate-in fade-in duration-150">
+            <div className="absolute top-12 right-0 w-[290px] sm:w-[340px] max-w-[calc(100vw-32px)] bg-surface rounded-lg border border-border-subtle shadow-xl p-4 z-50 animate-in fade-in duration-150">
               <div className="flex items-center justify-between mb-3">
                 <div className="font-bold text-sm text-text-primary">
                   {t('btn_notifications')} ({totalAlertsCount})
@@ -209,32 +256,32 @@ export const TopBar: React.FC<TopBarProps> = ({ onMenuToggle }) => {
         <div ref={profileRef} className="relative">
           <div
             onClick={() => setIsProfileOpen(!isProfileOpen)}
-            className="flex items-center gap-2.5 p-1 pr-3 rounded-lg bg-surface-secondary border border-border-subtle cursor-pointer hover:border-border-medium transition-all select-none"
+            className="flex items-center gap-2 p-1 sm:pr-2.5 rounded-lg bg-surface-secondary border border-border-subtle cursor-pointer hover:border-border-medium transition-all select-none shrink-0"
           >
             <img
               src={currentUser.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80'}
               alt={currentUser.fullName}
-              className="w-8 h-8 rounded-full object-cover border border-white shrink-0"
+              className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover border border-white shrink-0"
             />
-            <div className="flex flex-col text-left leading-tight">
-              <span className="text-xs sm:text-sm font-semibold text-text-primary">
+            <div className="hidden lg:flex flex-col text-left leading-tight max-w-[120px]">
+              <span className="text-xs sm:text-sm font-semibold text-text-primary truncate">
                 {currentUser.fullName}
               </span>
-              <span className="text-[11px] text-text-secondary font-medium">
+              <span className="text-[11px] text-text-secondary font-medium truncate">
                 {currentUser.role}
               </span>
             </div>
-            <ChevronDown size={14} className="text-text-secondary ml-0.5" />
+            <ChevronDown size={14} className="text-text-secondary hidden sm:block shrink-0" />
           </div>
 
           {/* Profile Dropdown Menu */}
           {isProfileOpen && (
-            <div className="absolute top-12 right-0 w-60 bg-surface rounded-lg border border-border-subtle shadow-xl p-3 z-50 flex flex-col gap-2 animate-in fade-in duration-150">
+            <div className="absolute top-12 right-0 w-56 sm:w-60 max-w-[calc(100vw-32px)] bg-surface rounded-lg border border-border-subtle shadow-xl p-3 z-50 flex flex-col gap-2 animate-in fade-in duration-150">
               <div className="p-1.5 px-2 border-b border-border-subtle">
-                <div className="font-semibold text-sm text-text-primary">
+                <div className="font-semibold text-sm text-text-primary truncate">
                   {currentUser.fullName}
                 </div>
-                <div className="text-xs text-text-secondary">
+                <div className="text-xs text-text-secondary truncate">
                   {currentUser.email}
                 </div>
               </div>
@@ -247,9 +294,9 @@ export const TopBar: React.FC<TopBarProps> = ({ onMenuToggle }) => {
                 </div>
                 <div className="flex flex-col gap-1">
                   {[
-                    { code: 'ka' as const, label: 'ქართული', flag: '🇬🇪' },
-                    { code: 'en' as const, label: 'English', flag: '🇬🇧' },
-                    { code: 'tr' as const, label: 'Türkçe', flag: '🇹🇷' }
+                    { code: 'ka' as const, label: 'ქართული' },
+                    { code: 'en' as const, label: 'English' },
+                    { code: 'tr' as const, label: 'Türkçe' }
                   ].map((item) => {
                     const isSelected = language === item.code;
                     return (
@@ -262,20 +309,16 @@ export const TopBar: React.FC<TopBarProps> = ({ onMenuToggle }) => {
                             item.code === 'ka'
                               ? 'ენა შეიცვალა: ქართული'
                               : item.code === 'tr'
-                              ? 'Dil değiştirildi: Türkçe'
-                              : 'Language changed: English'
+                                ? 'Dil değiştirildi: Türkçe'
+                                : 'Language changed: English'
                           );
                         }}
-                        className={`flex items-center justify-between p-1.5 px-2.5 rounded-sm border text-xs font-semibold cursor-pointer transition-all ${
-                          isSelected
-                            ? 'border-brand-primary bg-brand-primary text-white shadow-sm'
-                            : 'border-transparent bg-surface-secondary text-text-primary hover:bg-surface-tertiary'
-                        }`}
+                        className={`flex items-center justify-between p-1.5 px-2.5 rounded-sm border text-xs font-semibold cursor-pointer transition-all ${isSelected
+                          ? 'border-brand-primary bg-brand-primary text-white shadow-sm'
+                          : 'border-transparent bg-surface-secondary text-text-primary hover:bg-surface-tertiary'
+                          }`}
                       >
-                        <span className="flex items-center gap-2">
-                          <span className="text-base">{item.flag}</span>
-                          <span>{item.label}</span>
-                        </span>
+                        <span>{item.label}</span>
                         {isSelected && <CheckCircle2 size={15} className="text-white" />}
                       </button>
                     );
@@ -311,6 +354,12 @@ export const TopBar: React.FC<TopBarProps> = ({ onMenuToggle }) => {
           )}
         </div>
       </div>
+
+      {/* Global Search / Command Menu Modal */}
+      <GlobalSearchModal
+        isOpen={isGlobalSearchOpen}
+        onClose={() => setIsGlobalSearchOpen(false)}
+      />
     </header>
   );
 };

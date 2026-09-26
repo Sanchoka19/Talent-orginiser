@@ -14,6 +14,7 @@ import { toLocalDateStr } from '../../utils/dateUtils';
 import {
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Plus,
   Filter,
   Users,
@@ -180,14 +181,14 @@ export const TimelineCalendar: React.FC<TimelineCalendarProps> = () => {
       </div>
 
       {/* Control Bar: View Switcher, Date Navigator, Filters */}
-      <div className="flex items-center justify-between mb-5 flex-wrap gap-3.5 px-4 py-2.5 bg-surface-secondary rounded-md border border-border-subtle min-h-[56px]">
-        {/* Left: Month Navigator */}
-        <div className="flex items-center gap-2.5 flex-1 min-w-[320px]">
-          <div className="flex items-center gap-1 shrink-0">
+      <div className="flex flex-col xl:flex-row xl:items-center justify-between mb-5 gap-3.5 p-3 sm:px-4 sm:py-3 bg-surface-secondary rounded-md border border-border-subtle">
+        {/* Row 1: Month / Date Navigator */}
+        <div className="flex items-center justify-between sm:justify-start gap-2 sm:gap-3 flex-wrap">
+          <div className="flex items-center gap-1.5 shrink-0">
             <button
               type="button"
               onClick={handlePrev}
-              className="w-8 h-8 rounded-full border border-border-subtle bg-surface text-text-primary hover:bg-surface-tertiary hover:border-border-medium flex items-center justify-center transition-all duration-150 cursor-pointer outline-none"
+              className="w-8 h-8 rounded-full border border-border-subtle bg-surface text-text-primary hover:bg-surface-tertiary hover:border-border-medium flex items-center justify-center transition-all duration-150 cursor-pointer outline-none shadow-xs"
               title="Previous"
             >
               <ChevronLeft className="w-4 h-4" />
@@ -195,71 +196,69 @@ export const TimelineCalendar: React.FC<TimelineCalendarProps> = () => {
             <button
               type="button"
               onClick={handleNext}
-              className="w-8 h-8 rounded-full border border-border-subtle bg-surface text-text-primary hover:bg-surface-tertiary hover:border-border-medium flex items-center justify-center transition-all duration-150 cursor-pointer outline-none"
+              className="w-8 h-8 rounded-full border border-border-subtle bg-surface text-text-primary hover:bg-surface-tertiary hover:border-border-medium flex items-center justify-center transition-all duration-150 cursor-pointer outline-none shadow-xs"
               title="Next"
             >
               <ChevronRight className="w-4 h-4" />
             </button>
+            <button
+              type="button"
+              onClick={handleToday}
+              className="text-xs px-3 py-1.5 rounded-pill border border-border-subtle bg-surface text-text-primary hover:bg-surface-tertiary hover:border-border-medium font-semibold transition-all duration-150 cursor-pointer outline-none shrink-0 shadow-xs"
+            >
+              {t('today')}
+            </button>
           </div>
 
-          <button
-            type="button"
-            onClick={handleToday}
-            className="text-xs px-3 py-1.5 rounded-pill border border-border-subtle bg-surface text-text-primary hover:bg-surface-tertiary hover:border-border-medium font-medium transition-all duration-150 cursor-pointer outline-none shrink-0"
-          >
-            {t('today')}
-          </button>
-
-          <div className="min-w-[200px] inline-flex items-center">
-            <span className="text-base sm:text-lg font-bold text-text-primary ml-1.5 whitespace-nowrap tabular-nums">
+          <div className="inline-flex items-center">
+            <span className="text-base sm:text-lg font-bold text-text-primary ml-1 whitespace-nowrap tabular-nums">
               {displayDateLabel}
             </span>
           </div>
         </div>
 
-        {/* Center: View Switcher Pills (Day, Week, Month, Year) */}
-        <div className="inline-flex items-center bg-surface rounded-pill p-1 border border-border-subtle shadow-sm shrink-0">
-          {(['day', 'week', 'month', 'year'] as CalendarViewMode[]).map((mode) => {
-            const isActive = viewMode === mode;
-            const labelMap: Record<CalendarViewMode, string> = {
-              day: t('view_day'),
-              week: t('view_week'),
-              month: t('view_month'),
-              year: t('view_year')
-            };
+        {/* Row 2 & 3: View Switcher Pills + Filter Dropdowns */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 xl:justify-end">
+          {/* Center: View Switcher Pills (Day, Week, Month, Year) */}
+          <div className="grid grid-cols-4 sm:flex items-center bg-surface rounded-pill p-1 border border-border-subtle shadow-xs shrink-0">
+            {(['day', 'week', 'month', 'year'] as CalendarViewMode[]).map((mode) => {
+              const isActive = viewMode === mode;
+              const labelMap: Record<CalendarViewMode, string> = {
+                day: t('view_day'),
+                week: t('view_week'),
+                month: t('view_month'),
+                year: t('view_year')
+              };
 
-            return (
-              <button
-                key={mode}
-                type="button"
-                onClick={() => setViewMode(mode)}
-                className={`px-4 py-1.5 min-w-[64px] text-center rounded-pill text-xs font-semibold cursor-pointer transition-all duration-150 outline-none ${
-                  isActive
-                    ? 'bg-brand-primary text-text-inverse shadow-sm'
-                    : 'bg-transparent text-text-secondary hover:text-text-primary'
-                }`}
-              >
-                {labelMap[mode]}
-              </button>
-            );
-          })}
-        </div>
+              return (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => setViewMode(mode)}
+                  className={`px-3 sm:px-4 py-1.5 text-center rounded-pill text-xs font-semibold cursor-pointer transition-all duration-150 outline-none ${
+                    isActive
+                      ? 'bg-brand-primary text-text-inverse shadow-xs'
+                      : 'bg-transparent text-text-secondary hover:text-text-primary'
+                  }`}
+                >
+                  {labelMap[mode]}
+                </button>
+              );
+            })}
+          </div>
 
-        {/* Right: Filters (Group and Hotel) */}
-        <div className="flex items-center gap-2.5 flex-1 justify-end min-w-[300px] flex-wrap">
-          <div className="flex items-center gap-2">
-            <Filter className="w-3.5 h-3.5 text-text-secondary shrink-0" />
-
+          {/* Right: Filters (Group and Hotel) */}
+          <div className="flex items-center gap-2 w-full sm:w-auto">
             {/* Filter by Group */}
-            <div className="relative flex items-center">
-              <Users className="w-3.5 h-3.5 absolute left-3 text-text-secondary pointer-events-none" />
+            <div className="relative flex-1 sm:w-44 lg:w-48">
+              <Users className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary pointer-events-none" />
               <select
                 value={selectedGroupId}
                 onChange={(e) => setSelectedGroupId(e.target.value)}
-                className={`text-xs py-1.5 pl-8 pr-3.5 rounded-pill outline-none cursor-pointer transition-all duration-150 ${
+                className={`w-full text-xs py-2 pl-8 pr-7 rounded-pill outline-none cursor-pointer transition-all duration-150 appearance-none truncate font-medium ${
                   selectedGroupId !== 'ALL'
-                    ? 'border border-brand-primary bg-brand-primary/10 text-brand-primary font-semibold'
-                    : 'border border-border-subtle bg-surface text-text-primary font-normal hover:border-border-medium'
+                    ? 'border border-brand-primary bg-brand-primary/10 text-brand-primary font-semibold ring-1 ring-brand-primary/20'
+                    : 'border border-border-subtle bg-surface text-text-primary hover:border-border-medium shadow-xs'
                 }`}
               >
                 <option value="ALL">{t('all_groups')}</option>
@@ -269,18 +268,19 @@ export const TimelineCalendar: React.FC<TimelineCalendarProps> = () => {
                   </option>
                 ))}
               </select>
+              <ChevronDown className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-text-secondary pointer-events-none" />
             </div>
 
             {/* Filter by Hotel Venue */}
-            <div className="relative flex items-center">
-              <Building2 className="w-3.5 h-3.5 absolute left-3 text-text-secondary pointer-events-none" />
+            <div className="relative flex-1 sm:w-44 lg:w-48">
+              <Building2 className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary pointer-events-none" />
               <select
                 value={selectedHotelId}
                 onChange={(e) => setSelectedHotelId(e.target.value)}
-                className={`text-xs py-1.5 pl-8 pr-3.5 rounded-pill outline-none cursor-pointer transition-all duration-150 ${
+                className={`w-full text-xs py-2 pl-8 pr-7 rounded-pill outline-none cursor-pointer transition-all duration-150 appearance-none truncate font-medium ${
                   selectedHotelId !== 'ALL'
-                    ? 'border border-brand-primary bg-brand-primary/10 text-brand-primary font-semibold'
-                    : 'border border-border-subtle bg-surface text-text-primary font-normal hover:border-border-medium'
+                    ? 'border border-brand-primary bg-brand-primary/10 text-brand-primary font-semibold ring-1 ring-brand-primary/20'
+                    : 'border border-border-subtle bg-surface text-text-primary hover:border-border-medium shadow-xs'
                 }`}
               >
                 <option value="ALL">{t('all_venues')}</option>
@@ -290,6 +290,7 @@ export const TimelineCalendar: React.FC<TimelineCalendarProps> = () => {
                   </option>
                 ))}
               </select>
+              <ChevronDown className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 text-text-secondary pointer-events-none" />
             </div>
           </div>
         </div>

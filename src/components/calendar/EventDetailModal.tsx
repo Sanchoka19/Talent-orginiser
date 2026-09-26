@@ -1,10 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { ShowEvent } from '../../types/schedule';
 import { DutyAssignment } from '../../types/duty';
+import { COMMON_SPECIAL_TASKS } from '../../types/inventory';
 import { Modal } from '../common/Modal';
 import { DutySwapModal } from './DutySwapModal';
+import { getTalentAvatar } from '../../utils/avatarUtils';
 import { useApp } from '../../context/AppContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useConfirm } from '../../context/ConfirmContext';
@@ -16,11 +18,14 @@ import {
   RotateCw,
   Trash2,
   AlertCircle,
-  Sparkles,
+  Clock,
+  ShieldCheck,
   ArrowRightLeft,
   Bus,
   CheckCircle2,
-  LockKeyhole
+  LockKeyhole,
+  Box,
+  ClipboardList
 } from 'lucide-react';
 
 interface EventDetailModalProps {
@@ -34,7 +39,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
   onClose,
   event
 }) => {
-  const { groups, venues, talents, deleteShowEvent, regenerateDutiesForEvent } = useApp();
+  const { groups, venues, talents, deleteShowEvent, regenerateDutiesForEvent, formatTime, formatTimeRange } = useApp();
   const { language, t } = useLanguage();
   const { confirm } = useConfirm();
   const toast = useToast();
@@ -45,10 +50,45 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
     talentId: string;
   } | null>(null);
 
-  if (!event) return null;
+  const [activeDutyTab, setActiveDutyTab] = useState<'inventory' | 'tasks'>('inventory');
 
-  const group = groups.find((g) => g.id === event.groupId);
-  const venue = venues.find((v) => v.id === event.hotelId);
+  const group = groups.find((g) => g.id === event?.groupId);
+  const venue = venues.find((v) => v.id === event?.hotelId);
+
+  // Categorize duties into inventory vs special tasks
+  const getDutyCategory = (duty: DutyAssignment): 'inventory' | 'special_task' => {
+    if (duty.category === 'special_task') return 'special_task';
+    if (duty.category === 'inventory') return 'inventory';
+    const matchedReq = group?.inventoryRequirements?.find(
+      (r) => r.id === duty.requirementId || r.itemName.toLowerCase() === duty.itemName.toLowerCase()
+    );
+    if (matchedReq?.category === 'special_task') return 'special_task';
+    if (COMMON_SPECIAL_TASKS.some((taskName) => taskName.toLowerCase() === duty.itemName.toLowerCase())) {
+      return 'special_task';
+    }
+    return 'inventory';
+  };
+
+  const inventoryDuties = useMemo(() => {
+    if (!event) return [];
+    return (event.dutyAssignments || []).filter((d) => getDutyCategory(d) === 'inventory');
+  }, [event?.dutyAssignments, group]);
+
+  const taskDuties = useMemo(() => {
+    if (!event) return [];
+    return (event.dutyAssignments || []).filter((d) => getDutyCategory(d) === 'special_task');
+  }, [event?.dutyAssignments, group]);
+
+  // Auto-switch to tab that has items if one is empty
+  useEffect(() => {
+    if (inventoryDuties.length === 0 && taskDuties.length > 0) {
+      setActiveDutyTab('tasks');
+    } else if (inventoryDuties.length > 0 && taskDuties.length === 0) {
+      setActiveDutyTab('inventory');
+    }
+  }, [event?.id, inventoryDuties.length, taskDuties.length]);
+
+  if (!event) return null;
 
   const startDate = new Date(event.startDateTime);
   const endDate = new Date(event.endDateTime);
@@ -279,7 +319,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
               <div className="flex items-center gap-1.5 text-text-primary font-medium flex-wrap">
                 <Bus className="w-3.5 h-3.5 text-text-secondary shrink-0" strokeWidth={2} />
                 <span className="text-text-secondary">{t('gathering_label')}:</span>
-                <span className="font-bold text-text-primary font-mono">{lobbyTime}</span>
+                <span className="font-bold text-text-primary font-mono">{formatTime(lobbyTime)}</span>
                 {venue?.travelTimeMinutes && (
                   <span className="text-xs text-text-secondary font-normal">
                     ({venue.travelTimeMinutes} {t('minutes_short')})
@@ -288,11 +328,10 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
               </div>
 
               <div className="flex items-center gap-1.5 text-text-primary font-medium flex-wrap">
-                <Sparkles className="w-3.5 h-3.5 text-brand-primary shrink-0" strokeWidth={2} />
+                <Clock className="w-3.5 h-3.5 text-brand-primary shrink-0" strokeWidth={2} />
                 <span className="text-text-secondary">{t('show_time_label')}:</span>
                 <span className="font-semibold text-text-primary">
-                  {startDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} -{' '}
-                  {endDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  {formatTimeRange(startDate, endDate)}
                 </span>
                 {durationStr && (
                   <span className="text-[11px] font-semibold text-brand-primary bg-brand-primary/10 border border-brand-primary/20 px-1.5 py-0.5 rounded-pill">
@@ -304,38 +343,100 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
           </div>
         </div>
 
-        {/* Assigned Inventory Duty Personnel Section */}
+        {/* Stage Duties (Tasks & Inventory) Section */}
         <div>
           <div className="flex items-center justify-between mb-3.5">
             <div>
-              <h4 className="text-sm font-semibold text-text-primary flex items-center gap-1.5">
-                <Sparkles className="w-4 h-4 text-brand-primary" />
-                {t('assigned_inventory_crew')}
+              <h4 className="text-sm font-bold text-text-primary flex items-center gap-1.5 m-0">
+                <ShieldCheck className="w-4 h-4 text-brand-primary" />
+                <span>{t('assigned_inventory_crew')}</span>
               </h4>
-              <p className="text-xs text-text-secondary mt-0.5">
+              <p className="text-xs text-text-secondary mt-0.5 m-0">
                 {t('assigned_inventory_crew_sub')}
               </p>
             </div>
           </div>
 
+          {/* Segmented Switcher Tabs (Compact) */}
+          <div className="flex items-center p-1 bg-surface-secondary rounded-lg border border-border-subtle w-full max-w-xs mb-3.5">
+            <button
+              type="button"
+              onClick={() => setActiveDutyTab('inventory')}
+              className={`flex-1 py-1.5 px-3 rounded-md text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                activeDutyTab === 'inventory'
+                  ? 'bg-surface text-text-primary shadow-2xs font-bold border border-border-subtle'
+                  : 'text-text-secondary hover:text-text-primary'
+              }`}
+            >
+              <Box size={13} className={activeDutyTab === 'inventory' ? 'text-brand-primary' : 'opacity-60'} />
+              <span>{isKa ? 'ინვენტარი' : 'Inventory'}</span>
+              <span
+                className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                  activeDutyTab === 'inventory'
+                    ? 'bg-brand-primary/10 text-brand-primary'
+                    : 'bg-surface/70 text-text-secondary'
+                }`}
+              >
+                {inventoryDuties.length}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveDutyTab('tasks')}
+              className={`flex-1 py-1.5 px-3 rounded-md text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                activeDutyTab === 'tasks'
+                  ? 'bg-surface text-text-primary shadow-2xs font-bold border border-border-subtle'
+                  : 'text-text-secondary hover:text-text-primary'
+              }`}
+            >
+              <ClipboardList size={13} className={activeDutyTab === 'tasks' ? 'text-brand-primary' : 'opacity-60'} />
+              <span>{isKa ? 'დავალებები' : 'Tasks'}</span>
+              <span
+                className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                  activeDutyTab === 'tasks'
+                    ? 'bg-brand-primary/10 text-brand-primary'
+                    : 'bg-surface/70 text-text-secondary'
+                }`}
+              >
+                {taskDuties.length}
+              </span>
+            </button>
+          </div>
+
           {event.dutyAssignments.length === 0 ? (
-            <div className="text-center p-6 bg-surface-secondary rounded-sm border border-dashed border-border-medium text-text-secondary text-sm">
-              <AlertCircle className="w-5 h-5 mx-auto mb-1.5 opacity-60" />
-              <p>{t('no_inventory_reqs')}</p>
+            <div className="text-center p-6 bg-surface-secondary/50 rounded-xl border border-dashed border-border-medium text-text-secondary text-xs">
+              <AlertCircle className="w-5 h-5 mx-auto mb-1.5 opacity-40 text-text-secondary" />
+              <p className="m-0 font-medium">
+                {isKa ? 'ამ შოუზე მორიგეობები განსაზღვრული არ არის' : t('no_inventory_reqs')}
+              </p>
+            </div>
+          ) : (activeDutyTab === 'inventory' ? inventoryDuties : taskDuties).length === 0 ? (
+            <div className="text-center p-6 bg-surface-secondary/50 rounded-xl border border-dashed border-border-medium text-text-secondary text-xs">
+              <AlertCircle className="w-5 h-5 mx-auto mb-1.5 opacity-40 text-text-secondary" />
+              <p className="m-0 font-medium">
+                {activeDutyTab === 'inventory'
+                  ? isKa
+                    ? 'ამ შოუზე ინვენტარის მორიგეობა არ არის განსაზღვრული'
+                    : 'No inventory duties assigned for this show'
+                  : isKa
+                    ? 'ამ შოუზე სპეციალური დავალებები არ არის განსაზღვრული'
+                    : 'No special tasks assigned for this show'}
+              </p>
             </div>
           ) : (
             <div className="flex flex-col gap-3">
-              {event.dutyAssignments.map((duty) => (
+              {(activeDutyTab === 'inventory' ? inventoryDuties : taskDuties).map((duty) => (
                 <div
-                  key={duty.requirementId}
-                  className="border border-border-subtle rounded-md p-3.5 sm:p-4 bg-surface"
+                  key={duty.requirementId || duty.itemName}
+                  className="border border-border-subtle rounded-xl p-3.5 sm:p-4 bg-surface shadow-2xs"
                 >
                   <div className="flex items-center justify-between mb-2.5 flex-wrap gap-2">
                     <div className="flex items-center gap-2">
-                      <strong className="text-sm font-semibold text-text-primary">
+                      <strong className="text-sm font-bold text-text-primary">
                         {duty.itemName}
                       </strong>
-                      <span className="text-[11px] bg-surface-secondary px-2 py-0.5 rounded-pill text-text-secondary border border-border-subtle">
+                      <span className="text-[11px] bg-surface-secondary px-2 py-0.5 rounded-full text-text-secondary border border-border-subtle font-medium">
                         {duty.requiredHeadcount} ({duty.assignedGender})
                       </span>
                     </div>
@@ -353,24 +454,21 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                       return (
                         <div
                           key={talentId}
-                          className="flex items-center justify-between p-2 sm:p-2.5 rounded-sm bg-surface-secondary border border-border-subtle gap-2 flex-wrap sm:flex-nowrap"
+                          className="flex items-center justify-between p-2.5 rounded-lg bg-surface-secondary/60 border border-border-subtle gap-2 flex-wrap sm:flex-nowrap hover:bg-surface-secondary transition-colors"
                         >
-                          <div className="flex items-center gap-2.5">
+                          <div className="flex items-center gap-3">
                             <img
-                              src={
-                                talent.avatarUrl ||
-                                `https://api.dicebear.com/7.x/avataaars/svg?seed=${talent.firstName}`
-                              }
+                              src={getTalentAvatar(talent)}
                               alt={talent.firstName}
                               className="w-8 h-8 rounded-full object-cover shrink-0 border border-border-subtle"
                             />
                             <div>
-                              <div className="font-semibold text-sm text-text-primary flex items-center gap-1.5 flex-wrap">
+                              <div className="font-bold text-sm text-text-primary flex items-center gap-1.5 flex-wrap">
                                 <span>
                                   {talent.firstName} {talent.lastName}
                                 </span>
                                 {isOverridden && (
-                                  <span className="text-[10px] px-1.5 py-0.5 bg-status-rest-bg text-status-rest-text rounded-pill font-semibold border border-status-rest-dot/20">
+                                  <span className="text-[10px] px-1.5 py-0.5 bg-amber-500/10 text-amber-700 dark:text-amber-300 rounded-md font-semibold border border-amber-500/20">
                                     {t('admin_override_badge')}
                                   </span>
                                 )}
@@ -387,10 +485,11 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                               <button
                                 type="button"
                                 onClick={() => setSwapTarget({ duty, talentId })}
-                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-pill text-xs font-medium border border-border-subtle bg-surface text-text-primary hover:bg-surface-tertiary hover:border-border-medium transition-all duration-150 cursor-pointer"
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-border-subtle bg-surface text-text-primary hover:bg-brand-primary/10 hover:text-brand-primary hover:border-brand-primary/30 transition-all cursor-pointer"
                                 title="Manually reassign this shift"
                               >
-                                <ArrowRightLeft className="w-3 h-3" /> {t('swap_duty')}
+                                <ArrowRightLeft className="w-3.5 h-3.5" />
+                                <span>{t('swap_duty')}</span>
                               </button>
                             )}
                           </div>

@@ -1,6 +1,6 @@
 import { InventoryRequirement, SpecialDutyTask } from './inventory';
 
-export type RotationCycleType = 'every_show' | 'weekly' | 'monthly';
+export type RotationCycleType = 'every_show' | 'weekly' | 'monthly' | 'custom';
 
 export interface Group {
   id: string;
@@ -11,6 +11,8 @@ export interface Group {
   specialDutyTasks?: SpecialDutyTask[];
   rotationCycleWeeks: number; // e.g. 1 week, 2 weeks
   rotationCycleType?: RotationCycleType;
+  customRotationValue?: number;
+  customRotationUnit?: 'show' | 'day' | 'week';
   fairnessPoolEnabled?: boolean;
   colorAccent?: string;
   createdAt: string;

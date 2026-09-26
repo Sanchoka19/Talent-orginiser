@@ -20,7 +20,7 @@ export interface ShowEvent {
 
 export interface ScheduleConflict {
   type: 'GROUP_DOUBLE_BOOKED' | 'VENUE_OVERLAP';
-  conflictingEvent: ShowEvent;
+  conflictingEvent?: ShowEvent;
   reason: string;
 }
 

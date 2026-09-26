@@ -608,8 +608,17 @@ input[type="number"] {
   background: var(--color-text-tertiary);
 }
 
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 .thin-scrollbar::-webkit-scrollbar {
   width: 4px;
+  height: 4px;
 }
 
 .thin-scrollbar::-webkit-scrollbar-track {

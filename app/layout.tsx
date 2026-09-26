@@ -51,7 +51,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={firaGO.variable} suppressHydrationWarning>
+    <html lang="ka" dir="ltr" className={firaGO.variable} suppressHydrationWarning>
       <body className={`${firaGO.variable} font-sans`} suppressHydrationWarning>
         {children}
       </body>

@@ -7,7 +7,9 @@ import { useLanguage } from '../../context/LanguageContext';
 import { Talent } from '../../types/talent';
 import { TalentCard } from './TalentCard';
 import { StatCard } from '../common/StatCard';
-import { Search, Plus, Filter, List, LayoutGrid, Users, CheckCircle2, Clock, AlertTriangle } from 'lucide-react';
+import { StatusBadge, GenderBadge } from '../common/Badge';
+import { Search, Plus, Filter, List, LayoutGrid, Users, CheckCircle2, Clock, AlertTriangle, Phone, Mail } from 'lucide-react';
+import { getTalentAvatar } from '../../utils/avatarUtils';
 
 const TalentDetailDrawer = dynamic(
   () => import('./TalentDetailDrawer').then((mod) => mod.TalentDetailDrawer),
@@ -24,18 +26,36 @@ export const TalentList: React.FC = () => {
   const { t, language } = useLanguage();
   const isKa = language === 'ka';
 
-  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [genderFilter, setGenderFilter] = useState<string>('ALL');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTalent, setEditingTalent] = useState<Talent | null>(null);
 
+  React.useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 768) {
+        setViewMode('grid');
+      }
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Active roster talents: exclude talents whose contracts were terminated or archived
+  const activeRosterTalents = useMemo(() => {
+    return talents.filter(
+      (t) => !t.isArchived && t.status !== 'Terminated' && t.contractStatus !== 'terminated'
+    );
+  }, [talents]);
+
   // Statistics calculation
-  const totalTalents = talents.length;
-  const activeCount = talents.filter((t) => t.status === 'Active').length;
-  const restCount = talents.filter((t) => t.status === 'Rest').length;
-  const sickCount = talents.filter((t) => t.status === 'Sick/Injured').length;
+  const totalTalents = activeRosterTalents.length;
+  const activeCount = activeRosterTalents.filter((t) => t.status === 'Active').length;
+  const restCount = activeRosterTalents.filter((t) => t.status === 'Rest').length;
+  const sickCount = activeRosterTalents.filter((t) => t.status === 'Sick/Injured').length;
 
   const activePercent = totalTalents > 0 ? Math.round((activeCount / totalTalents) * 100) : 0;
   const restPercent = totalTalents > 0 ? Math.round((restCount / totalTalents) * 100) : 0;
@@ -43,7 +63,7 @@ export const TalentList: React.FC = () => {
 
   // Filtered talents
   const filteredTalents = useMemo(() => {
-    return talents.filter((t) => {
+    return activeRosterTalents.filter((t) => {
       const matchesSearch =
         searchQuery.trim() === '' ||
         `${t.firstName} ${t.lastName}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -55,7 +75,7 @@ export const TalentList: React.FC = () => {
 
       return matchesSearch && matchesStatus && matchesGender;
     });
-  }, [talents, searchQuery, statusFilter, genderFilter]);
+  }, [activeRosterTalents, searchQuery, statusFilter, genderFilter]);
 
   const handleOpenEdit = (talent: Talent) => {
     setEditingTalent(talent);
@@ -68,7 +88,7 @@ export const TalentList: React.FC = () => {
   };
 
   return (
-    <div className="w-full">
+    <div className="w-full max-w-full min-w-0">
       {/* Top Title & Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <div>
@@ -90,7 +110,7 @@ export const TalentList: React.FC = () => {
       </div>
 
       {/* 4 Unified KPI Stat Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-4 mb-6">
         {/* 1. Total Talents */}
         <StatCard
           title={isKa ? 'სულ ტალანტები' : 'Total Talents'}
@@ -191,8 +211,8 @@ export const TalentList: React.FC = () => {
             {t('showing')} <strong className="font-semibold text-text-primary">{filteredTalents.length}</strong> {t('of')} {totalTalents} {t('performers')}
           </div>
 
-          {/* View Mode Toggle */}
-          <div className="flex items-center bg-surface-secondary rounded-md border border-border-subtle p-0.5 gap-0.5">
+          {/* View Mode Toggle (Desktop only) */}
+          <div className="hidden md:flex items-center bg-surface-secondary rounded-md border border-border-subtle p-0.5 gap-0.5">
             <button
               onClick={() => setViewMode('list')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-xs font-semibold cursor-pointer transition-all duration-150 ${viewMode === 'list'
@@ -237,7 +257,7 @@ export const TalentList: React.FC = () => {
           </button>
         </div>
       ) : viewMode === 'grid' ? (
-        /* GRID VIEW */
+        /* GRID VIEW (all sizes) */
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3.5">
           {filteredTalents.map((talent) => (
             <TalentCard
@@ -250,27 +270,91 @@ export const TalentList: React.FC = () => {
           ))}
         </div>
       ) : (
-        /* LIST VIEW */
-        <div className="w-full overflow-x-auto pb-3">
-          <div className="min-w-[920px] flex flex-col gap-2">
-            {/* Table header row */}
-            <div className="grid grid-cols-[minmax(240px,2fr)_minmax(140px,1fr)_120px] items-center px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-text-secondary mb-0.5">
-              <div>{t('performer_name_specialty')}</div>
-              <div>{t('gender')}</div>
-              <div className="text-right whitespace-nowrap">{t('availability_status')}</div>
-            </div>
+        /* LIST VIEW: Identical to Archive Table design with responsive scroll */
+        <div className="rounded-xl bg-surface border border-border-subtle shadow-xs overflow-hidden flex flex-col w-full max-w-full">
+          <div className="overflow-x-auto w-full max-w-full pb-2 overscroll-x-contain">
+            <table className="min-w-[850px] w-full text-left border-collapse table-auto">
+                <thead>
+                  <tr className="border-b border-border-subtle bg-surface-secondary/50 text-[11px] font-bold uppercase tracking-wider text-text-tertiary">
+                    <th className="py-3.5 px-5">{t('performer_name_specialty')}</th>
+                    <th className="py-3.5 px-5">{t('gender')}</th>
+                    <th className="py-3.5 px-5">{isKa ? 'კონტაქტი' : (language === 'tr' ? 'İletişim' : 'Contact')}</th>
+                    <th className="py-3.5 px-5">{isKa ? 'სიმაღლე / წონა' : (language === 'tr' ? 'Boy / Kilo' : 'Height / Weight')}</th>
+                    <th className="py-3.5 px-5 text-right">{t('availability_status')}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border-subtle text-xs">
+                  {filteredTalents.map((talent) => {
+                    const avatarSrc = getTalentAvatar(talent);
+                    const isSelected = selectedTalent?.id === talent.id;
 
-            {filteredTalents.map((talent) => (
-              <TalentCard
-                key={talent.id}
-                talent={talent}
-                viewMode="list"
-                isSelected={selectedTalent?.id === talent.id}
-                onSelect={(t) => setSelectedTalent(t)}
-              />
-            ))}
+                    return (
+                      <tr
+                        key={talent.id}
+                        onClick={() => setSelectedTalent(talent)}
+                        className={`transition-colors cursor-pointer group ${
+                          isSelected
+                            ? 'bg-brand-primary/10 hover:bg-brand-primary/15'
+                            : 'hover:bg-surface-secondary/40'
+                        }`}
+                      >
+                        {/* Column 1: Talent */}
+                        <td className="py-3.5 px-5">
+                          <div className="flex items-center gap-3">
+                            <img
+                              src={avatarSrc}
+                              alt={`${talent.firstName} ${talent.lastName}`}
+                              className="w-9 h-9 rounded-full object-cover border border-border-subtle shrink-0 shadow-xs"
+                            />
+                            <div className="min-w-0">
+                              <span className="font-semibold text-sm text-text-primary block truncate group-hover:text-brand-primary transition-colors">
+                                {talent.firstName} {talent.lastName}
+                              </span>
+                              <span className="text-xs text-text-secondary truncate block mt-0.5">
+                                {talent.primarySkill}
+                              </span>
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Column 2: Gender */}
+                        <td className="py-3.5 px-5 whitespace-nowrap">
+                          <GenderBadge gender={talent.gender} />
+                        </td>
+
+                        {/* Column 3: Contact */}
+                        <td className="py-3.5 px-5 whitespace-nowrap">
+                          <div className="flex flex-col gap-0.5 text-xs">
+                            <span className="text-text-primary font-medium flex items-center gap-1.5">
+                              <Phone size={12} className="text-text-tertiary shrink-0" />
+                              <span>{talent.phone}</span>
+                            </span>
+                            <span className="text-text-tertiary flex items-center gap-1.5">
+                              <Mail size={12} className="text-text-tertiary shrink-0" />
+                              <span className="truncate max-w-[180px]">{talent.email}</span>
+                            </span>
+                          </div>
+                        </td>
+
+                        {/* Column 4: Physical attributes */}
+                        <td className="py-3.5 px-5 whitespace-nowrap">
+                          <span className="text-text-secondary font-medium text-xs">
+                            {talent.heightCm ? `${talent.heightCm} ${isKa ? 'სმ' : 'cm'}` : '-'}
+                            {talent.weightKg ? ` / ${talent.weightKg} ${isKa ? 'კგ' : 'kg'}` : ''}
+                          </span>
+                        </td>
+
+                        {/* Column 5: Status */}
+                        <td className="py-3.5 px-5 whitespace-nowrap text-right">
+                          <StatusBadge status={talent.status} />
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
       )}
 
       {/* Talent Detail Drawer */}

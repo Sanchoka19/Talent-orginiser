@@ -5,6 +5,7 @@ import { Talent } from '../types/talent';
 import { Group } from '../types/group';
 import { HotelVenue } from '../types/venue';
 import { ShowEvent, ConflictCheckResult } from '../types/schedule';
+import { DutyAssignment } from '../types/duty';
 import { UserProfile } from '../types/user';
 import {
   getStoredTalents,
@@ -17,12 +18,20 @@ import {
   saveStoredSchedule,
   getStoredUserProfile,
   saveStoredUserProfile,
-  resetToDemoData
+  resetToDemoData,
+  TimeFormat,
+  getStoredTimeFormat,
+  saveStoredTimeFormat
 } from '../services/storage';
+import { formatTimeWithFormat, formatTimeRangeWithFormat } from '../utils/timeFormat';
 import { checkScheduleConflicts } from '../services/conflictDetector';
 import {
   generateAutomatedDutiesForEvent,
-  applyManualDutyOverride
+  applyManualDutyOverride,
+  computeHistoricalDutyCounts,
+  computeFairnessScore,
+  getCycleKey,
+  syncShowsWithGroupRequirements
 } from '../services/rotationEngine';
 
 interface AppContextType {
@@ -34,6 +43,14 @@ interface AppContextType {
   setSelectedTalent: (talent: Talent | null) => void;
   currentUser: UserProfile;
   updateCurrentUser: (updates: Partial<UserProfile>) => void;
+  // Time Format Preferences
+  timeFormat: TimeFormat;
+  setTimeFormat: (format: TimeFormat) => void;
+  formatTime: (timeOrDate: Date | string | number | undefined | null) => string;
+  formatTimeRange: (
+    start: Date | string | number | undefined | null,
+    end: Date | string | number | undefined | null
+  ) => string;
   // Talent Actions
   addTalent: (talent: Omit<Talent, 'id' | 'createdAt'>) => Talent;
   updateTalent: (id: string, updates: Partial<Talent>) => void;
@@ -65,6 +82,7 @@ interface AppContextType {
     replacementTalentId: string
   ) => void;
   regenerateDutiesForEvent: (eventId: string) => void;
+  getGroupFairnessScore: (groupId: string) => number;
   // Check conflicts
   validateConflict: (candidate: {
     id?: string;
@@ -82,12 +100,29 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [talents, setTalents] = useState<Talent[]>(getStoredTalents);
-  const [groups, setGroups] = useState<Group[]>(getStoredGroups);
-  const [venues, setVenues] = useState<HotelVenue[]>(getStoredVenues);
-  const [schedule, setSchedule] = useState<ShowEvent[]>(getStoredSchedule);
-  const [currentUser, setCurrentUser] = useState<UserProfile>(getStoredUserProfile);
+  const [talents, setTalents] = useState<Talent[]>(() => getStoredTalents());
+  const [groups, setGroups] = useState<Group[]>(() => getStoredGroups());
+  const [venues, setVenues] = useState<HotelVenue[]>(() => getStoredVenues());
+  const [schedule, setSchedule] = useState<ShowEvent[]>(() => getStoredSchedule());
+  const [currentUser, setCurrentUser] = useState<UserProfile>(() => getStoredUserProfile());
   const [selectedTalent, setSelectedTalent] = useState<Talent | null>(null);
+  const [timeFormat, setTimeFormatState] = useState<TimeFormat>(() => getStoredTimeFormat());
+
+  const setTimeFormat = (fmt: TimeFormat) => {
+    setTimeFormatState(fmt);
+    saveStoredTimeFormat(fmt);
+  };
+
+  const formatTime = (timeOrDate: Date | string | number | undefined | null) => {
+    return formatTimeWithFormat(timeOrDate, timeFormat);
+  };
+
+  const formatTimeRange = (
+    start: Date | string | number | undefined | null,
+    end: Date | string | number | undefined | null
+  ) => {
+    return formatTimeRangeWithFormat(start, end, timeFormat);
+  };
 
   // Sync to storage
   useEffect(() => {
@@ -110,6 +145,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     saveStoredUserProfile(currentUser);
   }, [currentUser]);
 
+  // One-time initial sync: attach duties to any existing group shows that have missing duty assignments
+  useEffect(() => {
+    setSchedule((prevSchedule) => {
+      let current = prevSchedule;
+      for (const group of groups) {
+        if (group.inventoryRequirements && group.inventoryRequirements.length > 0) {
+          current = syncShowsWithGroupRequirements(group, current, talents);
+        }
+      }
+      return current;
+    });
+  }, []);
+
   const updateCurrentUser = (updates: Partial<UserProfile>) => {
     setCurrentUser((prev) => ({ ...prev, ...updates }));
   };
@@ -126,10 +174,87 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateTalent = (id: string, updates: Partial<Talent>) => {
+    const isTerminatedOrArchived =
+      updates.isArchived === true ||
+      updates.contractStatus === 'terminated' ||
+      updates.status === 'Terminated';
+
     setTalents((prev) =>
       prev.map((t) => (t.id === id ? { ...t, ...updates } : t))
     );
-    if (selectedTalent?.id === id) {
+
+    if (isTerminatedOrArchived) {
+      if (selectedTalent?.id === id) {
+        setSelectedTalent(null);
+      }
+
+      // Remove from all group memberships & requirement bindings
+      let affectedGroupIds: string[] = [];
+      setGroups((prev) =>
+        prev.map((g) => {
+          const hasMember = (g.memberTalentIds || []).includes(id);
+          const hasReq = (g.inventoryRequirements || []).some(
+            (r) => r.assignedTalentId === id || (r.assignedTalentIds || []).includes(id)
+          );
+          if (!hasMember && !hasReq) return g;
+
+          affectedGroupIds.push(g.id);
+          return {
+            ...g,
+            memberTalentIds: (g.memberTalentIds || []).filter((mid) => mid !== id),
+            inventoryRequirements: (g.inventoryRequirements || []).map((req) => ({
+              ...req,
+              assignedTalentId: req.assignedTalentId === id ? undefined : req.assignedTalentId,
+              assignedTalentIds: req.assignedTalentIds
+                ? req.assignedTalentIds.filter((tid) => tid !== id)
+                : undefined
+            }))
+          };
+        })
+      );
+
+      // Clean up from shows & duty assignments
+      setSchedule((prev) => {
+        const cleanedSchedule = prev.map((ev) => ({
+          ...ev,
+          dutyAssignments: (ev.dutyAssignments || []).map((duty) => {
+            const hasTalent = duty.assignedTalentIds.includes(id);
+            const hasOverride =
+              duty.manualOverrides &&
+              (duty.manualOverrides[id] || Object.values(duty.manualOverrides).includes(id));
+
+            if (!hasTalent && !hasOverride) return duty;
+
+            const newOverrides = { ...(duty.manualOverrides || {}) };
+            delete newOverrides[id];
+            for (const [origKey, replVal] of Object.entries(newOverrides)) {
+              if (replVal === id) delete newOverrides[origKey];
+            }
+
+            return {
+              ...duty,
+              assignedTalentIds: duty.assignedTalentIds.filter((tid) => tid !== id),
+              manualOverrides: Object.keys(newOverrides).length > 0 ? newOverrides : undefined
+            };
+          })
+        }));
+
+        // Resync affected groups shows with remaining talents
+        let resynced = cleanedSchedule;
+        for (const gId of affectedGroupIds) {
+          const targetGroup = groups.find((g) => g.id === gId);
+          if (targetGroup) {
+            const updatedG = {
+              ...targetGroup,
+              memberTalentIds: (targetGroup.memberTalentIds || []).filter((mid) => mid !== id)
+            };
+            const remainingTalents = talents.filter((t) => t.id !== id);
+            resynced = syncShowsWithGroupRequirements(updatedG, resynced, remainingTalents);
+          }
+        }
+        return resynced;
+      });
+    } else if (selectedTalent?.id === id) {
       setSelectedTalent((prev) => (prev ? { ...prev, ...updates } : null));
     }
   };
@@ -137,7 +262,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const deleteTalent = (id: string) => {
     setTalents((prev) => prev.filter((t) => t.id !== id));
 
-    // 1. Cascade cleanup in Groups: remove member ID and clear fixed assignment from tasks/inventory
     setGroups((prev) =>
       prev.map((g) => ({
         ...g,
@@ -148,7 +272,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }))
     );
 
-    // 2. Cascade cleanup in Schedule: remove deleted talent from all duty assignments and overrides
     setSchedule((prev) =>
       prev.map((ev) => ({
         ...ev,
@@ -180,7 +303,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  // GROUP ACTIONS (with cascade cleanup for orphan shows)
+  // GROUP ACTIONS
   const addGroup = (groupData: Omit<Group, 'id' | 'createdAt'>): Group => {
     const newGroup: Group = {
       ...groupData,
@@ -192,14 +315,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateGroup = (id: string, updates: Partial<Group>) => {
+    let nextGroup: Group | undefined;
+
     setGroups((prev) =>
-      prev.map((g) => (g.id === id ? { ...g, ...updates } : g))
+      prev.map((g) => {
+        if (g.id === id) {
+          nextGroup = { ...g, ...updates };
+          return nextGroup;
+        }
+        return g;
+      })
     );
+
+    // When inventoryRequirements or memberTalentIds are updated, automatically attach/sync to all shows of this group!
+    if (updates.inventoryRequirements || updates.memberTalentIds) {
+      setSchedule((prevSchedule) => {
+        const targetGroup = nextGroup || groups.find((g) => g.id === id);
+        if (!targetGroup) return prevSchedule;
+        const fullyUpdated = { ...targetGroup, ...updates };
+        return syncShowsWithGroupRequirements(fullyUpdated, prevSchedule, talents);
+      });
+    }
   };
 
   const deleteGroup = (id: string) => {
     setGroups((prev) => prev.filter((g) => g.id !== id));
-    // Cascade cleanup: remove orphan shows scheduled for the deleted group
     setSchedule((prev) => prev.filter((ev) => ev.groupId !== id));
   };
 
@@ -242,6 +382,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     eventData: Omit<ShowEvent, 'id' | 'createdAt' | 'dutyAssignments'>,
     autoAssignDuties: boolean = true
   ): { event?: ShowEvent; conflictResult?: ConflictCheckResult } => {
+    if (new Date(eventData.endDateTime).getTime() <= new Date(eventData.startDateTime).getTime()) {
+      return {
+        conflictResult: {
+          hasConflict: true,
+          blockingConflicts: [
+            {
+              type: 'GROUP_DOUBLE_BOOKED',
+              reason: 'Show end time must be after start time'
+            }
+          ],
+          warningConflicts: []
+        }
+      };
+    }
+
     const conflictResult = validateConflict(eventData);
     if (conflictResult.hasConflict) {
       return { conflictResult };
@@ -284,6 +439,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       startDateTime: updates.startDateTime || existing.startDateTime,
       endDateTime: updates.endDateTime || existing.endDateTime
     };
+
+    if (new Date(candidate.endDateTime).getTime() <= new Date(candidate.startDateTime).getTime()) {
+      return {
+        success: false,
+        conflictResult: {
+          hasConflict: true,
+          blockingConflicts: [
+            {
+              type: 'GROUP_DOUBLE_BOOKED',
+              reason: 'Show end time must be after start time'
+            }
+          ],
+          warningConflicts: []
+        }
+      };
+    }
 
     const conflictResult = validateConflict(candidate);
     if (conflictResult.hasConflict) {
@@ -333,8 +504,37 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       prev.map((ev) => {
         if (ev.id !== eventId) return ev;
 
-        const updatedDuties = ev.dutyAssignments.map((duty) => {
-          if (duty.requirementId !== requirementId) return duty;
+        const dutyIndex = ev.dutyAssignments.findIndex(
+          (duty) => duty.requirementId === requirementId || duty.itemName === requirementId
+        );
+
+        if (dutyIndex === -1) {
+          // If duty entry is not yet in event dutyAssignments, add it
+          const group = groups.find((g) => g.id === ev.groupId);
+          const req = group?.inventoryRequirements?.find(
+            (r) => r.id === requirementId || r.itemName === requirementId
+          );
+
+          const newDuty: DutyAssignment = {
+            requirementId: req?.id || requirementId,
+            itemName: req?.itemName || requirementId,
+            assignedGender: req?.assignedGender || 'Any',
+            requiredHeadcount: req?.requiredHeadcount || 1,
+            assignedTalentIds: [replacementTalentId],
+            manualOverrides: originalTalentId
+              ? { [originalTalentId]: replacementTalentId }
+              : {},
+            updatedAt: new Date().toISOString()
+          };
+
+          return {
+            ...ev,
+            dutyAssignments: [...ev.dutyAssignments, newDuty]
+          };
+        }
+
+        const updatedDuties = ev.dutyAssignments.map((duty, idx) => {
+          if (idx !== dutyIndex) return duty;
           return applyManualDutyOverride(duty, originalTalentId, replacementTalentId);
         });
 
@@ -364,6 +564,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
   };
 
+  // FAIRNESS METRIC HELPER
+  const getGroupFairnessScore = (groupId: string): number => {
+    const group = groups.find((g) => g.id === groupId);
+    if (!group || !group.memberTalentIds || group.memberTalentIds.length === 0) {
+      return 100;
+    }
+
+    const cycleWeeks = group.rotationCycleWeeks || 1;
+    const cycleKey = getCycleKey(new Date(), cycleWeeks);
+    const dutyCounts = computeHistoricalDutyCounts(schedule, group.id, cycleKey, cycleWeeks);
+    const score = computeFairnessScore(dutyCounts, group.memberTalentIds);
+
+    return isNaN(score) ? 100 : score;
+  };
+
   const resetAllData = () => {
     resetToDemoData();
     setTalents(getStoredTalents());
@@ -385,6 +600,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setSelectedTalent,
         currentUser,
         updateCurrentUser,
+        timeFormat,
+        setTimeFormat,
+        formatTime,
+        formatTimeRange,
         addTalent,
         updateTalent,
         deleteTalent,
@@ -399,6 +618,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         deleteShowEvent,
         swapDutyTalent,
         regenerateDutiesForEvent,
+        getGroupFairnessScore,
         validateConflict,
         resetAllData
       }}

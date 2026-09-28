@@ -23,13 +23,15 @@ interface InventoryAssignmentModalProps {
   onClose: () => void;
   inventoryReq: InventoryRequirement | null;
   currentGroup: Group;
+  getCycleLabel?: (cycle?: any, customVal?: number, customUnit?: any) => string;
 }
 
 export const InventoryAssignmentModal: React.FC<InventoryAssignmentModalProps> = ({
   isOpen,
   onClose,
   inventoryReq,
-  currentGroup
+  currentGroup,
+  getCycleLabel
 }) => {
   const { talents, schedule, swapDutyTalent, regenerateDutiesForEvent, updateGroup, formatTime } = useApp();
   const { language } = useLanguage();

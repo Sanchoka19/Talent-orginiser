@@ -11,6 +11,8 @@ export interface DutySlot {
   rotationCycle?: TaskRotationCycle;
   customRotationValue?: number;
   customRotationUnit?: CustomRotationUnit;
+  startDate?: string;
+  endDate?: string;
 }
 
 export interface SpecialDutyTask {
@@ -22,6 +24,8 @@ export interface SpecialDutyTask {
   slots: DutySlot[]; // Multi-slot stage positions array
   assignedTalentIds?: string[];
   assignedTalentId?: string;
+  startDate?: string;
+  endDate?: string;
 }
 
 export interface InventoryRequirement {
@@ -38,6 +42,8 @@ export interface InventoryRequirement {
   assignedTalentId?: string;
   assignedTalentIds?: string[];
   parentTaskId?: string;
+  startDate?: string; // YYYY-MM-DD
+  endDate?: string;   // YYYY-MM-DD
 }
 
 export const COMMON_INVENTORY_ITEMS: string[] = [

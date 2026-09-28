@@ -10,13 +10,15 @@ import {
   MapPin,
   Clock,
   Trash2,
-  Info
+  Info,
+  CalendarRange
 } from 'lucide-react';
 import { getTalentAvatar } from '../../../utils/avatarUtils';
 
 interface GroupTasksTabProps {
   specialTasks: InventoryRequirement[];
   talents: Talent[];
+  members: Talent[];
   onAddTask: () => void;
   onDeleteTask: (taskId: string, parentTaskId?: string, e?: React.MouseEvent) => void;
   onSelectTask?: (task: InventoryRequirement) => void;
@@ -28,6 +30,7 @@ interface GroupTasksTabProps {
 export const GroupTasksTab: React.FC<GroupTasksTabProps> = ({
   specialTasks,
   talents,
+  members,
   onAddTask,
   onDeleteTask,
   onSelectTask,
@@ -123,6 +126,15 @@ export const GroupTasksTab: React.FC<GroupTasksTabProps> = ({
                           <Clock size={11} className="text-text-primary" />
                           <span>{getCycleLabel(task.rotationCycle, task.customRotationValue, task.customRotationUnit)}</span>
                         </span>
+
+                        {(task.startDate || task.endDate) && (
+                          <span className="inline-flex items-center gap-1 text-[0.725rem] font-medium px-2 py-0.5 rounded-md bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-900/60 text-purple-700 dark:text-purple-300">
+                            <CalendarRange size={11} className="text-purple-600 dark:text-purple-400" />
+                            <span>
+                              {task.startDate} {task.endDate ? `– ${task.endDate}` : ''}
+                            </span>
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -180,9 +192,25 @@ export const GroupTasksTab: React.FC<GroupTasksTabProps> = ({
                       </span>
                     </div>
                   ) : (
-                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-pill bg-slate-100 dark:bg-surface-secondary border border-border-subtle text-xs text-text-secondary font-medium">
-                      <Users size={12} />
-                      <span>{isKa ? 'ავტო-როტაცია (ყველა)' : dict.notAssigned}</span>
+                    <div className="flex items-center gap-2 bg-slate-50 dark:bg-surface-secondary px-2.5 py-1.5 rounded-lg border border-border-subtle">
+                      <div className="flex -space-x-2 overflow-hidden">
+                        {members.slice(0, 3).map((m) => (
+                          <img
+                            key={m.id}
+                            src={getTalentAvatar(m)}
+                            alt={m.firstName}
+                            className="inline-block w-6 h-6 rounded-full ring-2 ring-surface object-cover shrink-0"
+                          />
+                        ))}
+                        {members.length > 3 && (
+                          <span className="inline-flex items-center justify-center w-6 h-6 rounded-full ring-2 ring-surface bg-slate-200 dark:bg-surface-secondary text-[0.6rem] font-bold text-text-secondary shrink-0">
+                            +{members.length - 3}
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-xs font-medium text-text-secondary">
+                        {isKa ? 'ყველა' : 'All'}
+                      </span>
                     </div>
                   )}
                 </div>

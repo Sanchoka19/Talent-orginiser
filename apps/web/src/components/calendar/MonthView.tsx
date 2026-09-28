@@ -6,7 +6,7 @@ import { Group } from '../../types/group';
 import { HotelVenue } from '../../types/venue';
 import { useLanguage } from '../../context/LanguageContext';
 import { useApp } from '../../context/AppContext';
-import { Check, X, CalendarDays } from 'lucide-react';
+import { Check, X, CalendarDays, MapPin } from 'lucide-react';
 
 interface MonthViewProps {
   currentDate: Date;
@@ -148,6 +148,7 @@ export const MonthView: React.FC<MonthViewProps> = ({
     const startTime = formatTime(ev.startDateTime);
     const isEventPast = isCellPast || new Date(ev.endDateTime || ev.startDateTime).getTime() < Date.now();
     const groupName = evGroup?.name || ev.title;
+    const hotelName = evVenue?.name || ev.hotelId;
 
     return (
       <div
@@ -157,13 +158,13 @@ export const MonthView: React.FC<MonthViewProps> = ({
           if (inPopover) setPopoverDate(null);
           onSelectEvent(ev);
         }}
-        className={`px-2.5 py-2 rounded-r-md border border-l-4 text-xs leading-tight flex flex-col gap-1 shrink-0 cursor-pointer transition-all duration-150 group ${
+        className={`px-2.5 py-1.5 rounded-r-md border border-l-4 text-xs leading-tight flex flex-col gap-0.5 shrink-0 cursor-pointer transition-all duration-150 group ${
           isEventPast
             ? 'bg-slate-100 dark:bg-surface-secondary border-border-subtle border-l-slate-400 dark:border-l-slate-500 opacity-80 hover:opacity-100 text-text-secondary'
             : 'bg-brand-primary/10 dark:bg-blue-500/15 border-blue-500/20 dark:border-blue-500/30 border-l-brand-primary hover:bg-brand-primary/15 text-text-primary shadow-2xs hover:shadow-xs'
         }`}
         title={`${ev.title}\n${t('group_label')}: ${groupName}\n${t('hotel_label')}: ${
-          evVenue?.name || ev.hotelId
+          hotelName
         }\n${t('show_time_label')}: ${startTime}${
           isEventPast ? `\n[${isKa ? 'დასრულებული' : 'Completed'}]` : ''
         }`}
@@ -192,9 +193,9 @@ export const MonthView: React.FC<MonthViewProps> = ({
           </div>
         )}
 
-        {/* Line 2: Troupe / Group Name (text-[13px], font-semibold, clear contrast) */}
+        {/* Line 2: Troupe / Group Name */}
         <div
-          className={`truncate text-[13px] font-semibold leading-snug ${
+          className={`truncate text-xs font-bold leading-tight ${
             isEventPast
               ? 'text-slate-600 dark:text-slate-300'
               : 'text-slate-800 dark:text-slate-100 group-hover:text-brand-primary dark:group-hover:text-blue-400 transition-colors'
@@ -202,6 +203,27 @@ export const MonthView: React.FC<MonthViewProps> = ({
         >
           {groupName}
         </div>
+
+        {/* Line 3: Hotel / Venue Name */}
+        {hotelName && (
+          <div
+            className={`flex items-center gap-1 text-[11px] leading-tight truncate ${
+              isEventPast
+                ? 'text-text-tertiary'
+                : 'text-text-secondary dark:text-slate-400'
+            }`}
+          >
+            <MapPin
+              size={10}
+              className={`shrink-0 ${
+                isEventPast
+                  ? 'text-text-tertiary'
+                  : 'text-brand-primary/80 dark:text-blue-400/80'
+              }`}
+            />
+            <span className="truncate">{hotelName}</span>
+          </div>
+        )}
       </div>
     );
   };

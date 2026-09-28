@@ -473,7 +473,13 @@ export const GroupDetailView: React.FC = () => {
     };
 
     // Save Special Task
-    const handleSaveSpecialTask = (taskName: string, slots: DutySlot[], performerIds?: string[] | string) => {
+    const handleSaveSpecialTask = (
+        taskName: string,
+        slots: DutySlot[],
+        performerIds?: string[] | string,
+        startDate?: string,
+        endDate?: string
+    ) => {
         if (!taskName.trim()) {
             toast.error(isKa ? 'გთხოვთ მიუთითოთ დავალების დასახელება' : 'Please enter a task name');
             return;
@@ -487,7 +493,9 @@ export const GroupDetailView: React.FC = () => {
             rotationCycle: s.rotationCycle || 'every_show',
             customRotationValue: s.rotationCycle === 'custom' ? (s.customRotationValue || 2) : undefined,
             customRotationUnit: s.rotationCycle === 'custom' ? (s.customRotationUnit || 'show') : undefined,
-            headcount: Math.max(1, s.headcount || 1)
+            headcount: Math.max(1, s.headcount || 1),
+            startDate: s.startDate || startDate,
+            endDate: s.endDate || endDate
         }));
 
         const talentIdsArray: string[] = Array.isArray(performerIds)
@@ -504,7 +512,9 @@ export const GroupDetailView: React.FC = () => {
             customRotationUnit: validSlots[0]?.customRotationUnit,
             slots: validSlots,
             assignedTalentIds: talentIdsArray.length > 0 ? talentIdsArray : undefined,
-            assignedTalentId: talentIdsArray.length === 1 ? talentIdsArray[0] : (talentIdsArray.length > 0 ? talentIdsArray[0] : undefined)
+            assignedTalentId: talentIdsArray.length === 1 ? talentIdsArray[0] : (talentIdsArray.length > 0 ? talentIdsArray[0] : undefined),
+            startDate,
+            endDate
         };
 
         // Flatten slots to inventoryRequirements
@@ -520,7 +530,9 @@ export const GroupDetailView: React.FC = () => {
             customRotationUnit: s.customRotationUnit,
             assignedTalentId: talentIdsArray.length === 1 ? talentIdsArray[0] : (talentIdsArray.length > 0 ? talentIdsArray[0] : undefined),
             assignedTalentIds: talentIdsArray.length > 0 ? talentIdsArray : undefined,
-            parentTaskId: taskId
+            parentTaskId: taskId,
+            startDate,
+            endDate
         }));
 
         updateGroup(currentGroup.id, {
@@ -539,7 +551,9 @@ export const GroupDetailView: React.FC = () => {
         cycle: RotationCycleType,
         performerId?: string,
         customRotationValue?: number,
-        customRotationUnit?: 'show' | 'day' | 'week'
+        customRotationUnit?: 'show' | 'day' | 'week',
+        startDate?: string,
+        endDate?: string
     ) => {
         const validItems = items.filter((i) => i.itemName.trim() !== '');
         if (validItems.length === 0) {
@@ -556,7 +570,9 @@ export const GroupDetailView: React.FC = () => {
             rotationCycle: cycle as TaskRotationCycle,
             customRotationValue: cycle === 'custom' ? customRotationValue : undefined,
             customRotationUnit: cycle === 'custom' ? customRotationUnit : undefined,
-            assignedTalentId: performerId
+            assignedTalentId: performerId,
+            startDate,
+            endDate
         }));
 
         updateGroup(currentGroup.id, {
@@ -852,9 +868,12 @@ export const GroupDetailView: React.FC = () => {
                 {activeTab === 'inventory' && (
                     <GroupInventoryTab
                         inventoryReqs={inventoryReqs}
+                        talents={talents}
+                        members={members}
                         onAddInventory={() => openInventoryModal()}
                         onDeleteInventory={handleDeleteInventoryItem}
                         onSelectInventory={(req) => setSelectedInventoryForDetail(req)}
+                        getCycleLabel={getCycleLabel}
                         dict={dict}
                         isKa={isKa}
                     />
@@ -864,6 +883,7 @@ export const GroupDetailView: React.FC = () => {
                     <GroupTasksTab
                         specialTasks={specialTasks}
                         talents={talents}
+                        members={members}
                         onAddTask={() => openTaskModal()}
                         onDeleteTask={handleDeleteTask}
                         onSelectTask={(task) => setSelectedTaskForDetail(task)}

@@ -24,8 +24,10 @@ import {
   Users,
   Search,
   Check,
-  AlertTriangle
+  AlertTriangle,
+  CalendarRange
 } from 'lucide-react';
+import { DatePicker } from '../common/DatePicker';
 
 interface TaskAssignmentModalProps {
   isOpen: boolean;
@@ -35,7 +37,13 @@ interface TaskAssignmentModalProps {
   initialPerformerId?: string;
   initialTalentIds?: string[];
   selectedTalentIds?: string[];
-  onSaveSpecialTask: (taskName: string, slots: DutySlot[], performerIds?: string[]) => void;
+  onSaveSpecialTask: (
+    taskName: string,
+    slots: DutySlot[],
+    performerIds?: string[],
+    startDate?: string,
+    endDate?: string
+  ) => void;
   dict: any;
   isKa: boolean;
 }
@@ -59,6 +67,9 @@ export const TaskAssignmentModal: React.FC<TaskAssignmentModalProps> = ({
 }) => {
   const toast = useToast();
   const [taskName, setTaskName] = useState('');
+  // Initialize empty; filled client-side to avoid SSR/hydration mismatch
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate]     = useState('');
   const [slots, setSlots] = useState<FormSlot[]>([
     {
       id: 'slot-1',
@@ -81,6 +92,9 @@ export const TaskAssignmentModal: React.FC<TaskAssignmentModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       setTaskName('');
+      const todayStr = new Date().toISOString().split('T')[0];
+      setStartDate(todayStr);
+      setEndDate('');
       setSlots([
         {
           id: `slot_${Date.now()}_1`,
@@ -109,6 +123,7 @@ export const TaskAssignmentModal: React.FC<TaskAssignmentModalProps> = ({
       setInactiveNotice(null);
     }
   }, [isOpen, initialPerformerId, initialTalentIds, propSelectedTalentIds]);
+
 
   // Filtered members by search and quick filter (only members of this group)
   const filteredMembers = useMemo(() => {
@@ -189,15 +204,18 @@ export const TaskAssignmentModal: React.FC<TaskAssignmentModalProps> = ({
 
   // Slot management
   const handleAddSlot = () => {
+    const currentCycle = slots[0]?.rotationCycle || 'every_show';
+    const currentVal = slots[0]?.customRotationValue ?? 2;
+    const currentUnit = slots[0]?.customRotationUnit || 'week';
     setSlots((prev) => [
       ...prev,
       {
         id: `slot_${Date.now()}_${prev.length + 1}`,
         position: '',
         assignedGender: 'Any',
-        rotationCycle: 'every_show',
-        customRotationValue: 2,
-        customRotationUnit: 'show',
+        rotationCycle: currentCycle,
+        customRotationValue: currentVal,
+        customRotationUnit: currentUnit,
         headcount: 1
       }
     ]);
@@ -231,6 +249,8 @@ export const TaskAssignmentModal: React.FC<TaskAssignmentModalProps> = ({
 
     const sanitizedSlots: DutySlot[] = slots.map((s) => ({
       ...s,
+      startDate: startDate || undefined,
+      endDate: endDate || undefined,
       headcount: Math.max(1, Number(s.headcount) || 1),
       customRotationValue:
         s.rotationCycle === 'custom'
@@ -240,16 +260,16 @@ export const TaskAssignmentModal: React.FC<TaskAssignmentModalProps> = ({
         s.rotationCycle === 'custom' ? (s.customRotationUnit || 'show') : undefined
     }));
 
-    onSaveSpecialTask(taskName, sanitizedSlots, performerIds);
+    onSaveSpecialTask(taskName, sanitizedSlots, performerIds, startDate || undefined, endDate || undefined);
   };
 
   return (
     <div
-      className="fixed inset-0 z-[1100] flex justify-center items-start overflow-y-auto p-3 sm:p-4 pt-6 sm:pt-[6vh] md:pt-[7vh] pb-8 bg-surface-overlay backdrop-blur-sm animate-in fade-in duration-200"
+      className="fixed inset-0 z-[1100] flex justify-center items-center overflow-y-auto p-4 bg-surface-overlay backdrop-blur-sm animate-in fade-in duration-200"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-2xl max-h-[88vh] bg-surface border border-border-subtle rounded-2xl shadow-modal overflow-hidden flex flex-col transition-[max-height,transform] duration-300 ease-out animate-in zoom-in-95 duration-200 my-auto sm:my-0"
+        className="w-full max-w-2xl max-h-[88vh] bg-surface border border-border-subtle rounded-2xl shadow-modal overflow-hidden flex flex-col transition-[max-height,transform] duration-300 ease-out animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
@@ -312,10 +332,43 @@ export const TaskAssignmentModal: React.FC<TaskAssignmentModalProps> = ({
                 </div>
               </div>
 
+              {/* ── Date Range ── */}
+              <div>
+                <label className="flex items-center gap-1.5 text-xs font-bold text-text-primary mb-2">
+                  <CalendarRange size={14} className="text-purple-600 dark:text-purple-400" />
+                  <span>{isKa ? 'დავალების პერიოდი' : 'Task Period'}</span>
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-text-secondary uppercase tracking-wider mb-1">
+                      {isKa ? 'დაწყება' : 'Start Date'}
+                    </label>
+                    <DatePicker
+                      value={startDate}
+                      onChange={setStartDate}
+                      placeholder={isKa ? 'აირჩიეთ დაწყება' : 'Select start date'}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-text-secondary uppercase tracking-wider mb-1">
+                      {isKa ? 'დამთავრება' : 'End Date'}
+                    </label>
+                    <DatePicker
+                      value={endDate}
+                      min={startDate}
+                      onChange={setEndDate}
+                      placeholder={isKa ? 'აირჩიეთ დამთავრება' : 'Select end date'}
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+
               {/* Multi-Slot Builder */}
               <div className="flex flex-col gap-3 pt-3 border-t border-slate-200/80 dark:border-border-subtle transition-all duration-300">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <SlidersHorizontal size={15} className="text-purple-600 dark:text-purple-400" />
                     <span className="text-xs font-bold text-text-primary">
                       {dict.stagePositionsAndSlots}
@@ -323,6 +376,11 @@ export const TaskAssignmentModal: React.FC<TaskAssignmentModalProps> = ({
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-900/60">
                       {slots.length}
                     </span>
+                    {startDate && endDate && (
+                      <span className="text-[10px] font-medium text-purple-700 dark:text-purple-300 bg-purple-100/80 dark:bg-purple-950/60 px-2 py-0.5 rounded-full border border-purple-200 dark:border-purple-900/60 animate-in fade-in duration-200">
+                        {isKa ? 'ციკლი გამოითვალა თარიღებიდან' : 'Cycle auto-computed from dates'}
+                      </span>
+                    )}
                   </div>
 
                   <button

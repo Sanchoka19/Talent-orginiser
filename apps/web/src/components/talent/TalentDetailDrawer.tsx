@@ -482,17 +482,6 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
             </div>
 
             <div className="flex items-center gap-1.5">
-              {/* Terminate Contract Button */}
-              <button
-                type="button"
-                onClick={() => handleOpenReview('Early Termination')}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400 hover:bg-amber-500/20 text-xs font-semibold transition-all duration-150 cursor-pointer outline-none shadow-2xs"
-                title={isKa ? 'კონტრაქტის შეწყვეტა & არქივში გადატანა' : 'Terminate Contract & Archive'}
-              >
-                <AlertTriangle size={13} />
-                <span>{isKa ? 'კონტრაქტის შეწყვეტა' : 'Terminate'}</span>
-              </button>
-
               <button
                 type="button"
                 onClick={() => onEdit(talent)}

@@ -3,14 +3,22 @@
  * Default Base URL: http://localhost:3000/api/v1
  */
 
-import type {
-  Talent,
-  Group,
-  Venue,
-  Schedule,
-  DutySwapRequest,
-  FairnessScoreResponse,
-} from '@talent/types';
+import type { Talent } from '../types/talent';
+import type { Group } from '../types/group';
+import type { HotelVenue as Venue } from '../types/venue';
+import type { ShowEvent as Schedule } from '../types/schedule';
+
+// Stub types not yet defined in local types (used only by this API client)
+interface DutySwapRequest {
+  eventId: string;
+  requirementId: string;
+  fromTalentId: string;
+  toTalentId: string;
+}
+interface FairnessScoreResponse {
+  groupId: string;
+  scores: Record<string, number>;
+}
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1';

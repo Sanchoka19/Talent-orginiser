@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
 interface ModalProps {
@@ -26,6 +27,10 @@ export const Modal: React.FC<ModalProps> = ({
   zIndex,
   position = 'center'
 }) => {
+  // Track client-side mount to avoid SSR/hydration mismatch with createPortal
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -40,11 +45,11 @@ export const Modal: React.FC<ModalProps> = ({
     };
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
   const isSide = position === 'side';
 
-  return (
+  const modalContent = (
     <div
       className={`fixed inset-0 bg-surface-overlay backdrop-blur-sm z-[1200] animate-in fade-in duration-200 ${isSide ? 'flex justify-end' : 'flex items-center justify-center p-4'
         }`}
@@ -95,4 +100,6 @@ export const Modal: React.FC<ModalProps> = ({
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 };

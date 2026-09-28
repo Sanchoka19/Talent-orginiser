@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Talent, ContractRecord, ReviewType, TerminationReason } from '../../types/talent';
 import { Modal } from '../common/Modal';
 import { useLanguage } from '../../context/LanguageContext';
@@ -8,10 +8,24 @@ import { useApp } from '../../context/AppContext';
 import {
   Star,
   Plus,
-  Check,
-  Circle,
-  X
+  ThumbsUp,
+  Minus,
+  Ban
 } from 'lucide-react';
+
+// Seasons with date ranges — used to auto-detect which season the termination date falls in
+const SEASONS = [
+  { id: 'winter_2025', start: '2025-11-01', end: '2026-02-28', ka: 'ზამთრის სეზონი 2025–2026', en: 'Winter Season 2025–2026' },
+  { id: 'spring_2026', start: '2026-03-01', end: '2026-05-31', ka: 'გაზაფხულის სეზონი 2026',  en: 'Spring Season 2026' },
+  { id: 'summer_2026', start: '2026-06-01', end: '2026-08-31', ka: 'ზაფხულის სეზონი 2026',    en: 'Summer Season 2026' },
+  { id: 'autumn_2026', start: '2026-09-01', end: '2026-11-30', ka: 'შემოდგომის სეზონი 2026',  en: 'Autumn Season 2026' },
+  { id: 'winter_2026', start: '2026-12-01', end: '2027-02-28', ka: 'ზამთრის სეზონი 2026–2027', en: 'Winter Season 2026–2027' },
+];
+
+function detectSeason(dateStr: string): typeof SEASONS[number] | null {
+  const d = new Date(dateStr);
+  return SEASONS.find(s => d >= new Date(s.start) && d <= new Date(s.end)) ?? null;
+}
 
 interface TalentReviewModalProps {
   isOpen: boolean;
@@ -28,7 +42,7 @@ export const TalentReviewModal: React.FC<TalentReviewModalProps> = ({
   onSubmit,
   initialReviewType = 'End of Season'
 }) => {
-  const { currentUser } = useApp();
+  const { currentUser, groups, schedule } = useApp();
   const { language } = useLanguage();
   const isKa = language === 'ka';
 
@@ -47,6 +61,44 @@ export const TalentReviewModal: React.FC<TalentReviewModalProps> = ({
   const [rehireStatus, setRehireStatus] = useState<'eligible' | 'neutral' | 'do_not_rehire'>('eligible');
   const [privateNote, setPrivateNote] = useState('');
 
+  // Find which group this talent belongs to
+  const activeGroup = useMemo(() =>
+    groups.find(g => g.memberTalentIds.includes(talent.id)) ?? null
+  , [groups, talent.id]);
+
+  // Collect project options: upcoming/active shows for this group + group name fallback
+  const projectOptions = useMemo(() => {
+    const now = new Date();
+    const opts: string[] = [];
+    if (activeGroup) {
+      const groupShows = schedule
+        .filter(e => e.groupId === activeGroup.id && e.status !== 'Cancelled')
+        .sort((a, b) => new Date(a.startDateTime).getTime() - new Date(b.startDateTime).getTime());
+      // Upcoming first, then past — deduplicate by title
+      const seen = new Set<string>();
+      // Upcoming shows
+      groupShows.filter(e => new Date(e.startDateTime) >= now).forEach(e => {
+        if (!seen.has(e.title)) { seen.add(e.title); opts.push(e.title); }
+      });
+      // Past shows (in case no upcoming)
+      groupShows.filter(e => new Date(e.startDateTime) < now).reverse().forEach(e => {
+        if (!seen.has(e.title)) { seen.add(e.title); opts.push(e.title); }
+      });
+      // Group name as last-resort option
+      if (!seen.has(activeGroup.name)) opts.push(activeGroup.name);
+    }
+    return opts;
+  }, [activeGroup, schedule]);
+
+  // Auto-detect season from termination date — use contractExpiryDate if set,
+  // otherwise fall back to today (computed client-side in useEffect to avoid SSR mismatch)
+  const autoSeason = useMemo(() => {
+    if (talent.contractExpiryDate) {
+      return detectSeason(talent.contractExpiryDate);
+    }
+    return null; // today fallback handled inside useEffect
+  }, [talent.contractExpiryDate]);
+
   // Sync initial type and sensible defaults when opening
   useEffect(() => {
     if (isOpen) {
@@ -57,8 +109,17 @@ export const TalentReviewModal: React.FC<TalentReviewModalProps> = ({
       } else {
         setRehireStatus('eligible');
       }
+      // Pre-fill project: first upcoming show of active group, else group name
+      if (projectOptions.length > 0) {
+        setProjectName(projectOptions[0]);
+      }
+      // Pre-fill period: use autoSeason (from contractExpiryDate) or detect from today (client-side only)
+      const season = autoSeason ?? detectSeason(new Date().toISOString().split('T')[0]);
+      if (season) {
+        setPeriod(isKa ? season.ka : season.en);
+      }
     }
-  }, [isOpen, initialReviewType]);
+  }, [isOpen, initialReviewType, autoSeason, isKa, projectOptions]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -158,27 +219,44 @@ export const TalentReviewModal: React.FC<TalentReviewModalProps> = ({
             <label className="block text-[11px] font-semibold text-text-secondary uppercase tracking-wider mb-1">
               {isKa ? 'პროექტი / შოუ *' : 'Project / Show *'}
             </label>
-            <input
-              type="text"
-              required
-              value={projectName}
-              onChange={(e) => setProjectName(e.target.value)}
-              placeholder={isKa ? 'მაგ. Summer Season 2026' : 'e.g. Summer Season 2026'}
-              className="w-full px-3 py-2 text-xs rounded-md bg-surface border border-border-subtle text-text-primary placeholder:text-text-tertiary focus:outline-hidden focus:border-brand-primary"
-            />
+            {projectOptions.length > 0 ? (
+              <select
+                required
+                value={projectName}
+                onChange={(e) => setProjectName(e.target.value)}
+                className="w-full px-3 py-2 text-xs rounded-md bg-surface border border-border-subtle text-text-primary focus:outline-hidden focus:border-brand-primary cursor-pointer"
+              >
+                {projectOptions.map((opt) => (
+                  <option key={opt} value={opt}>{opt}</option>
+                ))}
+              </select>
+            ) : (
+              <input
+                type="text"
+                required
+                value={projectName}
+                onChange={(e) => setProjectName(e.target.value)}
+                placeholder={isKa ? 'მაგ. Summer Season 2026' : 'e.g. Summer Season 2026'}
+                className="w-full px-3 py-2 text-xs rounded-md bg-surface border border-border-subtle text-text-primary placeholder:text-text-tertiary focus:outline-hidden focus:border-brand-primary"
+              />
+            )}
           </div>
 
           <div>
             <label className="block text-[11px] font-semibold text-text-secondary uppercase tracking-wider mb-1">
               {isKa ? 'პერიოდი' : 'Period'}
             </label>
-            <input
-              type="text"
+            <select
               value={period}
               onChange={(e) => setPeriod(e.target.value)}
-              placeholder={isKa ? 'მაგ. მაისი – ოქტ 2026' : 'e.g. May – Oct 2026'}
-              className="w-full px-3 py-2 text-xs rounded-md bg-surface border border-border-subtle text-text-primary placeholder:text-text-tertiary focus:outline-hidden focus:border-brand-primary"
-            />
+              className="w-full px-3 py-2 text-xs rounded-md bg-surface border border-border-subtle text-text-primary focus:outline-hidden focus:border-brand-primary cursor-pointer"
+            >
+              {SEASONS.map((s) => (
+                <option key={s.id} value={isKa ? s.ka : s.en}>
+                  {isKa ? s.ka : s.en}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 
@@ -278,19 +356,19 @@ export const TalentReviewModal: React.FC<TalentReviewModalProps> = ({
               {
                 id: 'eligible' as const,
                 label: isKa ? 'რეკომენდებული' : 'Recommended',
-                icon: Check,
+                icon: ThumbsUp,
                 activeClass: 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
               },
               {
                 id: 'neutral' as const,
                 label: isKa ? 'ნეიტრალური' : 'Neutral',
-                icon: Circle,
+                icon: Minus,
                 activeClass: 'bg-slate-800 text-white border-slate-800 shadow-sm'
               },
               {
                 id: 'do_not_rehire' as const,
                 label: isKa ? 'შავი სია' : 'Blacklist',
-                icon: X,
+                icon: Ban,
                 activeClass: 'bg-rose-600 text-white border-rose-600 shadow-sm'
               }
             ].map((option) => {

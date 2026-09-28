@@ -241,17 +241,25 @@ export function generateAutomatedDutiesForEvent(
   const assignments: DutyAssignment[] = [];
 
   for (const req of group.inventoryRequirements) {
+    // Check duty active date range
+    if (req.startDate || req.endDate) {
+      const evDateStr = typeof eventDate === 'string' ? eventDate.split('T')[0] : eventDate.toISOString().split('T')[0];
+      if (req.startDate && evDateStr < req.startDate) continue;
+      if (req.endDate && evDateStr > req.endDate) continue;
+    }
+
     const selectedIds: string[] = [];
 
     // ── Step 1: Honour fixed/pinned talent if available ──────────────────────
     // A single pinned talent is determined by assignedTalentId or a singleton
-    // assignedTalentIds array. If the same talent is pinned to multiple
-    // requirements, the second occurrence gracefully falls back to pool rotation.
-    const fixedTalentId =
-      req.assignedTalentId ||
-      (req.assignedTalentIds && req.assignedTalentIds.length === 1
-        ? req.assignedTalentIds[0]
-        : undefined);
+    // assignedTalentIds array. Explicit pools (> 1) rotate instead of pinning.
+    const isExplicitPool = Boolean(req.assignedTalentIds && req.assignedTalentIds.length > 1);
+    const fixedTalentId = isExplicitPool
+      ? undefined
+      : (req.assignedTalentId ||
+        (req.assignedTalentIds && req.assignedTalentIds.length === 1
+          ? req.assignedTalentIds[0]
+          : undefined));
 
     if (fixedTalentId) {
       const designatedTalent = allTalents.find((t) => t.id === fixedTalentId);
@@ -374,11 +382,20 @@ export function syncShowsWithGroupRequirements(
     const assignedInEvent = new Set<string>();
 
     for (const req of reqs) {
-      const fixedTalentId =
-        req.assignedTalentId ||
-        (req.assignedTalentIds && req.assignedTalentIds.length === 1
-          ? req.assignedTalentIds[0]
-          : undefined);
+      // 1. Check validity dates!
+      if (req.startDate || req.endDate) {
+        const evDateStr = ev.startDateTime.split('T')[0];
+        if (req.startDate && evDateStr < req.startDate) continue;
+        if (req.endDate && evDateStr > req.endDate) continue;
+      }
+
+      const isExplicitPool = Boolean(req.assignedTalentIds && req.assignedTalentIds.length > 1);
+      const fixedTalentId = isExplicitPool
+        ? undefined
+        : (req.assignedTalentId ||
+          (req.assignedTalentIds && req.assignedTalentIds.length === 1
+            ? req.assignedTalentIds[0]
+            : undefined));
 
       const existingDuty = existingDuties.find(
         (d) => d.requirementId === req.id || (d.itemName === req.itemName && d.position === req.position)
@@ -416,10 +433,9 @@ export function syncShowsWithGroupRequirements(
         existingDuty.assignedTalentIds &&
         existingDuty.assignedTalentIds.length >= Math.max(1, req.requiredHeadcount || 1)
       ) {
-        const poolIds =
-          req.assignedTalentIds && req.assignedTalentIds.length > 1
-            ? req.assignedTalentIds
-            : memberTalentIds;
+        const poolIds = isExplicitPool
+          ? req.assignedTalentIds!
+          : memberTalentIds;
 
         const stillEligible = existingDuty.assignedTalentIds.every((id) => {
           const t = allTalents.find((tal) => tal.id === id);
@@ -436,11 +452,10 @@ export function syncShowsWithGroupRequirements(
         }
       }
 
-      // 4. Generate assignment via fair rotation pool
-      const poolIds =
-        req.assignedTalentIds && req.assignedTalentIds.length > 1
-          ? req.assignedTalentIds
-          : memberTalentIds;
+      // 4. Generate assignment via fair rotation pool with accurate cycle interval calculation
+      const poolIds = isExplicitPool
+        ? req.assignedTalentIds!
+        : memberTalentIds;
 
       let eligible = allTalents.filter(
         (t) =>
@@ -462,8 +477,32 @@ export function syncShowsWithGroupRequirements(
         const notAssignedYet = eligible.filter((t) => !assignedInEvent.has(t.id));
         const candidatePool = notAssignedYet.length >= headcount ? notAssignedYet : eligible;
 
+        const evDate = new Date(ev.startDateTime);
+        const baseDate = groupShows[0] ? new Date(groupShows[0].startDateTime) : evDate;
+        const diffDays = Math.max(0, Math.floor((evDate.getTime() - baseDate.getTime()) / (1000 * 60 * 60 * 24)));
         const effectiveShowIndex = showIndex >= 0 ? showIndex : 0;
-        const startIndex = (effectiveShowIndex * headcount) % candidatePool.length;
+
+        let rotationStep = effectiveShowIndex;
+        if (req.rotationCycle === 'weekly') {
+          rotationStep = Math.floor(diffDays / 7);
+        } else if (req.rotationCycle === 'monthly') {
+          rotationStep = Math.max(0, (evDate.getFullYear() - baseDate.getFullYear()) * 12 + (evDate.getMonth() - baseDate.getMonth()));
+        } else if (req.rotationCycle === 'custom') {
+          const val = Math.max(1, req.customRotationValue || 2);
+          if (req.customRotationUnit === 'day') {
+            rotationStep = Math.floor(diffDays / val);
+          } else if (req.customRotationUnit === 'week') {
+            rotationStep = Math.floor(diffDays / (val * 7));
+          } else {
+            rotationStep = Math.floor(effectiveShowIndex / val);
+          }
+        } else if (req.rotationCycle === 'fixed') {
+          rotationStep = 0;
+        } else {
+          rotationStep = effectiveShowIndex;
+        }
+
+        const startIndex = (rotationStep * headcount) % candidatePool.length;
         for (let i = 0; i < headcount; i++) {
           const idx = (startIndex + i) % candidatePool.length;
           pickedIds.push(candidatePool[idx].id);

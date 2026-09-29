@@ -44,6 +44,7 @@ export interface InventoryRequirement {
   parentTaskId?: string;
   startDate?: string; // YYYY-MM-DD
   endDate?: string;   // YYYY-MM-DD
+  status?: 'active' | 'needs_attention' | 'paused';
 }
 
 export const COMMON_INVENTORY_ITEMS: string[] = [

@@ -10,6 +10,7 @@ import { useToast } from '../../context/ToastContext';
 import { StatusBadge, GenderBadge } from '../common/Badge';
 import { RefreshCw, AlertTriangle, Info } from 'lucide-react';
 import { getTalentAvatar } from '../../utils/avatarUtils';
+import { toLocalDateStr } from '../../utils/dateUtils';
 
 interface DutySwapModalProps {
   isOpen: boolean;
@@ -26,28 +27,58 @@ export const DutySwapModal: React.FC<DutySwapModalProps> = ({
   duty,
   originalTalentId
 }) => {
-  const { talents, groups, swapDutyTalent } = useApp();
+  const { talents, groups, swapDutyTalent, schedule } = useApp();
   const { t, language } = useLanguage();
   const toast = useToast();
   const isKa = language === 'ka';
 
   const group = groups.find((g) => g.id === event.groupId);
-  const originalTalent = talents.find((t) => t.id === originalTalentId);
+  const isVacantAssignment = !originalTalentId;
+  const originalTalent = originalTalentId ? talents.find((t) => t.id === originalTalentId) : null;
 
   const [replacementTalentId, setReplacementTalentId] = useState<string>('');
 
-  if (!group || !originalTalent) return null;
+  if (!group) return null;
+  if (!isVacantAssignment && !originalTalent) return null;
 
   // Find candidate members in the group
   const memberTalents = talents.filter((t) => group.memberTalentIds.includes(t.id));
 
-  // Eligible replacement candidates: Active-only, not already assigned, not the original
-  const candidateTalents = memberTalents.filter(
-    (t) =>
-      t.id !== originalTalentId &&
-      !duty.assignedTalentIds.includes(t.id) &&
-      t.status === 'Active'
-  );
+  const targetDateStr = toLocalDateStr(new Date(event.startDateTime));
+
+  const isTalentBusyOnDuty = (d: DutyAssignment, talentId: string) => {
+    if (!d) return false;
+    if (d.manualOverrides && d.manualOverrides[talentId]) return false;
+    if (d.assignedTalentIds && d.assignedTalentIds.includes(talentId)) return true;
+    if (d.manualOverrides && Object.values(d.manualOverrides).includes(talentId)) return true;
+    return false;
+  };
+
+  // Eligible replacement candidates: Active, not the original, and 100% free on this calendar day
+  const candidateTalents = memberTalents.filter((t) => {
+    if (originalTalentId && t.id === originalTalentId) return false;
+    if (t.status !== 'Active') return false;
+    if (t.isArchived) return false;
+    if (t.contractStatus === 'terminated') return false;
+    if (t.contractExpiryDate && new Date(t.contractExpiryDate).getTime() <= Date.now()) return false;
+
+    // Check if talent already has ANY duty on this event
+    const hasDutyInCurrentEvent = (event.dutyAssignments || []).some((d) =>
+      isTalentBusyOnDuty(d, t.id)
+    );
+    if (hasDutyInCurrentEvent) return false;
+
+    // Check if talent has ANY duty on any event on this calendar day
+    const hasDutyOnSameDay = (schedule || []).some((ev) => {
+      if (ev.status === 'Cancelled') return false;
+      const evDateStr = toLocalDateStr(new Date(ev.startDateTime));
+      if (evDateStr !== targetDateStr) return false;
+      return (ev.dutyAssignments || []).some((d) => isTalentBusyOnDuty(d, t.id));
+    });
+    if (hasDutyOnSameDay) return false;
+
+    return true;
+  });
 
   const handleSwap = (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,7 +90,11 @@ export const DutySwapModal: React.FC<DutySwapModalProps> = ({
     if (candidate) {
       toast.success(
         isKa
-          ? `მორიგეობა გადაეცა ${candidate.firstName} ${candidate.lastName}-ს`
+          ? isVacantAssignment
+            ? `ვაკანტურ სლოტზე დაინიშნა ${candidate.firstName} ${candidate.lastName}`
+            : `მორიგეობა გადაეცა ${candidate.firstName} ${candidate.lastName}-ს`
+          : isVacantAssignment
+          ? `Performer ${candidate.firstName} ${candidate.lastName} assigned to vacant slot`
           : `Shift reassigned to ${candidate.firstName} ${candidate.lastName}`
       );
     }
@@ -77,11 +112,23 @@ export const DutySwapModal: React.FC<DutySwapModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={t('admin_swap_title')}
-      subtitle={t('admin_swap_sub', {
-        item: duty.itemName,
-        date: new Date(event.startDateTime).toLocaleDateString()
-      })}
+      title={
+        isVacantAssignment
+          ? isKa
+            ? 'შემსრულებლის ხელით დანიშვნა'
+            : 'Assign Performer Manually'
+          : t('admin_swap_title')
+      }
+      subtitle={
+        isVacantAssignment
+          ? isKa
+            ? `ვაკანტური სლოტის შევსება: «${duty.itemName}» (${duty.assignedGender})`
+            : `Fill vacant slot for "${duty.itemName}" (${duty.assignedGender})`
+          : t('admin_swap_sub', {
+              item: duty.itemName,
+              date: new Date(event.startDateTime).toLocaleDateString()
+            })
+      }
       maxWidth="540px"
       zIndex={1300}
       footer={
@@ -99,39 +146,64 @@ export const DutySwapModal: React.FC<DutySwapModalProps> = ({
             disabled={!replacementTalentId}
             className="inline-flex items-center justify-center gap-2 px-5 py-2 rounded-pill text-sm font-medium bg-brand-primary text-text-inverse shadow-glow hover:bg-brand-primary-hover hover:-translate-y-0.5 active:translate-y-0 transition-all duration-150 cursor-pointer outline-none disabled:opacity-45 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:shadow-none"
           >
-            {t('confirm_reassignment')}
+            {isVacantAssignment
+              ? isKa
+                ? 'დანიშვნა'
+                : 'Assign'
+              : t('confirm_reassignment')}
           </button>
         </div>
       }
     >
       <form id="swap-form" onSubmit={handleSwap} className="flex flex-col">
-        {/* Currently Assigned Talent */}
-        <div className="p-3.5 sm:p-4 rounded-sm bg-surface-secondary border border-border-subtle mb-4">
-          <div className="text-[11px] uppercase text-text-secondary font-semibold mb-1.5 tracking-wider">
-            {t('current_performer')}
-          </div>
-          <div className="flex items-center justify-between gap-3 flex-wrap">
+        {/* Currently Assigned Talent or Vacant Bar */}
+        {isVacantAssignment ? (
+          <div className="p-3.5 sm:p-4 rounded-lg bg-amber-500/10 border-2 border-dashed border-amber-500/30 mb-4 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
-              <img
-                src={getTalentAvatar(originalTalent)}
-                alt={originalTalent.firstName}
-                className="w-9 h-9 rounded-full object-cover shrink-0 border border-border-subtle"
-              />
+              <div className="w-8 h-8 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                <AlertTriangle size={16} />
+              </div>
               <div>
-                <div className="font-semibold text-sm text-text-primary">
-                  {originalTalent.firstName} {originalTalent.lastName}
+                <div className="font-bold text-xs sm:text-sm text-amber-950 dark:text-amber-200">
+                  ⚠️ {isKa ? 'ვაკანტური სლოტი: საჭიროა შემსრულებელი' : 'Vacant Slot: Performer Needed'}
                 </div>
-                <div className="text-xs text-text-secondary">
-                  {originalTalent.primarySkill}
+                <div className="text-[11px] text-amber-800/80 dark:text-amber-300/80">
+                  {isKa ? `მოთხოვნა: ${duty.assignedGender}` : `Requirement: ${duty.assignedGender}`}
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-1.5 shrink-0">
-              <GenderBadge gender={originalTalent.gender} />
-              <StatusBadge status={originalTalent.status} />
+            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30 shrink-0">
+              {isKa ? 'შეუვსებელი' : 'Unfilled'}
+            </span>
+          </div>
+        ) : originalTalent ? (
+          <div className="p-3.5 sm:p-4 rounded-sm bg-surface-secondary border border-border-subtle mb-4">
+            <div className="text-[11px] uppercase text-text-secondary font-semibold mb-1.5 tracking-wider">
+              {t('current_performer')}
+            </div>
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-2.5">
+                <img
+                  src={getTalentAvatar(originalTalent)}
+                  alt={originalTalent.firstName}
+                  className="w-9 h-9 rounded-full object-cover shrink-0 border border-border-subtle"
+                />
+                <div>
+                  <div className="font-semibold text-sm text-text-primary">
+                    {originalTalent.firstName} {originalTalent.lastName}
+                  </div>
+                  <div className="text-xs text-text-secondary">
+                    {originalTalent.primarySkill}
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <GenderBadge gender={originalTalent.gender} />
+                <StatusBadge status={originalTalent.status} />
+              </div>
             </div>
           </div>
-        </div>
+        ) : null}
 
         {/* Swap Arrow Icon */}
         <div className="flex items-center justify-center my-2 text-text-secondary">

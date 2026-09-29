@@ -41,16 +41,26 @@ export const GroupCard: React.FC<GroupCardProps> = ({
     }
   };
 
+  const accent = group.colorAccent || '#6366F1';
+
   // LIST VIEW ROW
   if (viewMode === 'list') {
     return (
       <div
         onClick={handleClick}
+        style={{ borderLeftColor: accent, borderLeftWidth: '3px' }}
         className="group relative bg-surface rounded-md border border-border-subtle px-4 sm:px-5 py-3.5 shadow-sm grid grid-cols-[minmax(180px,2fr)_minmax(120px,1.2fr)_minmax(130px,1.2fr)_minmax(120px,1fr)_100px] items-center gap-3 sm:gap-4 cursor-pointer transition-all duration-150 hover:border-border-medium hover:shadow-md hover:-translate-y-0.5"
       >
         {/* Col 1: Group Name & Description */}
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-9 h-9 rounded-sm bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center justify-center shrink-0">
+          <div
+            className="w-9 h-9 rounded-sm flex items-center justify-center shrink-0 border"
+            style={{
+              backgroundColor: `${accent}18`,
+              color: accent,
+              borderColor: `${accent}35`
+            }}
+          >
             <Users size={18} strokeWidth={2} />
           </div>
           <div className="min-w-0 overflow-hidden">
@@ -130,10 +140,11 @@ export const GroupCard: React.FC<GroupCardProps> = ({
   return (
     <div
       onClick={handleClick}
+      style={{ borderTopColor: accent, borderTopWidth: '3px' }}
       className="group relative bg-surface rounded-md border border-border-subtle p-6 shadow-sm flex flex-col justify-between cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-border-medium"
     >
       <div>
-        {/* Top Row: Title + Mint-Green Users Badge */}
+        {/* Top Row: Title + Color Accent Users Badge */}
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <h3 className="text-base font-bold text-text-primary m-0 tracking-tight leading-snug group-hover:text-brand-primary transition-colors duration-150 truncate">
@@ -146,9 +157,14 @@ export const GroupCard: React.FC<GroupCardProps> = ({
             )}
           </div>
 
-          {/* Mint-Green Icon Badge */}
+          {/* Group Icon Badge */}
           <div
-            className="w-9 h-9 rounded-sm bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center justify-center shrink-0"
+            className="w-9 h-9 rounded-sm flex items-center justify-center shrink-0 border"
+            style={{
+              backgroundColor: `${accent}18`,
+              color: accent,
+              borderColor: `${accent}35`
+            }}
             title={t('group_members')}
           >
             <Users size={18} strokeWidth={2} />

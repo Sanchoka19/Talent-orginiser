@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { ShowEvent } from '../../../types/schedule';
 import { HotelVenue } from '../../../types/venue';
+import { Talent } from '../../../types/talent';
 import {
   Calendar,
   CalendarDays,
@@ -14,14 +15,17 @@ import {
   Plus,
   History,
   CheckCircle2,
-  Sparkles,
-  Layers
+  Layers,
+  Users,
 } from 'lucide-react';
 import { useApp } from '../../../context/AppContext';
+import { getTalentAvatar } from '../../../utils/avatarUtils';
 
 interface GroupShowsTabProps {
   groupShows: ShowEvent[];
   venues: HotelVenue[];
+  talents: Talent[];
+  members: Talent[];
   onSelectShow?: (show: ShowEvent) => void;
   onBookShow?: () => void;
   dict: any;
@@ -33,6 +37,8 @@ type ShowTabFilter = 'upcoming' | 'past' | 'all';
 export const GroupShowsTab: React.FC<GroupShowsTabProps> = ({
   groupShows,
   venues,
+  talents,
+  members,
   onSelectShow,
   onBookShow,
   dict,
@@ -42,184 +48,199 @@ export const GroupShowsTab: React.FC<GroupShowsTabProps> = ({
   const [activeFilter, setActiveFilter] = useState<ShowTabFilter>('upcoming');
   const [isPastAccordionOpen, setIsPastAccordionOpen] = useState(false);
 
-  // Helper to determine if a show has already passed
   const isShowPast = (show: ShowEvent) => {
     const endTime = new Date(show.endDateTime || show.startDateTime).getTime();
     return endTime < Date.now();
   };
 
-  // Split and sort shows
   const { upcomingShows, pastShows } = useMemo(() => {
     const upcoming: ShowEvent[] = [];
     const past: ShowEvent[] = [];
-
     groupShows.forEach((show) => {
-      if (isShowPast(show)) {
-        past.push(show);
-      } else {
-        upcoming.push(show);
-      }
+      if (isShowPast(show)) past.push(show);
+      else upcoming.push(show);
     });
-
-    // Sort upcoming: soonest first
-    upcoming.sort(
-      (a, b) =>
-        new Date(a.startDateTime).getTime() - new Date(b.startDateTime).getTime()
-    );
-
-    // Sort past: most recent first
-    past.sort(
-      (a, b) =>
-        new Date(b.startDateTime).getTime() - new Date(a.startDateTime).getTime()
-    );
-
+    upcoming.sort((a, b) => new Date(a.startDateTime).getTime() - new Date(b.startDateTime).getTime());
+    past.sort((a, b) => new Date(b.startDateTime).getTime() - new Date(a.startDateTime).getTime());
     return { upcomingShows: upcoming, pastShows: past };
   }, [groupShows]);
 
-  // Shows to display based on active filter
   const displayedShows = useMemo(() => {
     switch (activeFilter) {
-      case 'past':
-        return pastShows;
-      case 'all':
-        return groupShows;
+      case 'past': return pastShows;
+      case 'all': return groupShows;
       case 'upcoming':
-      default:
-        return upcomingShows;
+      default: return upcomingShows;
     }
   }, [activeFilter, upcomingShows, pastShows, groupShows]);
 
-  // Render an individual show card
   const renderShowCard = (show: ShowEvent, isPast: boolean) => {
     const venue = venues.find((v) => v.id === show.hotelId);
     const startDate = new Date(show.startDateTime);
     const endDate = new Date(show.endDateTime);
     const localeStr = isKa ? 'ka-GE' : 'en-US';
-    const totalDuties = (show.dutyAssignments || []).reduce(
-      (acc, d) => acc + (d.assignedTalentIds?.length || 0),
-      0
+
+    // Collect all assigned talent IDs across all duty slots
+    const assignedIds = Array.from(
+      new Set(
+        (show.dutyAssignments || []).flatMap((d) => d.assignedTalentIds || [])
+      )
     );
+    const assignedTalents = assignedIds
+      .map((id) => talents.find((t) => t.id === id))
+      .filter(Boolean) as Talent[];
+
+    // Fallback: show group members when no duties assigned yet
+    const displayTalents = assignedTalents.length > 0 ? assignedTalents : [];
+    const hasAssignedCrew = assignedTalents.length > 0;
 
     return (
       <div
         key={show.id}
         onClick={() => onSelectShow?.(show)}
-        className={`bg-surface border rounded-xl p-4 sm:p-5 flex items-center justify-between gap-4 shadow-xs transition-all cursor-pointer group ${
+        className={`bg-surface border rounded-xl p-4 sm:p-5 flex flex-col justify-between gap-4 shadow-xs transition-all cursor-pointer group ${
           isPast
-            ? 'border-border-subtle bg-surface/90 hover:border-slate-400/50 hover:shadow-sm opacity-90 hover:opacity-100'
+            ? 'border-border-subtle opacity-80 hover:opacity-100 hover:border-slate-400/50 hover:shadow-sm'
             : 'border-border-subtle hover:border-brand-primary/50 hover:shadow-md hover:-translate-y-0.5'
         }`}
       >
-        {/* Left: Icon & Show Info */}
-        <div className="flex items-center gap-3.5 min-w-0">
-          <div
-            className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform duration-200 shadow-xs border ${
-              isPast
-                ? 'bg-slate-100 dark:bg-surface-secondary text-text-tertiary border-border-subtle'
-                : 'bg-brand-primary/10 text-brand-primary border-brand-primary/20'
-            }`}
-          >
-            <CalendarDays size={22} />
-          </div>
+        {/* ── Top: Icon, Title, Badges, Arrow ── */}
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start gap-3 min-w-0">
+            <div
+              className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-105 transition-transform duration-200 ${
+                isPast
+                  ? 'bg-slate-100 dark:bg-surface-secondary text-text-tertiary'
+                  : 'bg-brand-primary/10 text-brand-primary'
+              }`}
+            >
+              <CalendarDays size={18} />
+            </div>
 
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="min-w-0 flex-1">
               <h4
-                className={`text-sm sm:text-base font-bold transition-colors truncate m-0 ${
+                className={`text-sm sm:text-base font-bold truncate m-0 transition-colors ${
                   isPast
-                    ? 'text-text-primary group-hover:text-text-primary'
+                    ? 'text-text-primary'
                     : 'text-text-primary group-hover:text-brand-primary'
                 }`}
               >
                 {show.title}
               </h4>
-              <span
-                className={`text-[10px] font-semibold px-2 py-0.5 rounded-pill border inline-flex items-center gap-1 ${
-                  isPast
-                    ? 'bg-slate-100 dark:bg-surface-secondary text-text-secondary border-border-subtle'
-                    : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
-                }`}
-              >
-                {isPast ? (
-                  <>
-                    <CheckCircle2 size={11} className="text-text-tertiary" />
-                    <span>{isKa ? 'დასრულებული' : 'Completed'}</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    <span>{isKa ? 'დაგეგმილი' : 'Scheduled'}</span>
-                  </>
-                )}
-              </span>
-            </div>
 
-            <div className="text-xs text-text-secondary mt-1 flex items-center gap-1.5 truncate">
-              <MapPin size={12} className="text-danger shrink-0" />
-              <span className="truncate">
-                {venue?.name || 'Hotel'} {venue?.city ? `(${venue.city})` : ''}
-              </span>
-              {venue?.roomOrBallroom && (
-                <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-surface-secondary border border-border-subtle text-text-primary font-medium shrink-0">
-                  {venue.roomOrBallroom}
+              {/* Metadata badges row */}
+              <div className="flex items-center gap-2 flex-wrap mt-2">
+                {/* Status badge */}
+                <span
+                  className={`inline-flex items-center gap-1 text-[0.725rem] font-semibold px-2 py-0.5 rounded-md border ${
+                    isPast
+                      ? 'bg-slate-100 dark:bg-surface-secondary text-text-secondary border-border-subtle'
+                      : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                  }`}
+                >
+                  {isPast ? (
+                    <>
+                      <CheckCircle2 size={11} />
+                      <span>{isKa ? 'დასრულებული' : 'Completed'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      <span>{isKa ? 'დაგეგმილი' : 'Scheduled'}</span>
+                    </>
+                  )}
                 </span>
-              )}
-            </div>
 
-            {totalDuties > 0 && (
-              <div className="flex items-center gap-2 mt-1.5">
-                <span className="inline-flex items-center gap-1 text-[11px] font-medium text-text-secondary">
-                  <ShieldCheck
-                    size={12}
-                    className={isPast ? 'text-text-tertiary' : 'text-brand-primary'}
-                  />
+                {/* Date badge */}
+                <span className="inline-flex items-center gap-1 text-[0.725rem] font-medium px-2 py-0.5 rounded-md bg-slate-100 dark:bg-surface-secondary border border-border-subtle text-text-secondary">
+                  <Calendar size={11} className={isPast ? 'text-text-tertiary' : 'text-brand-primary'} />
                   <span>
-                    {isKa
-                      ? `${totalDuties} მორიგე განაწილებული`
-                      : `${totalDuties} crew assigned`}
+                    {startDate.toLocaleDateString(localeStr, { month: 'short', day: 'numeric' })}
                   </span>
                 </span>
+
+                {/* Time badge */}
+                <span className="inline-flex items-center gap-1 text-[0.725rem] font-medium px-2 py-0.5 rounded-md bg-slate-100 dark:bg-surface-secondary border border-border-subtle text-text-secondary font-mono">
+                  <Clock size={11} />
+                  <span>{formatTimeRange(startDate, endDate)}</span>
+                </span>
+
+                {/* Venue badge */}
+                {venue && (
+                  <span className="inline-flex items-center gap-1 text-[0.725rem] font-medium px-2 py-0.5 rounded-md bg-slate-100 dark:bg-surface-secondary border border-border-subtle text-text-secondary">
+                    <MapPin size={11} className="text-danger" />
+                    <span className="truncate max-w-[120px]">
+                      {venue.name}{venue.city ? `, ${venue.city}` : ''}
+                    </span>
+                  </span>
+                )}
               </div>
-            )}
-          </div>
-        </div>
-
-        {/* Right: Date, Time & Arrow */}
-        <div className="flex items-center gap-3 shrink-0">
-          <div className="text-right text-xs">
-            <div className="font-bold text-text-primary flex items-center justify-end gap-1.5">
-              <Calendar
-                size={12}
-                className={isPast ? 'text-text-tertiary' : 'text-brand-primary'}
-              />
-              <span>
-                {startDate.toLocaleDateString(localeStr, {
-                  weekday: 'short',
-                  month: 'short',
-                  day: 'numeric'
-                })}
-              </span>
-            </div>
-            <div className="text-text-secondary mt-1 flex items-center justify-end gap-1 font-mono text-[11px]">
-              <Clock size={11} className="shrink-0" />
-              <span>
-                {formatTimeRange(startDate, endDate)}
-              </span>
             </div>
           </div>
 
+          {/* Arrow */}
           <div
-            className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors shrink-0 ${
+            className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors shrink-0 mt-0.5 ${
               isPast
                 ? 'bg-surface-secondary/50 text-text-tertiary group-hover:text-text-primary'
                 : 'bg-surface-secondary/80 text-text-secondary group-hover:bg-brand-primary/10 group-hover:text-brand-primary'
             }`}
           >
-            <ChevronRight
-              size={16}
-              className="group-hover:translate-x-0.5 transition-transform duration-200"
-            />
+            <ChevronRight size={16} className="group-hover:translate-x-0.5 transition-transform duration-200" />
           </div>
+        </div>
+
+        {/* ── Bottom: Assigned Crew ── */}
+        <div className="pt-3 border-t border-slate-100 dark:border-border-subtle flex items-center justify-between gap-3">
+          <span className="text-xs text-text-secondary font-medium">
+            {isKa ? 'მორიგე:' : 'Crew:'}
+          </span>
+
+          {hasAssignedCrew ? (
+            <div className="flex items-center gap-2 bg-slate-50 dark:bg-surface-secondary px-2.5 py-1.5 rounded-lg border border-border-subtle">
+              <div className="flex -space-x-2 overflow-hidden">
+                {displayTalents.slice(0, 4).map((t) => (
+                  <img
+                    key={t.id}
+                    src={getTalentAvatar(t)}
+                    alt={t.firstName}
+                    className="inline-block w-6 h-6 rounded-full ring-2 ring-surface object-cover shrink-0"
+                    title={`${t.firstName} ${t.lastName}`}
+                  />
+                ))}
+                {displayTalents.length > 4 && (
+                  <span className="inline-flex items-center justify-center w-6 h-6 rounded-full ring-2 ring-surface bg-slate-200 dark:bg-surface-secondary text-[0.6rem] font-bold text-text-secondary shrink-0">
+                    +{displayTalents.length - 4}
+                  </span>
+                )}
+              </div>
+              <span className="text-xs font-medium text-text-secondary">
+                {isKa ? `${displayTalents.length} მორიგე` : `${displayTalents.length} crew`}
+              </span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 bg-slate-50 dark:bg-surface-secondary px-2.5 py-1.5 rounded-lg border border-border-subtle">
+              <div className="flex -space-x-2 overflow-hidden">
+                {members.slice(0, 3).map((m) => (
+                  <img
+                    key={m.id}
+                    src={getTalentAvatar(m)}
+                    alt={m.firstName}
+                    className="inline-block w-6 h-6 rounded-full ring-2 ring-surface object-cover shrink-0 opacity-60"
+                    title={`${m.firstName} ${m.lastName}`}
+                  />
+                ))}
+                {members.length > 3 && (
+                  <span className="inline-flex items-center justify-center w-6 h-6 rounded-full ring-2 ring-surface bg-slate-200 dark:bg-surface-secondary text-[0.6rem] font-bold text-text-secondary shrink-0 opacity-60">
+                    +{members.length - 3}
+                  </span>
+                )}
+              </div>
+              <span className="text-xs font-medium text-text-secondary">
+                {isKa ? 'ყველა' : 'All'}
+              </span>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -227,9 +248,7 @@ export const GroupShowsTab: React.FC<GroupShowsTabProps> = ({
 
   return (
     <div className="flex flex-col gap-4 animate-in fade-in duration-150">
-      {/* ──────────────────────────────────────────────────────────────────
-          Top Header: Title & Action
-         ────────────────────────────────────────────────────────────────── */}
+      {/* ── Top Header ── */}
       <div className="flex items-center justify-between pb-1 flex-wrap gap-3">
         <div>
           <h3 className="text-base font-bold text-text-primary m-0">
@@ -261,12 +280,9 @@ export const GroupShowsTab: React.FC<GroupShowsTabProps> = ({
         )}
       </div>
 
-      {/* ──────────────────────────────────────────────────────────────────
-          Segmented Filter Tabs: Upcoming vs Past vs All
-         ────────────────────────────────────────────────────────────────── */}
+      {/* ── Filter Tabs ── */}
       {groupShows.length > 0 && (
         <div className="flex items-center gap-1 p-1 rounded-xl bg-surface-secondary/70 border border-border-subtle w-fit self-start max-w-full overflow-x-auto">
-          {/* 1. Upcoming Tab */}
           <button
             type="button"
             onClick={() => setActiveFilter('upcoming')}
@@ -278,18 +294,11 @@ export const GroupShowsTab: React.FC<GroupShowsTabProps> = ({
           >
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             <span>{isKa ? 'დაგეგმილი / მომავალი' : 'Upcoming'}</span>
-            <span
-              className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                activeFilter === 'upcoming'
-                  ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
-                  : 'bg-surface-secondary text-text-secondary'
-              }`}
-            >
+            <span className={`text-[10px] px-1.5 rounded-full font-bold ${activeFilter === 'upcoming' ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' : 'bg-surface-secondary text-text-secondary'}`}>
               {upcomingShows.length}
             </span>
           </button>
 
-          {/* 2. Past / History Tab */}
           <button
             type="button"
             onClick={() => setActiveFilter('past')}
@@ -301,18 +310,11 @@ export const GroupShowsTab: React.FC<GroupShowsTabProps> = ({
           >
             <History size={13} className="text-text-tertiary" />
             <span>{isKa ? 'ისტორია / გასული' : 'History / Past'}</span>
-            <span
-              className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                activeFilter === 'past'
-                  ? 'bg-brand-primary/10 text-brand-primary'
-                  : 'bg-surface-secondary text-text-secondary'
-              }`}
-            >
+            <span className={`text-[10px] px-1.5 rounded-full font-bold ${activeFilter === 'past' ? 'bg-brand-primary/10 text-brand-primary' : 'bg-surface-secondary text-text-secondary'}`}>
               {pastShows.length}
             </span>
           </button>
 
-          {/* 3. All Shows Tab */}
           <button
             type="button"
             onClick={() => setActiveFilter('all')}
@@ -324,29 +326,24 @@ export const GroupShowsTab: React.FC<GroupShowsTabProps> = ({
           >
             <Layers size={13} className="text-text-tertiary" />
             <span>{isKa ? 'ყველა' : 'All'}</span>
-            <span className="text-[10px] px-1.5 py-0.2 rounded-full font-bold bg-surface-secondary text-text-secondary">
+            <span className="text-[10px] px-1.5 rounded-full font-bold bg-surface-secondary text-text-secondary">
               {groupShows.length}
             </span>
           </button>
         </div>
       )}
 
-      {/* ──────────────────────────────────────────────────────────────────
-          Shows List / Empty States
-         ────────────────────────────────────────────────────────────────── */}
+      {/* ── Shows List / Empty States ── */}
       {groupShows.length === 0 ? (
-        /* Entirely Empty State */
         <div className="p-12 text-center bg-surface rounded-xl border border-dashed border-border-medium flex flex-col items-center justify-center gap-3">
           <div className="w-12 h-12 rounded-full bg-brand-primary/10 flex items-center justify-center text-brand-primary">
             <Calendar size={24} />
           </div>
           <div>
-            <h4 className="text-base font-bold text-text-primary">
-              {dict.noShows}
-            </h4>
+            <h4 className="text-base font-bold text-text-primary">{dict.noShows}</h4>
             <p className="text-xs text-text-secondary mt-1 max-w-sm">
               {isKa
-                ? 'ამ ჯგუფისთვის შოუები ჯერ არ არის დაგეგმილი. გამოიყენეთ „შოუს დაგეგმვა“ ახალი ღონისძიების დასამატებლად.'
+                ? 'ამ ჯგუფისთვის შოუები ჯერ არ არის დაგეგმილი. გამოიყენეთ „შოუს დაგეგმვა" ახალი ღონისძიების დასამატებლად.'
                 : 'No shows scheduled for this group yet. Use "Book Show" to schedule a new performance.'}
             </p>
           </div>
@@ -362,7 +359,6 @@ export const GroupShowsTab: React.FC<GroupShowsTabProps> = ({
           )}
         </div>
       ) : displayedShows.length === 0 ? (
-        /* Filter-Specific Empty State */
         <div className="p-8 text-center bg-surface rounded-xl border border-dashed border-border-medium flex flex-col items-center justify-center gap-2.5">
           <div className="w-10 h-10 rounded-full bg-surface-secondary flex items-center justify-center text-text-secondary">
             {activeFilter === 'upcoming' ? <CalendarDays size={20} /> : <History size={20} />}
@@ -383,7 +379,6 @@ export const GroupShowsTab: React.FC<GroupShowsTabProps> = ({
                 : 'This group has no completed shows yet.'}
             </p>
           </div>
-
           <div className="flex items-center gap-2 mt-2">
             {activeFilter === 'upcoming' && pastShows.length > 0 && (
               <button
@@ -408,15 +403,12 @@ export const GroupShowsTab: React.FC<GroupShowsTabProps> = ({
           </div>
         </div>
       ) : (
-        /* Regular List of Shows for the Active Filter */
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {displayedShows.map((show) => renderShowCard(show, isShowPast(show)))}
         </div>
       )}
 
-      {/* ──────────────────────────────────────────────────────────────────
-          Collapsible Past Shows Accordion (Visible on 'upcoming' tab if past shows exist)
-         ────────────────────────────────────────────────────────────────── */}
+      {/* ── Past Shows Accordion ── */}
       {activeFilter === 'upcoming' && upcomingShows.length > 0 && pastShows.length > 0 && (
         <div className="mt-2 pt-3 border-t border-border-subtle">
           <button
@@ -436,9 +428,7 @@ export const GroupShowsTab: React.FC<GroupShowsTabProps> = ({
               <span>{isPastAccordionOpen ? (isKa ? 'აკეცვა' : 'Collapse') : (isKa ? 'ჩამოშლა' : 'Expand')}</span>
               <ChevronDown
                 size={15}
-                className={`transition-transform duration-200 ${
-                  isPastAccordionOpen ? 'rotate-180' : ''
-                }`}
+                className={`transition-transform duration-200 ${isPastAccordionOpen ? 'rotate-180' : ''}`}
               />
             </div>
           </button>

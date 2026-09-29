@@ -235,8 +235,9 @@ export function generateAutomatedDutiesForEvent(
   const cycleKey = getCycleKey(eventDate, cycleWeeks);
   const dutyCounts = computeHistoricalDutyCounts(allEvents, group.id, cycleKey, cycleWeeks);
 
-  // Tracks every talent assigned so far in this show — enforces 1-to-1
-  const assignedInEvent = new Set<string>();
+  // Tracks duty counts per talent in this specific show
+  const assignedInEventCounts = new Map<string, number>();
+  const allowMultiDuty = group.allowMultiDuty !== false; // Enabled by default so duties are never left unhandled
 
   const assignments: DutyAssignment[] = [];
 
@@ -251,8 +252,6 @@ export function generateAutomatedDutiesForEvent(
     const selectedIds: string[] = [];
 
     // ── Step 1: Honour fixed/pinned talent if available ──────────────────────
-    // A single pinned talent is determined by assignedTalentId or a singleton
-    // assignedTalentIds array. Explicit pools (> 1) rotate instead of pinning.
     const isExplicitPool = Boolean(req.assignedTalentIds && req.assignedTalentIds.length > 1);
     const fixedTalentId = isExplicitPool
       ? undefined
@@ -263,40 +262,90 @@ export function generateAutomatedDutiesForEvent(
 
     if (fixedTalentId) {
       const designatedTalent = allTalents.find((t) => t.id === fixedTalentId);
+      const inEventCount = assignedInEventCounts.get(fixedTalentId) || 0;
 
-      // FIX: also check !assignedInEvent — prevents double-booking the same
-      // fixed performer when they are pinned to more than one requirement.
       if (
         designatedTalent &&
         designatedTalent.status === 'Active' &&
         group.memberTalentIds.includes(designatedTalent.id) &&
-        !assignedInEvent.has(fixedTalentId) // ← FIX 2 applied here
+        (allowMultiDuty || inEventCount === 0)
       ) {
         selectedIds.push(designatedTalent.id);
+        assignedInEventCounts.set(designatedTalent.id, inEventCount + 1);
+        dutyCounts.set(designatedTalent.id, (dutyCounts.get(designatedTalent.id) || 0) + 1);
       }
     }
 
     // ── Step 2: Fill remaining headcount from the fairness pool ──────────────
     const neededCount = Math.max(0, req.requiredHeadcount - selectedIds.length);
     if (neededCount > 0) {
-      // Exclude everyone already assigned (including the fixed talent above)
-      const currentExcluded = new Set([...assignedInEvent, ...selectedIds]);
-      const eligible = getEligibleTalentsForRequirement(
-        group,
-        allTalents,
-        req,
-        currentExcluded
-      );
-      const remainingIds = selectFairRandomTalents(eligible, neededCount, dutyCounts);
-      selectedIds.push(...remainingIds);
-    }
+      const poolIds = isExplicitPool
+        ? req.assignedTalentIds!
+        : group.memberTalentIds;
 
-    // ── Step 3: Record assignments to prevent reuse later in this show ───────
-    for (const id of selectedIds) {
-      assignedInEvent.add(id);
-      // Increment local duty count so subsequent requirements in the same event
-      // factor in duties already allocated above
-      dutyCounts.set(id, (dutyCounts.get(id) || 0) + 1);
+      const memberTalents = allTalents.filter(
+        (t) => poolIds.includes(t.id) && group.memberTalentIds.includes(t.id)
+      );
+
+      // Active talents, not already assigned to THIS exact requirement
+      let eligible = memberTalents.filter(
+        (t) => t.status === 'Active' && !selectedIds.includes(t.id)
+      );
+
+      // Gender filter
+      if (req.assignedGender === 'Male Only') {
+        eligible = eligible.filter((t) => t.gender === 'Male');
+      } else if (req.assignedGender === 'Female Only') {
+        eligible = eligible.filter((t) => t.gender === 'Female');
+      }
+
+      // First pass: Candidates with 0 duties in this show (1-to-1 rule)
+      const unassignedInEvent = eligible.filter(
+        (t) => (assignedInEventCounts.get(t.id) || 0) === 0
+      );
+
+      const pickedFirstPass = selectFairRandomTalents(
+        unassignedInEvent,
+        neededCount,
+        dutyCounts
+      );
+
+      for (const id of pickedFirstPass) {
+        selectedIds.push(id);
+        assignedInEventCounts.set(id, (assignedInEventCounts.get(id) || 0) + 1);
+        dutyCounts.set(id, (dutyCounts.get(id) || 0) + 1);
+      }
+
+      // Second pass: Multi-Duty allowance
+      // If headcount is still needed and allowMultiDuty is enabled:
+      // Distribute extra duties to members with the lowest historical duty load
+      const stillNeeded = neededCount - pickedFirstPass.length;
+      if (stillNeeded > 0 && allowMultiDuty) {
+        const multiCandidates = eligible.filter((t) => !selectedIds.includes(t.id));
+
+        if (multiCandidates.length > 0) {
+          const sortedMulti = [...multiCandidates].sort((a, b) => {
+            const countInEventA = assignedInEventCounts.get(a.id) || 0;
+            const countInEventB = assignedInEventCounts.get(b.id) || 0;
+            if (countInEventA !== countInEventB) {
+              return countInEventA - countInEventB; // Prioritize 1-duty before 2-duty members
+            }
+            const histA = dutyCounts.get(a.id) || 0;
+            const histB = dutyCounts.get(b.id) || 0;
+            if (histA !== histB) {
+              return histA - histB; // Lowest historical duty load gets the extra duty!
+            }
+            return Math.random() - 0.5;
+          });
+
+          const pickedSecondPass = sortedMulti.slice(0, stillNeeded).map((t) => t.id);
+          for (const id of pickedSecondPass) {
+            selectedIds.push(id);
+            assignedInEventCounts.set(id, (assignedInEventCounts.get(id) || 0) + 1);
+            dutyCounts.set(id, (dutyCounts.get(id) || 0) + 1);
+          }
+        }
+      }
     }
 
     assignments.push({
@@ -328,16 +377,19 @@ export function applyManualDutyOverride(
   originalTalentId: string,
   replacementTalentId: string
 ): DutyAssignment {
-  const newAssignedIds = duty.assignedTalentIds.map((id) =>
-    id === originalTalentId ? replacementTalentId : id
-  );
+  const isReplacing = originalTalentId && duty.assignedTalentIds.includes(originalTalentId);
+  const newAssignedIds = isReplacing
+    ? duty.assignedTalentIds.map((id) => (id === originalTalentId ? replacementTalentId : id))
+    : Array.from(new Set([...duty.assignedTalentIds, replacementTalentId]));
+
+  const overrideKey = originalTalentId || `manual_assigned_${Date.now()}`;
 
   return {
     ...duty,
     assignedTalentIds: newAssignedIds,
     manualOverrides: {
       ...(duty.manualOverrides || {}),
-      [originalTalentId]: replacementTalentId
+      [overrideKey]: replacementTalentId
     },
     updatedAt: new Date().toISOString()
   };
@@ -368,18 +420,39 @@ export function syncShowsWithGroupRequirements(
 
   const reqs = group.inventoryRequirements || [];
   const memberTalentIds = group.memberTalentIds || [];
+  const allowMultiDuty = group.allowMultiDuty !== false; // Enabled by default
+
+  // Cumulative duty counts to track rotation history across shows
+  const cumulativeDutyCounts = new Map<string, number>();
+
+  // Pre-seed cumulative counts with past events in this group
+  for (const ev of currentSchedule) {
+    if (ev.groupId !== group.id || ev.status === 'Cancelled') continue;
+    const isPast =
+      ev.status === 'Completed' ||
+      new Date(ev.startDateTime).getTime() < Date.now();
+    if (isPast && ev.dutyAssignments) {
+      for (const d of ev.dutyAssignments) {
+        for (const id of d.assignedTalentIds || []) {
+          cumulativeDutyCounts.set(id, (cumulativeDutyCounts.get(id) || 0) + 1);
+        }
+      }
+    }
+  }
 
   return currentSchedule.map((ev) => {
     if (ev.groupId !== group.id) return ev;
 
-    // Protect completed shows from being modified by rotation sync
-    const isPastOrCompleted = ev.status === 'Completed';
+    // Protect past and completed shows from being modified by rotation sync
+    const isPastOrCompleted =
+      ev.status === 'Completed' ||
+      new Date(ev.startDateTime).getTime() < Date.now();
     if (isPastOrCompleted) return ev;
 
     const showIndex = groupShows.findIndex((s) => s.id === ev.id);
     const existingDuties = ev.dutyAssignments || [];
     const newDuties: DutyAssignment[] = [];
-    const assignedInEvent = new Set<string>();
+    const assignedInEventCounts = new Map<string, number>();
 
     for (const req of reqs) {
       // 1. Check validity dates!
@@ -387,6 +460,21 @@ export function syncShowsWithGroupRequirements(
         const evDateStr = ev.startDateTime.split('T')[0];
         if (req.startDate && evDateStr < req.startDate) continue;
         if (req.endDate && evDateStr > req.endDate) continue;
+      }
+
+      // Check paused / needs attention status
+      if (req.status === 'paused' || req.status === 'needs_attention') {
+        newDuties.push({
+          requirementId: req.id,
+          itemName: req.itemName,
+          position: req.position,
+          category: req.category,
+          assignedGender: req.assignedGender,
+          requiredHeadcount: Math.max(1, req.requiredHeadcount || 1),
+          assignedTalentIds: [],
+          updatedAt: new Date().toISOString()
+        });
+        continue;
       }
 
       const isExplicitPool = Boolean(req.assignedTalentIds && req.assignedTalentIds.length > 1);
@@ -404,14 +492,18 @@ export function syncShowsWithGroupRequirements(
       // 1. Manual override preserved
       if (existingDuty?.manualOverrides && Object.keys(existingDuty.manualOverrides).length > 0) {
         newDuties.push(existingDuty);
-        existingDuty.assignedTalentIds.forEach((id) => assignedInEvent.add(id));
+        existingDuty.assignedTalentIds.forEach((id) => {
+          assignedInEventCounts.set(id, (assignedInEventCounts.get(id) || 0) + 1);
+          cumulativeDutyCounts.set(id, (cumulativeDutyCounts.get(id) || 0) + 1);
+        });
         continue;
       }
 
       // 2. Fixed talent rule
       if (fixedTalentId) {
         const talent = allTalents.find((t) => t.id === fixedTalentId);
-        if (talent && talent.status === 'Active') {
+        const inEventCount = assignedInEventCounts.get(fixedTalentId) || 0;
+        if (talent && talent.status === 'Active' && (allowMultiDuty || inEventCount === 0)) {
           newDuties.push({
             requirementId: req.id,
             itemName: req.itemName,
@@ -422,7 +514,8 @@ export function syncShowsWithGroupRequirements(
             assignedTalentIds: [fixedTalentId],
             updatedAt: new Date().toISOString()
           });
-          assignedInEvent.add(fixedTalentId);
+          assignedInEventCounts.set(fixedTalentId, inEventCount + 1);
+          cumulativeDutyCounts.set(fixedTalentId, (cumulativeDutyCounts.get(fixedTalentId) || 0) + 1);
           continue;
         }
       }
@@ -442,17 +535,21 @@ export function syncShowsWithGroupRequirements(
           if (!t || t.status !== 'Active' || !poolIds.includes(t.id)) return false;
           if (req.assignedGender === 'Male Only' && t.gender !== 'Male') return false;
           if (req.assignedGender === 'Female Only' && t.gender !== 'Female') return false;
+          if (!allowMultiDuty && (assignedInEventCounts.get(id) || 0) > 0) return false;
           return true;
         });
 
         if (stillEligible) {
           newDuties.push(existingDuty);
-          existingDuty.assignedTalentIds.forEach((id) => assignedInEvent.add(id));
+          existingDuty.assignedTalentIds.forEach((id) => {
+            assignedInEventCounts.set(id, (assignedInEventCounts.get(id) || 0) + 1);
+            cumulativeDutyCounts.set(id, (cumulativeDutyCounts.get(id) || 0) + 1);
+          });
           continue;
         }
       }
 
-      // 4. Generate assignment via fair rotation pool with accurate cycle interval calculation
+      // 4. Generate assignment via fair rotation pool
       const poolIds = isExplicitPool
         ? req.assignedTalentIds!
         : memberTalentIds;
@@ -474,8 +571,8 @@ export function syncShowsWithGroupRequirements(
       const pickedIds: string[] = [];
 
       if (eligible.length > 0) {
-        const notAssignedYet = eligible.filter((t) => !assignedInEvent.has(t.id));
-        const candidatePool = notAssignedYet.length >= headcount ? notAssignedYet : eligible;
+        // First pass: Candidates not assigned to any duty in this show yet (1-to-1 rule)
+        const notAssignedYet = eligible.filter((t) => (assignedInEventCounts.get(t.id) || 0) === 0);
 
         const evDate = new Date(ev.startDateTime);
         const baseDate = groupShows[0] ? new Date(groupShows[0].startDateTime) : evDate;
@@ -502,14 +599,63 @@ export function syncShowsWithGroupRequirements(
           rotationStep = effectiveShowIndex;
         }
 
-        const startIndex = (rotationStep * headcount) % candidatePool.length;
-        for (let i = 0; i < headcount; i++) {
-          const idx = (startIndex + i) % candidatePool.length;
-          pickedIds.push(candidatePool[idx].id);
+        if (notAssignedYet.length > 0) {
+          // Sort unassigned candidates primarily by cumulative duty history (fairness)
+          const sortedUnassigned = [...notAssignedYet].sort((a, b) => {
+            const histA = cumulativeDutyCounts.get(a.id) || 0;
+            const histB = cumulativeDutyCounts.get(b.id) || 0;
+            if (histA !== histB) return histA - histB;
+            return notAssignedYet.indexOf(a) - notAssignedYet.indexOf(b);
+          });
+
+          const countToPick = Math.min(headcount, sortedUnassigned.length);
+          const startIndex = sortedUnassigned.length > 0 ? (rotationStep * headcount) % sortedUnassigned.length : 0;
+          for (let i = 0; i < countToPick; i++) {
+            const idx = (startIndex + i) % sortedUnassigned.length;
+            const candId = sortedUnassigned[idx].id;
+            if (!pickedIds.includes(candId)) {
+              pickedIds.push(candId);
+            }
+          }
+        }
+
+        // Second pass: Multi-Duty allowance
+        // "თუ წესებში ჩართულია მრავალჯერადი მოვალეობა, სისტემა 4 ადამიანს გაანაწილებს 4 ინვენტარზე,
+        // ხოლო მე-5 ინვენტარს დაუმატებს იმ ადამიანს, ვისაც როტაციის ისტორიით ყველაზე ნაკლები დატვირთვა ჰქონდა.
+        // შესაბამისად, ერთ ადამიანს ექნება 2 ინვენტარი, დანარჩენ სამს კი — თითო."
+        const stillNeeded = headcount - pickedIds.length;
+        if (stillNeeded > 0 && allowMultiDuty) {
+          const multiCandidates = eligible.filter((t) => !pickedIds.includes(t.id));
+
+          if (multiCandidates.length > 0) {
+            const sortedMulti = [...multiCandidates].sort((a, b) => {
+              const inEventA = assignedInEventCounts.get(a.id) || 0;
+              const inEventB = assignedInEventCounts.get(b.id) || 0;
+              if (inEventA !== inEventB) {
+                return inEventA - inEventB; // Prioritize members with fewer duties in this show
+              }
+              const histA = cumulativeDutyCounts.get(a.id) || 0;
+              const histB = cumulativeDutyCounts.get(b.id) || 0;
+              if (histA !== histB) {
+                return histA - histB; // Lowest historical duty load gets the extra duty!
+              }
+              return eligible.indexOf(a) - eligible.indexOf(b);
+            });
+
+            const pickedSecond = sortedMulti.slice(0, stillNeeded).map((t) => t.id);
+            for (const id of pickedSecond) {
+              if (!pickedIds.includes(id)) {
+                pickedIds.push(id);
+              }
+            }
+          }
         }
       }
 
-      pickedIds.forEach((id) => assignedInEvent.add(id));
+      pickedIds.forEach((id) => {
+        assignedInEventCounts.set(id, (assignedInEventCounts.get(id) || 0) + 1);
+        cumulativeDutyCounts.set(id, (cumulativeDutyCounts.get(id) || 0) + 1);
+      });
 
       newDuties.push({
         requirementId: req.id,

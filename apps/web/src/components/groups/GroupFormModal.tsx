@@ -14,6 +14,7 @@ import {
   UserCheck
 } from 'lucide-react';
 import { getTalentAvatar } from '../../utils/avatarUtils';
+import { MemberGroupConflictModal, ConflictedMemberInfo } from './MemberGroupConflictModal';
 
 interface GroupFormModalProps {
   isOpen: boolean;
@@ -21,20 +22,66 @@ interface GroupFormModalProps {
   editingGroup?: Group | null;
 }
 
+const GROUP_COLOR_PRESETS = [
+  { name: 'Coral / Tangerine', hex: '#FF6C41' },
+  { name: 'Ocean Blue', hex: '#004F72' },
+  { name: 'Emerald Green', hex: '#10B981' },
+  { name: 'Indigo', hex: '#6366F1' },
+  { name: 'Purple', hex: '#8B5CF6' },
+  { name: 'Rose', hex: '#E11D48' },
+  { name: 'Amber Gold', hex: '#F59E0B' },
+  { name: 'Teal', hex: '#14B8A6' },
+  { name: 'Cyan', hex: '#06B6D4' },
+  { name: 'Hot Pink', hex: '#EC4899' },
+  { name: 'Sky Blue', hex: '#0EA5E9' },
+  { name: 'Lime', hex: '#84CC16' },
+  { name: 'Violet', hex: '#7C3AED' },
+  { name: 'Fuchsia', hex: '#D946EF' },
+  { name: 'Crimson', hex: '#BE123C' },
+  { name: 'Dark Teal', hex: '#0F766E' },
+];
+
 export const GroupFormModal: React.FC<GroupFormModalProps> = ({
   isOpen,
   onClose,
   editingGroup
 }) => {
-  const { talents, addGroup, updateGroup } = useApp();
+  const { groups, talents, addGroup, updateGroup } = useApp();
   const { t, language } = useLanguage();
   const toast = useToast();
   const isKa = language === 'ka';
   const isTr = language === 'tr';
 
+  // Map of lowercase hex -> group name of other groups (colors already taken)
+  const usedColorMap = useMemo(() => {
+    const map = new Map<string, string>();
+    groups.forEach((g) => {
+      if (editingGroup && g.id === editingGroup.id) return;
+      if (g.colorAccent) {
+        map.set(g.colorAccent.toLowerCase(), g.name);
+      }
+    });
+    return map;
+  }, [groups, editingGroup]);
+
+  // Find the first available preset color that is not taken by another group
+  const getFirstAvailableColor = (usedMap: Map<string, string>): string => {
+    for (const preset of GROUP_COLOR_PRESETS) {
+      if (!usedMap.has(preset.hex.toLowerCase())) {
+        return preset.hex;
+      }
+    }
+    const hue = (usedMap.size * 137.508) % 360;
+    return `hsl(${Math.round(hue)}, 75%, 50%)`;
+  };
+
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [colorAccent, setColorAccent] = useState<string>('#FF6C41');
+  const [allowMultiDuty, setAllowMultiDuty] = useState<boolean>(true);
   const [selectedTalentIds, setSelectedTalentIds] = useState<string[]>([]);
+  const [isConflictModalOpen, setIsConflictModalOpen] = useState(false);
+  const [conflictedMembers, setConflictedMembers] = useState<ConflictedMemberInfo[]>([]);
 
   const [talentSearch, setTalentSearch] = useState('');
   const [quickFilter, setQuickFilter] = useState<'all' | 'male' | 'female' | 'active'>('all');
@@ -47,15 +94,23 @@ export const GroupFormModal: React.FC<GroupFormModalProps> = ({
     if (editingGroup) {
       setName(editingGroup.name || '');
       setDescription(editingGroup.description || '');
+      setColorAccent(editingGroup.colorAccent || '#FF6C41');
+      setAllowMultiDuty(editingGroup.allowMultiDuty !== false);
       setSelectedTalentIds(editingGroup.memberTalentIds || []);
     } else {
       setName('');
       setDescription('');
+      setAllowMultiDuty(true);
+      // Auto-assign the first unused color among all groups
+      const firstAvailable = getFirstAvailableColor(usedColorMap);
+      setColorAccent(firstAvailable);
       setSelectedTalentIds([]);
     }
     setTalentSearch('');
     setInactiveNotice(null);
-  }, [editingGroup, isOpen]);
+    setIsConflictModalOpen(false);
+    setConflictedMembers([]);
+  }, [editingGroup, isOpen, usedColorMap]);
 
   // Toggle talent selection
   const handleToggleTalent = (talentId: string) => {
@@ -103,30 +158,67 @@ export const GroupFormModal: React.FC<GroupFormModalProps> = ({
       return;
     }
 
+    // Uniqueness validation: check if chosen color is already assigned to another group
+    const conflictingGroupName = usedColorMap.get(colorAccent.toLowerCase());
+    if (conflictingGroupName) {
+      toast.error(
+        isKa
+          ? `ეს ფერი უკვე მინიჭებულია ჯგუფისთვის „${conflictingGroupName}“. თითოეულ ჯგუფს უნდა ჰქონდეს უნიკალური ფერი.`
+          : `This color is already assigned to group "${conflictingGroupName}". Each group must have a unique color.`
+      );
+      return;
+    }
+
     if (editingGroup) {
       updateGroup(editingGroup.id, {
         name: name.trim(),
-        description: description.trim()
+        description: description.trim(),
+        colorAccent,
+        allowMultiDuty
       });
       toast.success(
         isKa ? `ჯგუფის „${name.trim()}“ ცვლილებები შენახულია` : `Changes to group "${name.trim()}" saved`
       );
+      onClose();
     } else {
-      addGroup({
-        name: name.trim(),
-        description: description.trim(),
-        memberTalentIds: selectedTalentIds,
-        inventoryRequirements: [],
-        specialDutyTasks: [],
-        rotationCycleWeeks: 1,
-        fairnessPoolEnabled: true,
-        colorAccent: '#FF6C41'
-      });
-      toast.success(
-        isKa ? `ჯგუფი „${name.trim()}“ წარმატებით შეიქმნა` : `Group "${name.trim()}" created successfully`
-      );
-    }
+      // Check if any selected performer is already a member of an existing group
+      const conflicts: ConflictedMemberInfo[] = [];
+      for (const talentId of selectedTalentIds) {
+        const assignedGroups = groups.filter((g) => (g.memberTalentIds || []).includes(talentId));
+        if (assignedGroups.length > 0) {
+          const talent = talents.find((t) => t.id === talentId);
+          if (talent) {
+            conflicts.push({ talent, existingGroups: assignedGroups });
+          }
+        }
+      }
 
+      if (conflicts.length > 0) {
+        setConflictedMembers(conflicts);
+        setIsConflictModalOpen(true);
+        return;
+      }
+
+      executeCreateGroup();
+    }
+  };
+
+  const executeCreateGroup = () => {
+    addGroup({
+      name: name.trim(),
+      description: description.trim(),
+      memberTalentIds: selectedTalentIds,
+      inventoryRequirements: [],
+      specialDutyTasks: [],
+      rotationCycleWeeks: 1,
+      fairnessPoolEnabled: true,
+      allowMultiDuty,
+      colorAccent
+    });
+    toast.success(
+      isKa ? `ჯგუფი „${name.trim()}“ წარმატებით შეიქმნა` : `Group "${name.trim()}" created successfully`
+    );
+    setIsConflictModalOpen(false);
     onClose();
   };
 
@@ -179,8 +271,9 @@ export const GroupFormModal: React.FC<GroupFormModalProps> = ({
   );
 
   return (
-    <Modal
-      isOpen={isOpen}
+    <>
+      <Modal
+        isOpen={isOpen}
       onClose={onClose}
       title={editingGroup ? t('edit_group') : t('create_group')}
       subtitle={
@@ -230,6 +323,118 @@ export const GroupFormModal: React.FC<GroupFormModalProps> = ({
             }
             className="w-full p-3 rounded-lg border border-border-subtle bg-surface text-sm text-text-primary placeholder:text-text-muted/60 focus:border-brand-primary focus:ring-1 focus:ring-brand-primary outline-none transition-all resize-none"
           />
+        </div>
+
+        {/* Color Accent Picker */}
+        <div>
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="block text-xs font-medium text-text-secondary">
+              {isKa ? 'ჯგუფის ფერი (კალენდარზე)' : 'Group Accent Color (for calendar)'}
+            </label>
+            <span className="text-[11px] text-text-tertiary">
+              {isKa ? 'თითოეულ ჯგუფს აქვს უნიკალური ფერი' : 'Unique per group'}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            {GROUP_COLOR_PRESETS.map((preset) => {
+              const usedByGroup = usedColorMap.get(preset.hex.toLowerCase());
+              const isSelected = colorAccent.toLowerCase() === preset.hex.toLowerCase();
+              const isTaken = !!usedByGroup;
+
+              return (
+                <button
+                  key={preset.hex}
+                  type="button"
+                  disabled={isTaken}
+                  onClick={() => !isTaken && setColorAccent(preset.hex)}
+                  title={
+                    isTaken
+                      ? `${preset.name} (${isKa ? 'დაკავებულია: ' : 'In use by: '}${usedByGroup})`
+                      : preset.name
+                  }
+                  className={`w-7 h-7 rounded-full flex items-center justify-center transition-all relative ${
+                    isSelected
+                      ? 'ring-2 ring-offset-2 ring-brand-primary scale-110 shadow-sm z-10'
+                      : isTaken
+                      ? 'opacity-25 cursor-not-allowed filter grayscale'
+                      : 'hover:scale-105 opacity-85 hover:opacity-100'
+                  }`}
+                  style={{ backgroundColor: preset.hex }}
+                >
+                  {isSelected && (
+                    <Check size={14} className="text-white drop-shadow-sm" />
+                  )}
+                  {isTaken && !isSelected && (
+                    <X size={13} className="text-white/80" />
+                  )}
+                </button>
+              );
+            })}
+
+            {/* Custom color input */}
+            <div className="relative flex items-center ml-1">
+              <input
+                type="color"
+                value={colorAccent.startsWith('#') ? colorAccent : '#6366F1'}
+                onChange={(e) => setColorAccent(e.target.value)}
+                className="w-7 h-7 rounded-full cursor-pointer border border-border-subtle p-0 overflow-hidden"
+                title={isKa ? 'სხვა ფერის არჩევა' : 'Custom color'}
+              />
+            </div>
+
+            <div
+              className="px-2 py-0.5 rounded text-xs font-mono font-medium border border-border-subtle"
+              style={{ color: colorAccent }}
+            >
+              {colorAccent.toUpperCase()}
+            </div>
+          </div>
+
+          {/* Warning banner if current color is taken */}
+          {usedColorMap.has(colorAccent.toLowerCase()) && (
+            <div className="flex items-center gap-1.5 mt-2 px-2.5 py-1.5 rounded-lg bg-danger/10 border border-danger/20 text-danger text-xs font-medium">
+              <AlertTriangle size={14} className="shrink-0" />
+              <span>
+                {isKa
+                  ? `ეს ფერი უკვე გამოყენებულია ჯგუფის მიერ: „${usedColorMap.get(colorAccent.toLowerCase())}“. გთხოვთ აირჩიოთ განსხვავებული ფერი.`
+                  : `This color is already in use by group "${usedColorMap.get(colorAccent.toLowerCase())}". Please select a different color.`}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Multi-Duty Rule Setting */}
+        <div className="p-3.5 rounded-xl border border-border-subtle bg-surface-secondary/40 flex items-start justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs font-bold text-text-primary">
+                {isKa ? 'დაშვება: 1 ადამიანი = 1-ზე მეტი ინვენტარი (Multi-Duty)' : 'Multi-Duty Allowance (1 talent > 1 duty)'}
+              </span>
+              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-pill border ${
+                allowMultiDuty
+                  ? 'bg-brand-primary/10 text-brand-primary border-brand-primary/30'
+                  : 'bg-surface-secondary text-text-tertiary border-border-subtle'
+              }`}>
+                {allowMultiDuty ? (isKa ? 'ჩართულია' : 'Enabled') : (isKa ? 'გამორთულია' : 'Disabled')}
+              </span>
+            </div>
+            <p className="text-[11px] text-text-secondary mt-1 leading-relaxed m-0">
+              {isKa
+                ? 'თუ ერთ შოუზე ინვენტარის რაოდენობა მეტია ხელმისაწვდომ წევრებზე (მაგ. 5 ინვენტარი და 4 წევრი), სისტემა მე-5 ინვენტარს დაუმატებს იმ წევრს, ვისაც როტაციის ისტორიით ყველაზე ნაკლები დატვირთვა ჰქონდა.'
+                : 'When duty requirements exceed available troupe members, extra duties are automatically distributed to members with the lowest historical duty load.'}
+            </p>
+          </div>
+
+          <label className="relative inline-flex items-center cursor-pointer shrink-0 mt-0.5">
+            <input
+              type="checkbox"
+              checked={allowMultiDuty}
+              onChange={(e) => setAllowMultiDuty(e.target.checked)}
+              className="sr-only peer"
+            />
+            <div className="w-9 h-5 bg-border-medium peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand-primary"></div>
+          </label>
         </div>
 
         {/* Cast Selection Block */}
@@ -344,6 +549,7 @@ export const GroupFormModal: React.FC<GroupFormModalProps> = ({
                 filteredTalents.map((talent) => {
                   const isSelected = selectedTalentIds.includes(talent.id);
                   const isActive = talent.status === 'Active';
+                  const assignedGroups = groups.filter((g) => (g.memberTalentIds || []).includes(talent.id));
                   return (
                     <div
                       key={talent.id}
@@ -366,6 +572,31 @@ export const GroupFormModal: React.FC<GroupFormModalProps> = ({
                           <div className="text-[11px] text-text-secondary truncate">
                             {talent.primarySkill}
                           </div>
+                          {assignedGroups.length > 0 && (
+                            <div className="flex items-center gap-1 mt-0.5 flex-wrap">
+                              <span className="text-[9px] text-amber-700 dark:text-amber-400 font-semibold flex items-center gap-1">
+                                <span className="w-1 h-1 rounded-full bg-amber-500 animate-pulse shrink-0" />
+                                {isKa ? 'სხვა ჯგუფშია:' : 'In group:'}
+                              </span>
+                              {assignedGroups.map((grp) => (
+                                <span
+                                  key={grp.id}
+                                  className="inline-flex items-center gap-1 text-[9px] font-semibold px-1.5 py-0.2 rounded-full border"
+                                  style={{
+                                    backgroundColor: `${grp.colorAccent || '#6366f1'}15`,
+                                    borderColor: `${grp.colorAccent || '#6366f1'}35`,
+                                    color: grp.colorAccent || '#6366f1',
+                                  }}
+                                >
+                                  <span
+                                    className="w-1 h-1 rounded-full"
+                                    style={{ backgroundColor: grp.colorAccent || '#6366f1' }}
+                                  />
+                                  {grp.name}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-center gap-2.5 shrink-0">
@@ -413,5 +644,14 @@ export const GroupFormModal: React.FC<GroupFormModalProps> = ({
         )}
       </form>
     </Modal>
+
+    <MemberGroupConflictModal
+      isOpen={isConflictModalOpen}
+      onClose={() => setIsConflictModalOpen(false)}
+      onConfirm={executeCreateGroup}
+      targetGroupName={name.trim()}
+      conflictedMembers={conflictedMembers}
+    />
+    </>
   );
 };

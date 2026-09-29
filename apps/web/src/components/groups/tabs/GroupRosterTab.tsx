@@ -15,6 +15,8 @@ import {
 import { useLanguage } from '../../../context/LanguageContext';
 import { getTalentAvatar } from '../../../utils/avatarUtils';
 
+import { useApp } from '../../../context/AppContext';
+
 interface GroupRosterTabProps {
   members: Talent[];
   currentGroup: Group;
@@ -27,12 +29,14 @@ interface GroupRosterTabProps {
 
 export const GroupRosterTab: React.FC<GroupRosterTabProps> = ({
   members,
+  currentGroup,
   onAssignTask,
   onRemoveMember,
   onSelectTalent,
   dict,
   isKa
 }) => {
+  const { groups } = useApp();
   const { t } = useLanguage();
   const [openMemberMenuId, setOpenMemberMenuId] = useState<string | null>(null);
 
@@ -79,6 +83,34 @@ export const GroupRosterTab: React.FC<GroupRosterTabProps> = ({
                     </p>
                     <div className="text-xs text-text-secondary flex items-center gap-1.5 flex-wrap mt-1">
                       <span>{member.gender === 'Male' ? (isKa ? 'კაცი' : 'Male') : (isKa ? 'ქალი' : 'Female')}</span>
+                      {(() => {
+                        const otherGroups = groups.filter(
+                          (g) => g.id !== currentGroup.id && (g.memberTalentIds || []).includes(member.id)
+                        );
+                        if (otherGroups.length === 0) return null;
+                        return (
+                          <div className="flex items-center gap-1 flex-wrap">
+                            <span className="text-text-muted">•</span>
+                            {otherGroups.map((og) => (
+                              <span
+                                key={og.id}
+                                className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full border shadow-2xs"
+                                style={{
+                                  backgroundColor: `${og.colorAccent || '#6366f1'}15`,
+                                  borderColor: `${og.colorAccent || '#6366f1'}35`,
+                                  color: og.colorAccent || '#6366f1',
+                                }}
+                              >
+                                <span
+                                  className="w-1.5 h-1.5 rounded-full"
+                                  style={{ backgroundColor: og.colorAccent || '#6366f1' }}
+                                />
+                                {og.name}
+                              </span>
+                            ))}
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
                 </div>

@@ -733,13 +733,25 @@ export const GroupDetailView: React.FC = () => {
             </div>
 
             {/* 2. Page Header Area */}
-            <div className="bg-surface border border-border-subtle rounded-xl p-5 sm:p-6 mb-6 shadow-xs">
+            <div
+                style={{
+                    borderLeftColor: currentGroup.colorAccent || '#6366F1',
+                    borderLeftWidth: '4px'
+                }}
+                className="bg-surface border border-border-subtle rounded-xl p-5 sm:p-6 mb-6 shadow-xs"
+            >
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
                     {/* Header Left */}
                     <div className="min-w-0 flex-1">
-                        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-text-primary m-0">
-                            {currentGroup.name}
-                        </h1>
+                        <div className="flex items-center gap-3">
+                            <span
+                                className="w-4 h-4 rounded-full shrink-0 shadow-sm"
+                                style={{ backgroundColor: currentGroup.colorAccent || '#6366F1' }}
+                            />
+                            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-text-primary m-0">
+                                {currentGroup.name}
+                            </h1>
+                        </div>
 
                         {displayDescription && (
                             <p className="text-sm text-text-secondary mt-1.5 max-w-2xl leading-relaxed m-0">
@@ -791,7 +803,7 @@ export const GroupDetailView: React.FC = () => {
             </div>
 
             {/* 3. KPI / Metrics Row */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 <StatCard
                     title={dict.totalMembers}
                     value={members.length}
@@ -817,6 +829,30 @@ export const GroupDetailView: React.FC = () => {
                     icon={<Clock size={18} strokeWidth={2.2} />}
                     iconBgColor="bg-purple-500/10 text-purple-600 dark:text-purple-400"
                 />
+
+                <div
+                    onClick={() => {
+                        const isCurrentlyActive = currentGroup.allowMultiDuty !== false;
+                        const nextVal = !isCurrentlyActive;
+                        updateGroup(currentGroup.id, { allowMultiDuty: nextVal });
+                        toast.success(
+                            nextVal
+                                ? (isKa ? 'მრავალჯერადი მოვალეობა (Multi-Duty) გააქტიურდა' : 'Multi-Duty enabled')
+                                : (isKa ? 'მრავალჯერადი მოვალეობა (Multi-Duty) გაითიშა' : 'Multi-Duty disabled')
+                        );
+                    }}
+                    className="cursor-pointer group hover:scale-[1.01] transition-transform"
+                    title={isKa ? 'დააჭირეთ წესის გადასართავად (ჩართვა/გამორთვა)' : 'Click to toggle Multi-Duty rule'}
+                >
+                    <StatCard
+                        title={isKa ? 'მრავალჯერადი (Multi-Duty)' : 'Multi-Duty'}
+                        value={currentGroup.allowMultiDuty !== false ? (isKa ? 'ჩართულია' : 'Enabled') : (isKa ? 'გამორთულია' : 'Disabled')}
+                        subtitle={currentGroup.allowMultiDuty !== false ? (isKa ? '1 არტისტი > 1 ინვენტარი' : '1 talent > 1 item') : (isKa ? 'მკაცრი 1-to-1 შეზღუდვა' : 'Strict 1-to-1')}
+                        subtitleColor={currentGroup.allowMultiDuty !== false ? 'text-brand-primary font-semibold' : 'text-text-secondary'}
+                        icon={<Boxes size={18} strokeWidth={2.2} />}
+                        iconBgColor={currentGroup.allowMultiDuty !== false ? 'bg-brand-primary/10 text-brand-primary' : 'bg-surface-secondary text-text-tertiary'}
+                    />
+                </div>
             </div>
 
             {/* 4. Full-Width Border-Bottom Tab Strip */}
@@ -897,6 +933,8 @@ export const GroupDetailView: React.FC = () => {
                     <GroupShowsTab
                         groupShows={groupShows}
                         venues={venues}
+                        talents={talents}
+                        members={members}
                         onSelectShow={(show) => setSelectedShowForDetail(show)}
                         onBookShow={() => openScheduleModal()}
                         dict={dict}

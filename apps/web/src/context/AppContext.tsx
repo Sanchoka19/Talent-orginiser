@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Talent } from '../types/talent';
+import { Talent, ContractRecord, TalentStatus } from '../types/talent';
 import { Group } from '../types/group';
 import { HotelVenue } from '../types/venue';
 import { ShowEvent, ConflictCheckResult } from '../types/schedule';
@@ -33,6 +33,7 @@ import {
   getCycleKey,
   syncShowsWithGroupRequirements
 } from '../services/rotationEngine';
+import { applyCascadeResolutions } from '../services/cascadeImpactEngine';
 
 interface AppContextType {
   talents: Talent[];
@@ -93,6 +94,24 @@ interface AppContextType {
     lobbyTime?: string;
     lobbyDateTime?: string;
   }) => ConflictCheckResult;
+  // Cascade Termination
+  terminateTalentWithCascade: (
+    talentId: string,
+    resolutions: {
+      caseAResolutions: Record<string, 'relax_rule' | 'pause_task'>;
+      caseBResolutions: Record<string, 'reduce_headcount' | 'keep_vacant'>;
+    },
+    reviewData?: Partial<ContractRecord>
+  ) => void;
+  // Status Change with Duty Resolution
+  changeTalentStatusWithDutyResolution: (
+    talentId: string,
+    newStatus: TalentStatus,
+    resolution: {
+      mode: 'auto' | 'manual';
+      replacements?: Record<string, string>;
+    }
+  ) => void;
   // Reset
   resetAllData: () => void;
 }
@@ -254,6 +273,50 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
         return resynced;
       });
+    } else if (updates.status === 'Rest' || updates.status === 'Sick/Injured') {
+      const now = Date.now();
+      const updatedTalents = talents.map((t) =>
+        t.id === id ? { ...t, ...updates } : t
+      );
+
+      setSchedule((prev) => {
+        const cleanedSchedule = prev.map((ev) => {
+          if (
+            ev.status === 'Completed' ||
+            ev.status === 'Cancelled' ||
+            new Date(ev.startDateTime).getTime() < now
+          ) {
+            return ev;
+          }
+
+          let hasChanges = false;
+          const updatedDuties = (ev.dutyAssignments || []).map((duty) => {
+            if (!duty.assignedTalentIds.includes(id)) return duty;
+            hasChanges = true;
+            return {
+              ...duty,
+              assignedTalentIds: duty.assignedTalentIds.filter((tid) => tid !== id),
+              updatedAt: new Date().toISOString()
+            };
+          });
+
+          return hasChanges ? { ...ev, dutyAssignments: updatedDuties } : ev;
+        });
+
+        const memberGroups = groups.filter((g) =>
+          (g.memberTalentIds || []).includes(id)
+        );
+
+        let resynced = cleanedSchedule;
+        for (const g of memberGroups) {
+          resynced = syncShowsWithGroupRequirements(g, resynced, updatedTalents);
+        }
+        return resynced;
+      });
+
+      if (selectedTalent?.id === id) {
+        setSelectedTalent((prev) => (prev ? { ...prev, ...updates } : null));
+      }
     } else if (selectedTalent?.id === id) {
       setSelectedTalent((prev) => (prev ? { ...prev, ...updates } : null));
     }
@@ -327,8 +390,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       })
     );
 
-    // When inventoryRequirements or memberTalentIds are updated, automatically attach/sync to all shows of this group!
-    if (updates.inventoryRequirements || updates.memberTalentIds) {
+    // When inventoryRequirements, memberTalentIds, or allowMultiDuty rules are updated, automatically attach/sync to all shows of this group!
+    if (updates.inventoryRequirements || updates.memberTalentIds || updates.allowMultiDuty !== undefined) {
       setSchedule((prevSchedule) => {
         const targetGroup = nextGroup || groups.find((g) => g.id === id);
         if (!targetGroup) return prevSchedule;
@@ -589,6 +652,196 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setSelectedTalent(null);
   };
 
+  const terminateTalentWithCascade = (
+    talentId: string,
+    resolutions: {
+      caseAResolutions: Record<string, 'relax_rule' | 'pause_task'>;
+      caseBResolutions: Record<string, 'reduce_headcount' | 'keep_vacant'>;
+    },
+    reviewData?: Partial<ContractRecord>
+  ) => {
+    const talent = talents.find((t) => t.id === talentId);
+    if (!talent) return;
+
+    // 1. Run cascade resolution engine on groups and schedule
+    const { updatedGroups, updatedSchedule } = applyCascadeResolutions({
+      talent,
+      caseAResolutions: resolutions.caseAResolutions,
+      caseBResolutions: resolutions.caseBResolutions,
+      groups,
+      talents,
+      schedule
+    });
+
+    setGroups(updatedGroups);
+    setSchedule(updatedSchedule);
+
+    // 2. Mark talent as Terminated & Archived
+    const todayStr = new Date().toISOString().split('T')[0];
+    const newReview: ContractRecord = {
+      id: `ctr-${Date.now()}`,
+      talentId: talent.id,
+      talentName: `${talent.firstName} ${talent.lastName}`,
+      talentRole: talent.primarySkill,
+      avatarUrl: talent.avatarUrl,
+      projectName: reviewData?.projectName || 'Early Termination',
+      location: (talent as any).location || 'Tbilisi',
+      period: reviewData?.period || 'Current Season 2026',
+      startDate: (talent as any).contractStart || '2026-05-01',
+      endDate: talent.contractExpiryDate || todayStr,
+      contractStatus: 'terminated',
+      rating: reviewData?.rating || 5,
+      rehireStatus: reviewData?.rehireStatus || 'do_not_rehire',
+      terminationReason: reviewData?.terminationReason || 'Administrative',
+      initiator: 'admin',
+      internalNote: reviewData?.internalNote || '',
+      reviewedBy: currentUser?.fullName || 'Administrator',
+      reviewDate: todayStr,
+      overallRating: reviewData?.overallRating || 5,
+      privateNote: reviewData?.privateNote || '',
+      reviewerName: currentUser?.fullName || 'Administrator',
+      createdAt: new Date().toISOString(),
+      completionStatus: 'Terminated Early',
+      reviewType: 'Early Termination',
+      ...reviewData
+    };
+
+    const updatedReviews = [newReview, ...(talent.reviews || [])];
+
+    setTalents((prev) =>
+      prev.map((t) =>
+        t.id === talentId
+          ? {
+              ...t,
+              reviews: updatedReviews,
+              rehireStatus: newReview.rehireStatus,
+              contractExpiryDate: undefined,
+              status: 'Terminated',
+              isArchived: true,
+              contractStatus: 'terminated',
+              terminationReason: newReview.terminationReason,
+              terminationDate: todayStr
+            }
+          : t
+      )
+    );
+
+    if (selectedTalent?.id === talentId) {
+      setSelectedTalent(null);
+    }
+  };
+
+  const changeTalentStatusWithDutyResolution = (
+    talentId: string,
+    newStatus: TalentStatus,
+    resolution: {
+      mode: 'auto' | 'manual';
+      replacements?: Record<string, string>;
+    }
+  ) => {
+    const talent = talents.find((t) => t.id === talentId);
+    if (!talent) return;
+
+    // 1. Update talent status
+    const updatedTalents = talents.map((t) =>
+      t.id === talentId ? { ...t, status: newStatus } : t
+    );
+    setTalents(updatedTalents);
+
+    if (selectedTalent?.id === talentId) {
+      setSelectedTalent({ ...selectedTalent, status: newStatus });
+    }
+
+    const now = Date.now();
+
+    // 2. Handle affected future shows
+    if (resolution.mode === 'manual' && resolution.replacements) {
+      setSchedule((prev) =>
+        prev.map((ev) => {
+          if (
+            ev.status === 'Completed' ||
+            ev.status === 'Cancelled' ||
+            new Date(ev.startDateTime).getTime() < now
+          ) {
+            return ev;
+          }
+
+          let hasChanges = false;
+          const updatedDuties = (ev.dutyAssignments || []).map((duty) => {
+            if (!duty.assignedTalentIds.includes(talentId)) return duty;
+
+            const repKey = `${ev.id}_${duty.requirementId || duty.itemName}`;
+            const repKeySimple = `${ev.id}_${duty.itemName}`;
+            const replacementId =
+              resolution.replacements?.[repKey] ||
+              resolution.replacements?.[repKeySimple] ||
+              resolution.replacements?.[ev.id];
+
+            if (replacementId) {
+              hasChanges = true;
+              return {
+                ...duty,
+                assignedTalentIds: duty.assignedTalentIds.map((tid) =>
+                  tid === talentId ? replacementId : tid
+                ),
+                manualOverrides: {
+                  ...(duty.manualOverrides || {}),
+                  [talentId]: replacementId
+                },
+                updatedAt: new Date().toISOString()
+              };
+            }
+            return duty;
+          });
+
+          return hasChanges ? { ...ev, dutyAssignments: updatedDuties } : ev;
+        })
+      );
+    } else {
+      // mode === 'auto':
+      // Remove talent from upcoming future show duties
+      const cleanedSchedule = schedule.map((ev) => {
+        if (
+          ev.status === 'Completed' ||
+          ev.status === 'Cancelled' ||
+          new Date(ev.startDateTime).getTime() < now
+        ) {
+          return ev;
+        }
+
+        let hasChanges = false;
+        const updatedDuties = (ev.dutyAssignments || []).map((duty) => {
+          if (!duty.assignedTalentIds.includes(talentId)) return duty;
+          hasChanges = true;
+          return {
+            ...duty,
+            assignedTalentIds: duty.assignedTalentIds.filter((tid) => tid !== talentId),
+            updatedAt: new Date().toISOString()
+          };
+        });
+
+        return hasChanges ? { ...ev, dutyAssignments: updatedDuties } : ev;
+      });
+
+      // Find groups this talent belongs to
+      const memberGroups = groups.filter((g) =>
+        (g.memberTalentIds || []).includes(talentId)
+      );
+
+      // Resync these groups shows with updated talents (talent is now non-Active)
+      let resyncedSchedule = cleanedSchedule;
+      for (const g of memberGroups) {
+        resyncedSchedule = syncShowsWithGroupRequirements(
+          g,
+          resyncedSchedule,
+          updatedTalents
+        );
+      }
+
+      setSchedule(resyncedSchedule);
+    }
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -620,6 +873,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         regenerateDutiesForEvent,
         getGroupFairnessScore,
         validateConflict,
+        terminateTalentWithCascade,
+        changeTalentStatusWithDutyResolution,
         resetAllData
       }}
     >

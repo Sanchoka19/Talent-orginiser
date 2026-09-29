@@ -16,6 +16,16 @@ import {
   Bus
 } from 'lucide-react';
 
+// Convert a hex color (#RRGGBB) to an "r, g, b" string for CSS rgba()
+const hexToRgb = (hex: string): string => {
+  const clean = hex.replace('#', '');
+  const r = parseInt(clean.substring(0, 2), 16);
+  const g = parseInt(clean.substring(2, 4), 16);
+  const b = parseInt(clean.substring(4, 6), 16);
+  if (isNaN(r) || isNaN(g) || isNaN(b)) return '99, 102, 241';
+  return `${r}, ${g}, ${b}`;
+};
+
 interface YearViewProps {
   currentDate: Date;
   events: ShowEvent[];
@@ -232,10 +242,19 @@ export const YearView: React.FC<YearViewProps> = ({
 
                         {/* Group Name & Hotel Venue */}
                         <div className="flex items-center gap-2 text-xs mt-0.5 flex-wrap">
-                          <span className="inline-flex items-center gap-1 text-text-inverse font-semibold bg-brand-primary px-1.5 py-0.5 rounded-pill text-[10px] shadow-sm">
-                            <Users className="w-2.5 h-2.5" />
-                            <span>{group?.name}</span>
-                          </span>
+                          {(() => {
+                            const accent = group?.colorAccent || '#6366F1';
+                            const rgb = hexToRgb(accent);
+                            return (
+                              <span
+                                style={{ backgroundColor: accent, color: '#fff' }}
+                                className="inline-flex items-center gap-1 font-semibold px-1.5 py-0.5 rounded-pill text-[10px] shadow-sm"
+                              >
+                                <Users className="w-2.5 h-2.5" />
+                                <span>{group?.name}</span>
+                              </span>
+                            );
+                          })()}
 
                           <span className="inline-flex items-center gap-1 text-text-secondary text-[11px]">
                             <MapPin className="w-2.5 h-2.5" />
@@ -330,10 +349,18 @@ export const YearView: React.FC<YearViewProps> = ({
                       <div className="text-[11px] text-text-secondary mb-0.5">
                         {t('group_label')}:
                       </div>
-                      <span className="inline-flex items-center gap-1 text-xs font-semibold bg-brand-primary text-text-inverse px-2.5 py-1 rounded-pill shadow-sm">
-                        <Users className="w-3 h-3" />
-                        <span>{group?.name}</span>
-                      </span>
+                      {(() => {
+                        const accent = group?.colorAccent || '#6366F1';
+                        return (
+                          <span
+                            style={{ backgroundColor: accent, color: '#fff' }}
+                            className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-pill shadow-sm"
+                          >
+                            <Users className="w-3 h-3" />
+                            <span>{group?.name}</span>
+                          </span>
+                        );
+                      })()}
                     </div>
 
                     {/* Hotel Venue */}

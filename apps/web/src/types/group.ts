@@ -14,6 +14,7 @@ export interface Group {
   customRotationValue?: number;
   customRotationUnit?: 'show' | 'day' | 'week';
   fairnessPoolEnabled?: boolean;
+  allowMultiDuty?: boolean; // Multi-Duty: allows 1 talent > 1 duty when items exceed team members
   colorAccent?: string;
   createdAt: string;
 }

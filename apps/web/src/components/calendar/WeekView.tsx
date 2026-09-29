@@ -6,7 +6,17 @@ import { Group } from '../../types/group';
 import { HotelVenue } from '../../types/venue';
 import { useLanguage } from '../../context/LanguageContext';
 import { useApp } from '../../context/AppContext';
-import { MapPin, Users, Bus, Clock, Check } from 'lucide-react';
+import { MapPin, Users, Bus, Clock, Check, AlertTriangle } from 'lucide-react';
+
+// Convert a hex color (#RRGGBB) to an "r, g, b" string for CSS rgba()
+const hexToRgb = (hex: string): string => {
+  const clean = hex.replace('#', '');
+  const r = parseInt(clean.substring(0, 2), 16);
+  const g = parseInt(clean.substring(2, 4), 16);
+  const b = parseInt(clean.substring(4, 6), 16);
+  if (isNaN(r) || isNaN(g) || isNaN(b)) return '99, 102, 241';
+  return `${r}, ${g}, ${b}`;
+};
 
 interface WeekViewProps {
   currentDate: Date;
@@ -26,6 +36,7 @@ export const WeekView: React.FC<WeekViewProps> = ({
   onSelectDate
 }) => {
   const { language, t } = useLanguage();
+  const isKa = language === 'ka';
   const { formatTime } = useApp();
   const groupMap = new Map(groups.map((g) => [g.id, g]));
   const venueMap = new Map(venues.map((v) => [v.id, v]));
@@ -135,6 +146,26 @@ export const WeekView: React.FC<WeekViewProps> = ({
 
                     const isEventPast = isPast || new Date(ev.endDateTime).getTime() < Date.now();
 
+                    // Group accent color
+                    const accent = group?.colorAccent || '#6366F1';
+                    const rgb = hexToRgb(accent);
+                    const cardStyle = isEventPast
+                      ? {
+                          borderLeftColor: `rgba(${rgb}, 0.5)`,
+                          borderLeftWidth: '3px',
+                          backgroundColor: `rgba(${rgb}, 0.06)`
+                        }
+                      : {
+                          backgroundColor: accent,
+                          borderColor: accent
+                        };
+
+                    const totalVacancies = (ev.dutyAssignments || []).reduce((acc, d) => {
+                      const needed = Math.max(1, d.requiredHeadcount || 1);
+                      const assigned = d.assignedTalentIds?.length || 0;
+                      return acc + Math.max(0, needed - assigned);
+                    }, 0);
+
                     return (
                       <div
                         key={ev.id}
@@ -142,13 +173,22 @@ export const WeekView: React.FC<WeekViewProps> = ({
                           e.stopPropagation();
                           onSelectEvent(ev);
                         }}
+                        style={cardStyle}
                         className={`p-2.5 rounded-sm border cursor-pointer transition-all duration-150 ${
                           isEventPast
-                            ? 'bg-surface-secondary text-text-secondary border-border-medium opacity-85 hover:opacity-100'
-                            : 'bg-brand-primary text-text-inverse border-brand-primary-hover shadow-sm hover:shadow-glow hover:-translate-y-0.5 active:translate-y-0'
+                            ? 'text-text-secondary border-border-subtle opacity-85 hover:opacity-100'
+                            : 'text-text-inverse border-transparent shadow-sm hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 hover:brightness-90'
                         }`}
                       >
-                        <div className="font-bold text-xs truncate mb-1">{ev.title}</div>
+                        <div className="flex items-center justify-between gap-1 mb-1">
+                          <div className="font-bold text-xs truncate">{ev.title}</div>
+                          {!isEventPast && totalVacancies > 0 && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-500/30 text-amber-100 border border-amber-400/40 shrink-0">
+                              <AlertTriangle size={10} className="shrink-0" />
+                              <span>{totalVacancies} {isKa ? 'ვაკანსია' : totalVacancies === 1 ? 'Vacancy' : 'Vacancies'}</span>
+                            </span>
+                          )}
+                        </div>
 
                         <div className="flex flex-col gap-0.5 text-xs mb-1.5">
                           <div

@@ -25,7 +25,9 @@ import {
   Search,
   Check,
   AlertTriangle,
-  CalendarRange
+  CalendarRange,
+  Info,
+  AlertCircle
 } from 'lucide-react';
 import { DatePicker } from '../common/DatePicker';
 
@@ -67,6 +69,27 @@ export const TaskAssignmentModal: React.FC<TaskAssignmentModalProps> = ({
 }) => {
   const toast = useToast();
   const [taskName, setTaskName] = useState('');
+
+  // Helper to calculate maximum allowed headcount for given gender filter
+  const getMaxHeadcountForGender = (gender: DutyGenderRequirement) => {
+    let count = members.length;
+    let labelKa = 'წევრი';
+    let labelEn = 'member';
+
+    if (gender === 'Male Only') {
+      count = members.filter((m) => m.gender === 'Male').length;
+      labelKa = 'კაცი';
+      labelEn = 'male';
+    } else if (gender === 'Female Only') {
+      count = members.filter((m) => m.gender === 'Female').length;
+      labelKa = 'ქალი';
+      labelEn = 'female';
+    }
+
+    const max = Math.max(1, count);
+    return { count, max, labelKa, labelEn };
+  };
+
   // Initialize empty; filled client-side to avoid SSR/hydration mismatch
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate]     = useState('');
@@ -230,8 +253,29 @@ export const TaskAssignmentModal: React.FC<TaskAssignmentModalProps> = ({
     setSlots((prev) => prev.map((s) => (s.id === slotId ? { ...s, ...updated } : s)));
   };
 
+  /**
+   * Zero-match gender validation:
+   * Returns a map of slot.id -> error message for slots whose gender filter
+   * yields 0 matching members.
+   */
+  const genderMismatchErrors: Record<string, string> = {};
+  for (const slot of slots) {
+    const { count } = getMaxHeadcountForGender(slot.assignedGender);
+    if (slot.assignedGender !== 'Any' && count === 0) {
+      genderMismatchErrors[slot.id] = slot.assignedGender === 'Female Only'
+        ? (isKa
+          ? 'ჯგუფში არ ირიცხება მდედრობითი სქესის წევრი ამ მოთხოვნის შესასრულებლად'
+          : 'No female members in group to fulfil this requirement')
+        : (isKa
+          ? 'ჯგუფში არ ირიცხება მამრობითი სქესის წევრი ამ მოთხოვნის შესასრულებლად'
+          : 'No male members in group to fulfil this requirement');
+    }
+  }
+  const hasGenderMismatch = Object.keys(genderMismatchErrors).length > 0;
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (hasGenderMismatch) return; // double-guard
 
     if (assignmentMode === 'manual' && selectedTalentIds.length === 0) {
       toast.error(
@@ -247,18 +291,21 @@ export const TaskAssignmentModal: React.FC<TaskAssignmentModalProps> = ({
         ? selectedTalentIds
         : undefined;
 
-    const sanitizedSlots: DutySlot[] = slots.map((s) => ({
-      ...s,
-      startDate: startDate || undefined,
-      endDate: endDate || undefined,
-      headcount: Math.max(1, Number(s.headcount) || 1),
-      customRotationValue:
-        s.rotationCycle === 'custom'
-          ? Math.max(1, Number(s.customRotationValue) || 2)
-          : undefined,
-      customRotationUnit:
-        s.rotationCycle === 'custom' ? (s.customRotationUnit || 'show') : undefined
-    }));
+    const sanitizedSlots: DutySlot[] = slots.map((s) => {
+      const { max } = getMaxHeadcountForGender(s.assignedGender);
+      return {
+        ...s,
+        startDate: startDate || undefined,
+        endDate: endDate || undefined,
+        headcount: Math.min(max, Math.max(1, Number(s.headcount) || 1)),
+        customRotationValue:
+          s.rotationCycle === 'custom'
+            ? Math.max(1, Number(s.customRotationValue) || 2)
+            : undefined,
+        customRotationUnit:
+          s.rotationCycle === 'custom' ? (s.customRotationUnit || 'show') : undefined
+      };
+    });
 
     onSaveSpecialTask(taskName, sanitizedSlots, performerIds, startDate || undefined, endDate || undefined);
   };
@@ -396,6 +443,25 @@ export const TaskAssignmentModal: React.FC<TaskAssignmentModalProps> = ({
                 <div className="flex flex-col gap-2.5 transition-all duration-300">
                   {slots.map((slot, sIdx) => {
                     const datalistId = `stage-pos-list-${sIdx}`;
+                    const { count, max: maxLimit, labelKa, labelEn } = getMaxHeadcountForGender(slot.assignedGender);
+                    const isAtMax = maxLimit > 0 && Number(slot.headcount) >= maxLimit;
+                    const showHint = count === 0 || count <= 1 || isAtMax;
+
+                    let hintText = '';
+                    if (count === 0) {
+                      if (slot.assignedGender === 'Female Only') {
+                        hintText = isKa ? 'ჯგუფში არ არის ქალი წევრი' : 'No female members in group';
+                      } else if (slot.assignedGender === 'Male Only') {
+                        hintText = isKa ? 'ჯგუფში არ არის კაცი წევრი' : 'No male members in group';
+                      } else {
+                        hintText = isKa ? 'ჯგუფში წევრები არ არიან' : 'No members in group';
+                      }
+                    } else {
+                      hintText = isKa
+                        ? `ჯგუფში მხოლოდ ${count} ${labelKa}ა (მაქსიმუმი: ${maxLimit})`
+                        : `Only ${count} ${labelEn}${count === 1 ? '' : 's'} in group (Max: ${maxLimit})`;
+                    }
+
                     return (
                       <div
                         key={slot.id || sIdx}
@@ -437,80 +503,125 @@ export const TaskAssignmentModal: React.FC<TaskAssignmentModalProps> = ({
                           )}
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                          <div className="relative">
-                            <User
-                              size={14}
-                              className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary pointer-events-none"
-                            />
-                            <select
-                              value={slot.assignedGender}
-                              onChange={(e) =>
-                                handleUpdateSlot(slot.id, {
-                                  assignedGender: e.target.value as DutyGenderRequirement
-                                })
-                              }
-                              className="w-full text-xs font-semibold pl-8 pr-2.5 py-2 rounded-lg border border-border-medium bg-surface text-text-primary outline-none focus:border-purple-600 cursor-pointer"
-                            >
-                              <option value="Any">{dict.genderAny}</option>
-                              <option value="Female Only">{dict.genderFemaleOnly}</option>
-                              <option value="Male Only">{dict.genderMaleOnly}</option>
-                            </select>
-                          </div>
+                        <div>
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            <div className="relative">
+                              <User
+                                size={14}
+                                className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary pointer-events-none"
+                              />
+                              <select
+                                value={slot.assignedGender}
+                                onChange={(e) => {
+                                  const newGender = e.target.value as DutyGenderRequirement;
+                                  const genderMax = getMaxHeadcountForGender(newGender).max;
+                                  const currentHeadcount = Number(slot.headcount) || 1;
+                                  handleUpdateSlot(slot.id, {
+                                    assignedGender: newGender,
+                                    headcount: Math.min(genderMax, currentHeadcount)
+                                  });
+                                }}
+                                className="w-full text-xs font-semibold pl-8 pr-2.5 py-2 rounded-lg border border-border-medium bg-surface text-text-primary outline-none focus:border-purple-600 cursor-pointer"
+                              >
+                                <option value="Any">{dict.genderAny}</option>
+                                <option value="Female Only">{dict.genderFemaleOnly}</option>
+                                <option value="Male Only">{dict.genderMaleOnly}</option>
+                              </select>
+                            </div>
 
-                          <div className="relative">
-                            <Clock
-                              size={14}
-                              className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary pointer-events-none"
-                            />
-                            <select
-                              value={slot.rotationCycle || 'every_show'}
-                              onChange={(e) =>
-                                handleUpdateSlot(slot.id, {
-                                  rotationCycle: e.target.value as TaskRotationCycle,
-                                  customRotationValue: slot.customRotationValue || 2,
-                                  customRotationUnit: slot.customRotationUnit || 'show'
-                                })
-                              }
-                              className="w-full text-xs font-semibold pl-8 pr-2.5 py-2 rounded-lg border border-border-medium bg-surface text-text-primary outline-none focus:border-purple-600 cursor-pointer"
-                            >
-                              <option value="every_show">{dict.slotCycleEveryShow}</option>
-                              <option value="weekly">{dict.slotCycleWeekly}</option>
-                              <option value="monthly">{dict.slotCycleMonthly}</option>
-                              <option value="fixed">{dict.slotCycleFixed}</option>
-                              <option value="custom">{dict.slotCycleCustom || (isKa ? 'მორგებული... (Custom)' : 'Custom...')}</option>
-                            </select>
-                          </div>
-
-                          <div className="relative flex items-center">
-                            <Users
-                              size={14}
-                              className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary pointer-events-none"
-                            />
-                            <input
-                              type="number"
-                              min={1}
-                              max={10}
-                              value={slot.headcount}
-                              onChange={(e) =>
-                                handleUpdateSlot(slot.id, {
-                                  headcount: e.target.value === '' ? '' : Math.max(1, Math.min(10, Number(e.target.value)))
-                                })
-                              }
-                              onBlur={() => {
-                                if (slot.headcount === '' || Number(slot.headcount) < 1) {
-                                  handleUpdateSlot(slot.id, { headcount: 1 });
+                            <div className="relative">
+                              <Clock
+                                size={14}
+                                className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary pointer-events-none"
+                              />
+                              <select
+                                value={slot.rotationCycle || 'every_show'}
+                                onChange={(e) =>
+                                  handleUpdateSlot(slot.id, {
+                                    rotationCycle: e.target.value as TaskRotationCycle,
+                                    customRotationValue: slot.customRotationValue || 2,
+                                    customRotationUnit: slot.customRotationUnit || 'show'
+                                  })
                                 }
-                              }}
-                              className="w-full text-xs font-bold pl-8 pr-12 py-2 rounded-lg border border-border-medium bg-surface text-text-primary text-center outline-none focus:border-purple-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                              title={dict.headcount}
-                              placeholder={dict.headcount}
-                              required
-                            />
-                            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] font-medium text-text-secondary pointer-events-none select-none">
-                              {isKa ? 'შემსრ.' : 'prs.'}
-                            </span>
+                                className="w-full text-xs font-semibold pl-8 pr-2.5 py-2 rounded-lg border border-border-medium bg-surface text-text-primary outline-none focus:border-purple-600 cursor-pointer"
+                              >
+                                <option value="every_show">{dict.slotCycleEveryShow}</option>
+                                <option value="weekly">{dict.slotCycleWeekly}</option>
+                                <option value="monthly">{dict.slotCycleMonthly}</option>
+                                <option value="fixed">{dict.slotCycleFixed}</option>
+                                <option value="custom">{dict.slotCycleCustom || (isKa ? 'მორგებული... (Custom)' : 'Custom...')}</option>
+                              </select>
+                            </div>
+
+                            <div className="relative flex items-center">
+                              <Users
+                                size={14}
+                                className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary pointer-events-none"
+                              />
+                              <input
+                                type="number"
+                                min={1}
+                                max={maxLimit}
+                                value={slot.headcount}
+                                onChange={(e) => {
+                                  if (e.target.value === '') {
+                                    handleUpdateSlot(slot.id, { headcount: '' });
+                                    return;
+                                  }
+                                  const entered = Number(e.target.value);
+                                  const clamped = Math.max(1, Math.min(maxLimit, entered));
+                                  handleUpdateSlot(slot.id, {
+                                    headcount: clamped
+                                  });
+                                }}
+                                onBlur={() => {
+                                  if (slot.headcount === '' || Number(slot.headcount) < 1) {
+                                    handleUpdateSlot(slot.id, { headcount: 1 });
+                                  } else if (Number(slot.headcount) > maxLimit) {
+                                    handleUpdateSlot(slot.id, { headcount: maxLimit });
+                                  }
+                                }}
+                                className={`w-full text-xs font-bold pl-8 pr-12 py-2 rounded-lg border bg-surface text-text-primary text-center outline-none focus:border-purple-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-colors ${
+                                  count === 0
+                                    ? 'border-rose-400 dark:border-rose-500/60 focus:border-rose-500'
+                                    : isAtMax && count <= 2
+                                    ? 'border-amber-400/80 dark:border-amber-500/60 focus:border-amber-500'
+                                    : 'border-border-medium'
+                                }`}
+                                title={dict.headcount}
+                                placeholder={dict.headcount}
+                                required
+                              />
+                              <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] font-medium text-text-secondary pointer-events-none select-none">
+                                {isKa ? 'შემსრ.' : 'prs.'}
+                              </span>
+                            </div>
                           </div>
+
+                          {showHint && (
+                            <div
+                              className={`flex items-center justify-end gap-1.5 pt-1.5 px-0.5 text-[11px] font-medium animate-in fade-in slide-in-from-top-0.5 duration-150 ${
+                                count === 0
+                                  ? 'text-rose-600 dark:text-rose-400'
+                                  : 'text-amber-600 dark:text-amber-400'
+                              }`}
+                            >
+                              {count === 0 ? (
+                                <AlertCircle size={12} className="shrink-0" />
+                              ) : (
+                                <Info size={12} className="shrink-0" />
+                              )}
+                              <span>{hintText}</span>
+                            </div>
+                          )}
+
+                          {/* Zero-match gender block error */}
+                          {genderMismatchErrors[slot.id] && (
+                            <div className="flex items-start gap-1.5 mt-1 p-2 rounded-lg bg-rose-500/10 border border-rose-500/30 text-[11px] font-semibold text-rose-600 dark:text-rose-400 animate-in fade-in duration-200">
+                              <AlertCircle size={12} className="shrink-0 mt-0.5" />
+                              <span>{genderMismatchErrors[slot.id]}</span>
+                            </div>
+                          )}
                         </div>
 
                         {/* Custom Rotation Compact Pair */}
@@ -917,7 +1028,15 @@ export const TaskAssignmentModal: React.FC<TaskAssignmentModalProps> = ({
 
             <button
               type="submit"
-              className="px-5 py-2 rounded-pill text-xs font-bold bg-brand-primary text-white shadow-glow hover:bg-brand-primary-hover hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer"
+              disabled={hasGenderMismatch}
+              title={hasGenderMismatch
+                ? (isKa ? 'სქესობრივი შეზღუდვის გამო შენახვა შეუძლებელია' : 'Cannot save: gender requirement cannot be met')
+                : undefined}
+              className={`px-5 py-2 rounded-pill text-xs font-bold text-white shadow-glow transition-all ${
+                hasGenderMismatch
+                  ? 'bg-slate-400 dark:bg-slate-600 opacity-60 cursor-not-allowed'
+                  : 'bg-brand-primary hover:bg-brand-primary-hover hover:-translate-y-0.5 active:translate-y-0 cursor-pointer'
+              }`}
             >
               {dict.saveTask}
             </button>

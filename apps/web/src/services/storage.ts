@@ -724,6 +724,7 @@ export const INITIAL_GROUPS: Group[] = [
       }
     ],
     rotationCycleWeeks: 1,
+    allowMultiDuty: true,
     colorAccent: '#FF6C41',
     createdAt: '2026-01-15T12:00:00Z'
   },
@@ -749,6 +750,7 @@ export const INITIAL_GROUPS: Group[] = [
       }
     ],
     rotationCycleWeeks: 2,
+    allowMultiDuty: true,
     colorAccent: '#004F72',
     createdAt: '2026-02-01T10:00:00Z'
   }

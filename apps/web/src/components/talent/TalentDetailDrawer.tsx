@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Talent, TalentStatus, TalentDocument, TalentReview, RehireStatus, ReviewType } from '../../types/talent';
+import { Talent, TalentStatus, TalentDocument, TalentReview, RehireStatus, ReviewType, ContractRecord } from '../../types/talent';
 import { Drawer } from '../common/Drawer';
 import { StatusBadge, GenderBadge, RehireBadge } from '../common/Badge';
 import { SplitProgressBar } from '../common/ProgressBar';
@@ -20,6 +20,7 @@ import {
   Plus,
   ExternalLink,
   User,
+  Users,
   FileText,
   BarChart3,
   Calendar,
@@ -55,6 +56,12 @@ import {
 import { extractContractExpiryDate } from '../../utils/contractParser';
 import { getCountryFromPhone } from '../common/PhoneInput';
 import { TalentReviewModal } from './TalentReviewModal';
+import { CascadeImpactModal } from './CascadeImpactModal';
+import { StatusChangeImpactModal, AffectedDutyShift } from './StatusChangeImpactModal';
+import {
+  analyzeContractTerminationImpact,
+  CascadeImpactReport
+} from '../../services/cascadeImpactEngine';
 import {
   computeHistoricalDutyCounts,
   computeFairnessScore,
@@ -86,13 +93,13 @@ export const DOCUMENT_TYPES: {
   short: string;
   badgeClass: string;
 }[] = [
-    { value: 'Passport', labelKa: 'პასპორტი', labelEn: 'Passport', short: 'PAS', badgeClass: 'bg-sky-500/10 text-sky-700 dark:text-sky-300 border border-sky-500/20' },
-    { value: 'Visa', labelKa: 'ვიზა', labelEn: 'Visa', short: 'VISA', badgeClass: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20' },
-    { value: 'ID Card', labelKa: 'პირადობის მოწმობა', labelEn: 'ID Card', short: 'ID', badgeClass: 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border border-indigo-500/20' },
-    { value: 'Medical', labelKa: 'სამედიცინო ცნობა', labelEn: 'Medical Clearance', short: 'MED', badgeClass: 'bg-red-500/10 text-red-700 dark:text-red-400 border border-red-500/20' },
-    { value: 'Contract', labelKa: 'კონტრაქტი', labelEn: 'Contract', short: 'CON', badgeClass: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20' },
-    { value: 'Other', labelKa: 'სხვა დოკუმენტი', labelEn: 'Other Document', short: 'DOC', badgeClass: 'bg-surface-secondary text-text-secondary border border-border-subtle' },
-  ];
+  { value: 'Passport', labelKa: 'პასპორტი', labelEn: 'Passport', short: 'PAS', badgeClass: 'bg-sky-500/10 text-sky-700 dark:text-sky-300 border border-sky-500/20' },
+  { value: 'Visa', labelKa: 'ვიზა', labelEn: 'Visa', short: 'VISA', badgeClass: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20' },
+  { value: 'ID Card', labelKa: 'პირადობის მოწმობა', labelEn: 'ID Card', short: 'ID', badgeClass: 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border border-indigo-500/20' },
+  { value: 'Medical', labelKa: 'სამედიცინო ცნობა', labelEn: 'Medical Clearance', short: 'MED', badgeClass: 'bg-red-500/10 text-red-700 dark:text-red-400 border border-red-500/20' },
+  { value: 'Contract', labelKa: 'კონტრაქტი', labelEn: 'Contract', short: 'CON', badgeClass: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20' },
+  { value: 'Other', labelKa: 'სხვა დოკუმენტი', labelEn: 'Other Document', short: 'DOC', badgeClass: 'bg-surface-secondary text-text-secondary border border-border-subtle' },
+];
 
 export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
   talent,
@@ -100,7 +107,7 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
   onClose,
   onEdit
 }) => {
-  const { updateTalent, deleteTalent, groups, schedule, formatTimeRange } = useApp();
+  const { updateTalent, deleteTalent, terminateTalentWithCascade, changeTalentStatusWithDutyResolution, groups, talents, schedule, formatTimeRange } = useApp();
   const { t, language } = useLanguage();
   const { confirm } = useConfirm();
   const toast = useToast();
@@ -110,6 +117,11 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
   const [statsSubTab, setStatsSubTab] = useState<'rotation' | 'shows'>('rotation');
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [selectedReviewType, setSelectedReviewType] = useState<ReviewType>('End of Season');
+  const [isCascadeModalOpen, setIsCascadeModalOpen] = useState(false);
+  const [cascadeReport, setCascadeReport] = useState<CascadeImpactReport | null>(null);
+  const [pendingTerminationReview, setPendingTerminationReview] = useState<ContractRecord | null>(null);
+  const [isStatusImpactModalOpen, setIsStatusImpactModalOpen] = useState(false);
+  const [pendingTargetStatus, setPendingTargetStatus] = useState<TalentStatus>('Sick/Injured');
   const [isActionsMenuOpen, setIsActionsMenuOpen] = useState(false);
   const actionsMenuRef = React.useRef<HTMLDivElement>(null);
   const [newDocName, setNewDocName] = useState('');
@@ -198,6 +210,41 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
 
   const totalDutiesServed = servedShifts.length;
 
+  // Future upcoming shifts for this talent (must be declared before early returns)
+  const futureShifts: AffectedDutyShift[] = useMemo(() => {
+    if (!talent || !schedule) return [];
+    const now = Date.now();
+    const upcoming: AffectedDutyShift[] = [];
+
+    for (const ev of schedule) {
+      if (ev.status === 'Completed' || ev.status === 'Cancelled') continue;
+      if (new Date(ev.startDateTime).getTime() < now) continue;
+
+      for (const d of ev.dutyAssignments || []) {
+        if (d.assignedTalentIds && d.assignedTalentIds.includes(talent.id)) {
+          let assignedGender = d.assignedGender;
+          if (!assignedGender && ev.groupId) {
+            const grp = (groups || []).find((g) => g.id === ev.groupId);
+            const req = grp?.inventoryRequirements?.find(
+              (r) => r.id === d.requirementId || r.itemName === d.itemName
+            );
+            if (req) assignedGender = req.assignedGender;
+          }
+          upcoming.push({
+            eventId: ev.id,
+            eventTitle: ev.title,
+            eventDate: ev.startDateTime,
+            itemName: d.itemName,
+            requirementId: d.requirementId,
+            groupId: ev.groupId,
+            assignedGender: assignedGender || 'Any'
+          });
+        }
+      }
+    }
+    return upcoming;
+  }, [talent, schedule, groups]);
+
   // Groups this talent is part of
   const memberGroups = useMemo(() => {
     if (!talent || !groups) return [];
@@ -227,7 +274,6 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
       const cycleWeeks = group.rotationCycleWeeks || 1;
       const cycleKey = getCycleKey(new Date(), cycleWeeks);
 
-      // computeHistoricalDutyCounts(events, groupId, cycleKey, cycleWeeks)
       const dutyCounts = computeHistoricalDutyCounts(
         schedule || [],
         group.id,
@@ -235,16 +281,13 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
         cycleWeeks
       );
 
-      // Group-level fairness
       const score = computeFairnessScore(dutyCounts, group.memberTalentIds || []);
       if (typeof score === 'number' && !isNaN(score) && score < lowestScore) {
         lowestScore = score;
       }
 
-      // Talent's own accumulated duties in this cycle
       totalTalentDuties += dutyCounts.get(talent.id) || 0;
 
-      // Total duties across all members in this group
       dutyCounts.forEach((v) => {
         totalGroupDuties += v;
       });
@@ -270,6 +313,12 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
   );
 
   const handleStatusChange = (newStatus: TalentStatus) => {
+    if (newStatus !== 'Active' && talent.status === 'Active' && futureShifts.length > 0) {
+      setPendingTargetStatus(newStatus);
+      setIsStatusImpactModalOpen(true);
+      return;
+    }
+
     updateTalent(talent.id, { status: newStatus });
     const statusLabel =
       newStatus === 'Active'
@@ -280,7 +329,31 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
     toast.success(isKa ? `სტატუსი განახლდა: ${statusLabel}` : `Status updated: ${statusLabel}`);
   };
 
-  // Document uniqueness and type helper states
+  const handleConfirmAutoReassign = () => {
+    changeTalentStatusWithDutyResolution(talent.id, pendingTargetStatus, {
+      mode: 'auto'
+    });
+    setIsStatusImpactModalOpen(false);
+    toast.success(
+      isKa
+        ? `სტატუსი განახლდა. მორიგეობები ავტომატურად გადაუნაწილდა როტაციის შემდეგ წევრებს.`
+        : `Status updated. Duties automatically reallocated to next rotation members.`
+    );
+  };
+
+  const handleConfirmManualReplacements = (replacements: Record<string, string>) => {
+    changeTalentStatusWithDutyResolution(talent.id, pendingTargetStatus, {
+      mode: 'manual',
+      replacements
+    });
+    setIsStatusImpactModalOpen(false);
+    toast.success(
+      isKa
+        ? `სტატუსი განახლდა. შემცვლელები წარმატებით დაინიშნა.`
+        : `Status updated. Replacements assigned successfully.`
+    );
+  };
+
   const existingDocTypes = new Set((talent.documents || []).map((d) => d.type));
   const availableDocTypes = DOCUMENT_TYPES.filter((dt) => !existingDocTypes.has(dt.value));
   const allDocTypesUploaded = availableDocTypes.length === 0;
@@ -367,7 +440,7 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
     if (existingDocTypes.has(newDocType)) {
       toast.error(
         isKa
-          ? `დოკუმენტი ტიპით „${currentTypeLabel}“ უკვე ატვირთულია ამ თანამშრომელზე!`
+          ? `დოკუმენტი ტიპით „${currentTypeLabel}" უკვე ატვირთულია ამ თანამშრომელზე!`
           : `A document of type "${currentTypeLabel}" is already uploaded for this talent!`
       );
       return;
@@ -398,7 +471,7 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
 
     toast.success(
       isKa
-        ? `დოკუმენტი „${fileName}“ (${currentTypeLabel}) წარმატებით დაემატა`
+        ? `დოკუმენტი „${fileName}" (${currentTypeLabel}) წარმატებით დაემატა`
         : `Document "${fileName}" (${currentTypeLabel}) added successfully`
     );
     setNewDocName('');
@@ -412,7 +485,7 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
     confirm({
       title: isKa ? 'დოკუმენტის წაშლა' : 'Delete Document',
       message: isKa
-        ? `დარწმუნებული ხართ, რომ გსურთ დოკუმენტის „${docName}“ წაშლა?`
+        ? `დარწმუნებული ხართ, რომ გსურთ დოკუმენტის „${docName}" წაშლა?`
         : `Are you sure you want to delete the document "${docName}"?`,
       itemName: docName,
       confirmLabel: isKa ? 'წაშლა' : 'Delete',
@@ -422,7 +495,7 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
       onConfirm: () => {
         const updatedDocs = (talent.documents || []).filter((d) => d.id !== docId);
         updateTalent(talent.id, { documents: updatedDocs });
-        toast.success(isKa ? `დოკუმენტი „${docName}“ წაიშალა` : `Document "${docName}" removed`);
+        toast.success(isKa ? `დოკუმენტი „${docName}" წაიშალა` : `Document "${docName}" removed`);
       }
     });
   };
@@ -442,7 +515,7 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
         deleteTalent(talent.id);
         toast.success(
           isKa
-            ? `თანამშრომელი „${fullName}“ წარმატებით წაიშალა`
+            ? `თანამშრომელი „${fullName}" წარმატებით წაიშალა`
             : `Performer "${fullName}" deleted successfully`
         );
         onClose();
@@ -496,8 +569,7 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsActionsMenuOpen((prev) => !prev)}
-                  className={`w-8.5 h-8.5 rounded-full inline-flex items-center justify-center border border-border-subtle bg-surface-secondary text-text-primary hover:bg-surface-tertiary hover:border-border-medium transition-all duration-150 cursor-pointer outline-none ${isActionsMenuOpen ? 'border-brand-primary text-brand-primary bg-surface-tertiary shadow-xs' : ''
-                    }`}
+                  className={`w-8.5 h-8.5 rounded-full inline-flex items-center justify-center border border-border-subtle bg-surface-secondary text-text-primary hover:bg-surface-tertiary hover:border-border-medium transition-all duration-150 cursor-pointer outline-none ${isActionsMenuOpen ? 'border-brand-primary text-brand-primary bg-surface-tertiary shadow-xs' : ''}`}
                   title={isKa ? 'სხვა მოქმედებები' : 'More Actions'}
                   aria-expanded={isActionsMenuOpen}
                   aria-haspopup="true"
@@ -560,8 +632,7 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
           {/* Status Selector Dropdown */}
           <div
             ref={statusDropdownRef}
-            className={`relative flex items-center justify-between gap-3 px-3 py-2 rounded-md bg-surface-secondary border border-border-subtle ${talent.status !== 'Active' ? 'mb-2.5' : 'mb-3.5'
-              }`}
+            className={`relative flex items-center justify-between gap-3 px-3 py-2 rounded-md bg-surface-secondary border border-border-subtle ${talent.status !== 'Active' ? 'mb-2.5' : 'mb-3.5'}`}
           >
             <span className="text-xs font-medium text-text-secondary">
               {t('availability_status')}:
@@ -570,20 +641,22 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
             <button
               type="button"
               onClick={() => setIsStatusDropdownOpen((prev) => !prev)}
-              className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-md border text-xs font-medium cursor-pointer transition-all ${talent.status === 'Active'
+              className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-md border text-xs font-medium cursor-pointer transition-all ${
+                talent.status === 'Active'
                   ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700'
                   : talent.status === 'Rest'
                     ? 'border-amber-500/30 bg-amber-500/10 text-amber-700'
                     : 'border-rose-500/30 bg-rose-500/10 text-rose-600'
-                }`}
+              }`}
             >
               <span
-                className={`w-1.5 h-1.5 rounded-full ${talent.status === 'Active'
+                className={`w-1.5 h-1.5 rounded-full ${
+                  talent.status === 'Active'
                     ? 'bg-emerald-600'
                     : talent.status === 'Rest'
                       ? 'bg-amber-600'
                       : 'bg-rose-600'
-                  }`}
+                }`}
               />
               <span>
                 {talent.status === 'Active'
@@ -613,10 +686,11 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
                         handleStatusChange(st);
                         setIsStatusDropdownOpen(false);
                       }}
-                      className={`px-3 py-2 text-xs flex items-center justify-between cursor-pointer transition-colors ${isSelected
+                      className={`px-3 py-2 text-xs flex items-center justify-between cursor-pointer transition-colors ${
+                        isSelected
                           ? 'font-semibold bg-surface-secondary text-text-primary'
                           : 'font-normal text-text-primary hover:bg-surface-secondary'
-                        }`}
+                      }`}
                     >
                       <div className="flex items-center gap-2">
                         <span className={`w-1.5 h-1.5 rounded-full ${dotColor}`} />
@@ -663,71 +737,36 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
 
           {/* Segmented Tab Controls */}
           <div className="flex items-center bg-surface-secondary rounded-lg p-0.5 border border-border-subtle gap-0.5 h-[38px] box-border">
-            <button
-              type="button"
-              onClick={() => handleTabSelect('info')}
-              className={`flex-1 h-[32px] flex items-center justify-center gap-1.5 px-2 rounded-md border-none text-xs cursor-pointer whitespace-nowrap min-w-0 transition-all duration-150 ${activeTab === 'info'
-                  ? 'font-semibold bg-surface text-text-primary shadow-xs border border-border-subtle'
-                  : 'font-medium bg-transparent text-text-secondary hover:text-text-primary'
+            {([
+              { key: 'info', icon: User, labelKa: 'ინფო', labelEn: 'Info' },
+              { key: 'docs', icon: FileText, labelKa: 'დოკუმენტები', labelEn: 'Docs' },
+              { key: 'stats', icon: BarChart3, labelKa: 'სტატისტიკა', labelEn: 'Stats' },
+              { key: 'reviews', icon: Star, labelKa: 'შეფასება', labelEn: 'Reviews' },
+            ] as { key: DrawerTab; icon: React.ElementType; labelKa: string; labelEn: string }[]).map(({ key, icon: Icon, labelKa, labelEn }) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => handleTabSelect(key)}
+                className={`flex-1 h-[32px] flex items-center justify-center gap-1.5 px-2 rounded-md border-none text-xs cursor-pointer whitespace-nowrap min-w-0 transition-all duration-150 ${
+                  activeTab === key
+                    ? 'font-semibold bg-surface text-text-primary shadow-xs border border-border-subtle'
+                    : 'font-medium bg-transparent text-text-secondary hover:text-text-primary'
                 }`}
-            >
-              <User size={13} className="shrink-0" />
-              <span className="whitespace-nowrap truncate">{isKa ? 'ინფო' : 'Info'}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleTabSelect('docs')}
-              className={`flex-1 relative h-[32px] flex items-center justify-center gap-1 px-1.5 rounded-md border-none text-xs cursor-pointer whitespace-nowrap min-w-0 transition-all duration-150 ${activeTab === 'docs'
-                  ? 'font-semibold bg-surface text-text-primary shadow-xs border border-border-subtle'
-                  : 'font-medium bg-transparent text-text-secondary hover:text-text-primary'
-                }`}
-            >
-              <FileText size={13} className="shrink-0" />
-              <span className="whitespace-nowrap truncate">{isKa ? 'დოკუმენტები' : 'Docs'}</span>
-              <span
-                className={`text-[10px] font-semibold rounded px-1.5 min-w-[16px] h-[16px] flex items-center justify-center leading-none shrink-0 transition-colors ${activeTab === 'docs'
-                    ? 'bg-surface-secondary text-text-primary border border-border-subtle'
-                    : 'bg-surface-secondary text-text-secondary'
-                  }`}
               >
-                {(talent.documents || []).length}
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleTabSelect('stats')}
-              className={`flex-1 h-[32px] flex items-center justify-center gap-1.5 px-2 rounded-md border-none text-xs cursor-pointer whitespace-nowrap min-w-0 transition-all duration-150 ${activeTab === 'stats'
-                  ? 'font-semibold bg-surface text-text-primary shadow-xs border border-border-subtle'
-                  : 'font-medium bg-transparent text-text-secondary hover:text-text-primary'
-                }`}
-            >
-              <BarChart3 size={13} className="shrink-0" />
-              <span className="whitespace-nowrap truncate">{isKa ? 'სტატისტიკა' : 'Stats'}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleTabSelect('reviews')}
-              className={`flex-1 relative h-[32px] flex items-center justify-center gap-1 px-1.5 rounded-md border-none text-xs cursor-pointer whitespace-nowrap min-w-0 transition-all duration-150 ${activeTab === 'reviews'
-                  ? 'font-semibold bg-surface text-text-primary shadow-xs border border-border-subtle'
-                  : 'font-medium bg-transparent text-text-secondary hover:text-text-primary'
-                }`}
-            >
-              <Star size={13} className="shrink-0" />
-              <span className="whitespace-nowrap truncate">{isKa ? 'შეფასება' : 'Reviews'}</span>
-              {talent.reviews && talent.reviews.length > 0 && (
-                <span
-                  className={`text-[10px] font-semibold rounded px-1.5 min-w-[16px] h-[16px] flex items-center justify-center leading-none shrink-0 transition-colors ${activeTab === 'reviews'
-                      ? 'bg-surface-secondary text-text-primary border border-border-subtle'
-                      : 'bg-surface-secondary text-text-secondary'
-                    }`}
-                >
-                  {talent.reviews.length}
-                </span>
-              )}
-            </button>
+                <Icon size={13} className="shrink-0" />
+                <span className="whitespace-nowrap truncate">{isKa ? labelKa : labelEn}</span>
+                {key === 'docs' && (
+                  <span className={`text-[10px] font-semibold rounded px-1.5 min-w-[16px] h-[16px] flex items-center justify-center leading-none shrink-0 ${activeTab === 'docs' ? 'bg-surface-secondary text-text-primary border border-border-subtle' : 'bg-surface-secondary text-text-secondary'}`}>
+                    {(talent.documents || []).length}
+                  </span>
+                )}
+                {key === 'reviews' && talent.reviews && talent.reviews.length > 0 && (
+                  <span className={`text-[10px] font-semibold rounded px-1.5 min-w-[16px] h-[16px] flex items-center justify-center leading-none shrink-0 ${activeTab === 'reviews' ? 'bg-surface-secondary text-text-primary border border-border-subtle' : 'bg-surface-secondary text-text-secondary'}`}>
+                    {talent.reviews.length}
+                  </span>
+                )}
+              </button>
+            ))}
           </div>
         </div>
       </div>
@@ -784,7 +823,6 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
                                 <MessageSquare size={14} />
                               </a>
                             )}
-
                             <a
                               href={`tel:${talent.phone}`}
                               title={language === 'ka' ? 'დარეკვა' : 'Call'}
@@ -792,7 +830,6 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
                             >
                               <PhoneCall size={14} />
                             </a>
-
                             <button
                               type="button"
                               onClick={() => {
@@ -801,10 +838,11 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
                                 setTimeout(() => setCopiedPhone(false), 2000);
                               }}
                               title={copiedPhone ? (language === 'ka' ? 'დაკოპირებულია!' : 'Copied!') : (language === 'ka' ? 'ნომრის კოპირება' : 'Copy number')}
-                              className={`inline-flex items-center justify-center w-[30px] h-[30px] rounded-sm border cursor-pointer transition-all duration-150 ${copiedPhone
+                              className={`inline-flex items-center justify-center w-[30px] h-[30px] rounded-sm border cursor-pointer transition-all duration-150 ${
+                                copiedPhone
                                   ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30'
                                   : 'bg-canvas text-text-secondary border-border-subtle hover:text-text-primary hover:bg-surface-tertiary'
-                                }`}
+                              }`}
                             >
                               {copiedPhone ? <Check size={14} /> : <Copy size={14} />}
                             </button>
@@ -817,12 +855,8 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
               )}
 
               <div className="flex items-center justify-between py-3 border-b border-border-subtle gap-3">
-                <span className="text-sm text-text-secondary font-medium">
-                  {t('gender')}
-                </span>
-                <div className="flex items-center gap-2.5">
-                  <GenderBadge gender={talent.gender} />
-                </div>
+                <span className="text-sm text-text-secondary font-medium">{t('gender')}</span>
+                <GenderBadge gender={talent.gender} />
               </div>
 
               <div className="flex items-center justify-between py-3 border-b border-border-subtle gap-3">
@@ -861,17 +895,8 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
                     <span className="text-xs font-bold text-text-primary uppercase tracking-wider flex items-center gap-1.5">
                       <FileText size={14} strokeWidth={2} className="shrink-0" /> {t('internal_notes')}
                     </span>
-                    <span className="text-[0.725rem] text-text-secondary font-medium">
-                      {new Date().toLocaleDateString(language === 'ka' ? 'ka-GE' : 'en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric'
-                      })}
-                    </span>
                   </div>
-                  <p className="text-sm text-text-primary leading-relaxed m-0">
-                    "{talent.notes}"
-                  </p>
+                  <p className="text-sm text-text-primary leading-relaxed m-0">"{talent.notes}"</p>
                 </div>
               )}
             </div>
@@ -903,16 +928,13 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
             {showAddDoc && (
               <form
                 onSubmit={handleAddDocument}
-                className="bg-surface-secondary p-4 rounded-sm mb-4.5 border border-border-subtle flex flex-col gap-3.5"
+                className="bg-surface-secondary p-4 rounded-sm mb-4 border border-border-subtle flex flex-col gap-3.5"
               >
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
                     <label className="text-[0.785rem] font-semibold text-text-primary">
                       {isKa ? 'დოკუმენტის ტიპი *' : 'Document Type *'}
                     </label>
-                    <span className="text-[0.7rem] text-text-secondary">
-                      {isKa ? 'უნიკალური ტიპი (1 თითო თანამშრომელზე)' : 'Unique type (1 per talent)'}
-                    </span>
                   </div>
                   <div className="grid grid-cols-3 gap-1.5">
                     {DOCUMENT_TYPES.map((dt) => {
@@ -925,18 +947,17 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
                           type="button"
                           disabled={isUploaded}
                           onClick={() => !isUploaded && handleDocTypeSelect(dt.value as TalentDocument['type'])}
-                          className={`relative flex flex-col items-center justify-center gap-1 py-2.5 px-1 rounded-lg border text-xs font-semibold transition-all duration-150 ${isUploaded
+                          className={`relative flex flex-col items-center justify-center gap-1 py-2.5 px-1 rounded-lg border text-xs font-semibold transition-all duration-150 ${
+                            isUploaded
                               ? 'opacity-35 cursor-not-allowed border-border-subtle bg-surface-secondary text-text-tertiary'
                               : isSelected
                                 ? `${dt.badgeClass} border-current shadow-sm cursor-pointer`
                                 : 'border-border-subtle bg-surface text-text-secondary hover:border-border-medium hover:text-text-primary cursor-pointer'
-                            }`}
+                          }`}
                         >
                           <DocIcon size={16} className={isSelected ? 'text-current' : 'text-text-secondary'} />
                           <span className="leading-none text-center">{isKa ? dt.labelKa : dt.labelEn}</span>
-                          {isUploaded && (
-                            <span className="absolute top-1 right-1.5 text-[9px] font-bold">✓</span>
-                          )}
+                          {isUploaded && <span className="absolute top-1 right-1.5 text-[9px] font-bold">✓</span>}
                         </button>
                       );
                     })}
@@ -944,15 +965,9 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
                 </div>
 
                 <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-[0.785rem] font-semibold text-text-primary">
-                      {isKa ? 'დოკუმენტის ფაილი *' : 'Document File *'}
-                    </label>
-                    <span className="text-[0.72rem] text-text-secondary font-medium">
-                      {isKa ? 'არჩეული ტიპი:' : 'Type:'} <strong className="text-brand-primary">{currentTypeLabel}</strong>
-                    </span>
-                  </div>
-
+                  <label className="text-[0.785rem] font-semibold text-text-primary mb-1.5 block">
+                    {isKa ? 'დოკუმენტის ფაილი *' : 'Document File *'}
+                  </label>
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -966,524 +981,334 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
                   {!selectedFile ? (
                     <div
                       onClick={() => fileInputRef.current?.click()}
-                      className="border-2 border-dashed border-border-medium rounded-sm p-4.5 text-center cursor-pointer bg-surface hover:border-brand-primary hover:bg-brand-primary-light/50 transition-all duration-150"
+                      className="border-2 border-dashed border-border-medium rounded-sm p-4 text-center cursor-pointer bg-surface hover:border-brand-primary hover:bg-brand-primary-light/50 transition-all duration-150"
                     >
                       <UploadCloud size={24} className="text-brand-primary mx-auto mb-1.5" />
                       <div className="text-[0.84rem] font-semibold text-text-primary">
-                        {isKa ? `დააკლიკეთ „${currentTypeLabel}“-ის ასარჩევად` : `Click to select "${currentTypeLabel}" file`}
+                        {isKa ? `დააკლიკეთ ფაილის ასარჩევად` : `Click to select file`}
                       </div>
-                      <div className="text-[0.725rem] text-text-secondary mt-1 flex items-center justify-center gap-1.5">
-                        <span className="inline-flex items-center px-2 py-0.5 bg-surface-secondary rounded-pill border border-border-subtle text-[0.7rem] font-semibold text-brand-primary">
-                          {currentTypeLabel}
-                        </span>
-                        <span>PDF, DOC, DOCX, JPG, PNG (მაქს. 10MB)</span>
+                      <div className="text-[0.725rem] text-text-secondary mt-1">
+                        PDF, DOC, DOCX, JPG, PNG
                       </div>
                     </div>
                   ) : (
-                    <div className="flex items-center justify-between p-2.5 sm:px-3.5 bg-surface border border-border-medium rounded-sm">
+                    <div className="flex items-center justify-between p-2.5 bg-surface border border-border-medium rounded-sm">
                       <div className="flex items-center gap-2.5 min-w-0">
                         <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${currentTypeObj.badgeClass}`}>
                           {(() => { const I = DOCUMENT_TYPE_ICON[currentTypeObj.value] || FolderOpen; return <I size={17} />; })()}
                         </div>
                         <div className="min-w-0">
-                          <div className="text-[0.825rem] font-semibold text-text-primary truncate">
-                            {selectedFile.name}
-                          </div>
-                          <div className="text-[0.72rem] text-text-secondary flex items-center gap-1.5 mt-0.5">
-                            <span className={`font-semibold px-1.5 py-0.5 rounded text-[0.675rem] ${currentTypeObj.badgeClass}`}>
-                              {currentTypeLabel}
-                            </span>
-                            <span>•</span>
-                            <span className="font-semibold">{selectedFile.name.split('.').pop()?.toUpperCase() || 'FILE'}</span>
-                            <span>•</span>
-                            <span>{(selectedFile.size / (1024 * 1024)).toFixed(1)} MB</span>
-                          </div>
+                          <div className="text-[0.825rem] font-semibold text-text-primary truncate">{selectedFile.name}</div>
+                          <div className="text-[0.72rem] text-text-secondary">{(selectedFile.size / (1024 * 1024)).toFixed(1)} MB</div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <button
-                          type="button"
-                          onClick={() => fileInputRef.current?.click()}
-                          className="bg-transparent border border-border-subtle rounded px-2 py-1 text-[0.725rem] font-semibold text-text-secondary hover:text-text-primary hover:bg-surface-secondary cursor-pointer transition-colors"
-                        >
-                          {isKa ? 'შეცვლა' : 'Change'}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSelectedFile(null);
-                            if (fileInputRef.current) fileInputRef.current.value = '';
-                          }}
-                          className="bg-transparent border-none text-danger hover:bg-danger-light rounded p-1 cursor-pointer flex transition-colors"
-                          title="Remove file"
-                        >
-                          <X size={14} />
-                        </button>
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => { setSelectedFile(null); setNewDocName(''); }}
+                        className="w-7 h-7 rounded-full flex items-center justify-center text-text-secondary hover:text-danger hover:bg-danger-light transition-all cursor-pointer border-none bg-transparent"
+                      >
+                        <X size={14} />
+                      </button>
                     </div>
                   )}
                 </div>
 
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-[0.785rem] font-semibold text-text-primary">
-                      {isKa ? 'დოკუმენტის დასახელება *' : 'Document Title *'}
-                    </label>
-                    <span className="text-[0.7rem] text-text-secondary">
-                      {isKa ? '(ივსება ავტომატურად, შესაძლებელია რედაქტირება)' : '(Auto-filled, editable)'}
-                    </span>
-                  </div>
-                  <input
-                    type="text"
-                    placeholder={isKa ? 'შეიყვანეთ დოკუმენტის სახელი' : 'Enter document title'}
-                    value={newDocName}
-                    onChange={(e) => setNewDocName(e.target.value)}
-                    className="w-full text-xs px-3 py-2 rounded-sm border border-border-subtle bg-surface text-text-primary outline-none transition-all duration-150 focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20 placeholder:text-text-tertiary"
-                    required
-                  />
-                </div>
-
                 {newDocType === 'Contract' && (
-                  <div className="bg-brand-primary/5 border border-brand-primary/20 rounded-sm p-3 flex flex-col gap-1.5">
-                    <div className="flex items-center justify-between">
-                      <label className="text-[0.785rem] font-semibold text-text-primary flex items-center gap-1.5">
-                        <Calendar size={14} className="text-brand-primary" />
-                        <span>{t('contract_expiry_date')} *</span>
-                      </label>
-                      {isParsingDoc && (
-                        <span className="text-[0.72rem] text-brand-primary font-semibold flex items-center gap-1.5">
-                          <Loader2 size={13} className="animate-spin" />
-                          <span>{t('analyzing_file')}</span>
-                        </span>
-                      )}
-                      {!isParsingDoc && parseDetected === true && (
-                        <span className="text-[0.72rem] text-emerald-600 font-semibold flex items-center gap-1">
-                          <CheckCircle2 size={12} />
-                          <span>{t('auto_detected_date')}</span>
-                        </span>
-                      )}
-                    </div>
-
-                    <DatePicker
-                      value={newDocExpiryDate}
-                      onChange={(val) => {
-                        setNewDocExpiryDate(val);
-                        setParseDetected(null);
-                      }}
-                      required
-                    />
-
-                    <div className="text-[0.7rem] text-text-secondary mt-0.5">
-                      {parseDetected === false ? (
-                        <span className="text-amber-600 font-medium">
-                          {t('manual_date_hint')}
-                        </span>
-                      ) : (
-                        <span>{t('contract_expiry_hint')}</span>
-                      )}
-                    </div>
+                  <div>
+                    <label className="text-[0.785rem] font-semibold text-text-primary mb-1.5 block">
+                      {isKa ? 'კონტრაქტის ვადა (სურვილისამებრ)' : 'Contract Expiry Date (optional)'}
+                    </label>
+                    {isParsingDoc ? (
+                      <div className="flex items-center gap-2 text-xs text-brand-primary">
+                        <Loader2 size={14} className="animate-spin" />
+                        <span>{isKa ? 'ვადის ამოცნობა...' : 'Detecting expiry date...'}</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <DatePicker
+                          value={newDocExpiryDate}
+                          onChange={setNewDocExpiryDate}
+                          placeholder={isKa ? 'YYYY-MM-DD' : 'YYYY-MM-DD'}
+                        />
+                        {parseDetected === true && (
+                          <span className="text-[11px] text-emerald-600 flex items-center gap-1 font-semibold">
+                            <CheckCircle2 size={13} /> {isKa ? 'ავტო-ამოცნობა' : 'Auto-detected'}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
 
-                <div className="flex justify-end gap-2 mt-1">
+                <div className="flex items-center justify-end gap-2 pt-1">
                   <button
                     type="button"
-                    onClick={() => {
-                      setShowAddDoc(false);
-                      setSelectedFile(null);
-                      setNewDocName('');
-                    }}
-                    className="inline-flex items-center justify-center px-3.5 py-1.5 rounded-pill text-xs font-semibold border border-border-subtle bg-surface text-text-primary hover:bg-surface-secondary hover:border-border-medium transition-all duration-150 cursor-pointer outline-none"
+                    onClick={() => setShowAddDoc(false)}
+                    className="px-3 py-1.5 rounded-md text-xs font-medium border border-border-subtle bg-surface text-text-secondary hover:bg-surface-secondary transition-all cursor-pointer"
                   >
                     {t('cancel')}
                   </button>
                   <button
                     type="submit"
-                    className="inline-flex items-center justify-center px-4.5 py-1.5 rounded-pill text-xs font-semibold bg-brand-primary text-white shadow-glow hover:bg-brand-primary-hover hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:pointer-events-none transition-all duration-150 cursor-pointer outline-none"
-                    disabled={!selectedFile || !newDocName.trim()}
+                    disabled={!selectedFile}
+                    className="px-4 py-1.5 rounded-md text-xs font-semibold bg-brand-primary text-white hover:bg-brand-primary-hover transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                   >
-                    {t('save')}
+                    {isKa ? 'დოკუმენტის დამატება' : 'Add Document'}
                   </button>
                 </div>
               </form>
             )}
 
-            <div className="flex flex-col gap-2">
-              {(talent.documents || []).map((doc) => {
-                const docTypeObj = DOCUMENT_TYPES.find((dt) => dt.value === doc.type) || DOCUMENT_TYPES[0];
-                const docTypeLabel = isKa ? docTypeObj.labelKa : docTypeObj.labelEn;
-                const isExpired = doc.expiryDate && new Date(doc.expiryDate).getTime() < Date.now();
-                const isExpiringSoon = doc.expiryDate && !isExpired && Math.ceil((new Date(doc.expiryDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) <= 30;
+            {/* Documents List */}
+            {(talent.documents || []).length === 0 ? (
+              <div className="text-center py-10 text-text-tertiary">
+                <FileText size={32} className="mx-auto mb-2 opacity-30" />
+                <p className="text-sm">{isKa ? 'დოკუმენტები არ არის' : 'No documents uploaded'}</p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2.5">
+                {(talent.documents || []).map((doc) => {
+                  const DocIcon = DOCUMENT_TYPE_ICON[doc.type] || FolderOpen;
+                  const typeObj = DOCUMENT_TYPES.find((dt) => dt.value === doc.type);
+                  const badgeClass = typeObj?.badgeClass || 'bg-surface-secondary text-text-secondary border border-border-subtle';
+                  const typeLabel = isKa ? (typeObj?.labelKa || doc.type) : (typeObj?.labelEn || doc.type);
+                  const isExpired = doc.expiryDate && new Date(doc.expiryDate) < new Date();
+                  const isExpiringSoon = doc.expiryDate && !isExpired && (new Date(doc.expiryDate).getTime() - Date.now()) < 30 * 24 * 60 * 60 * 1000;
 
-                return (
-                  <div
-                    key={doc.id}
-                    className="flex items-center justify-between p-3 sm:px-3.5 rounded-sm bg-surface-secondary border border-border-subtle hover:border-border-medium transition-all"
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${docTypeObj.badgeClass}`}>
-                        {(() => { const I = DOCUMENT_TYPE_ICON[docTypeObj.value] || FolderOpen; return <I size={17} />; })()}
-                      </div>
-                      <div className="min-w-0">
-                        <div className="text-[0.825rem] font-semibold text-text-primary truncate">
-                          {doc.name}
+                  return (
+                    <div
+                      key={doc.id}
+                      className="flex items-center justify-between p-3 rounded-lg border border-border-subtle bg-surface gap-3 hover:bg-surface-secondary/50 transition-colors group"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${badgeClass}`}>
+                          <DocIcon size={18} />
                         </div>
-                        <div className="text-[0.725rem] text-text-secondary flex items-center gap-1.5 mt-0.5 flex-wrap">
-                          <span className={`font-semibold px-1.5 py-0.5 rounded text-[0.675rem] ${docTypeObj.badgeClass}`}>
-                            {docTypeLabel}
-                          </span>
-                          <span>•</span>
-                          <span>{doc.fileSize || '2.0 MB'}</span>
-                          {doc.expiryDate && (
-                            <>
-                              <span>•</span>
-                              <span className={`inline-flex items-center gap-1 font-semibold ${isExpired ? 'text-danger' : isExpiringSoon ? 'text-amber-600' : 'text-emerald-700'}`}>
-                                <Calendar size={11} />
-                                <span>{t('valid_until')} {doc.expiryDate}</span>
+                        <div className="min-w-0">
+                          <div className="font-semibold text-sm text-text-primary truncate">{doc.name}</div>
+                          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${badgeClass}`}>{typeLabel}</span>
+                            {doc.fileSize && <span className="text-[11px] text-text-tertiary">{doc.fileSize}</span>}
+                            {doc.expiryDate && (
+                              <span className={`text-[11px] font-semibold flex items-center gap-1 ${isExpired ? 'text-danger' : isExpiringSoon ? 'text-amber-600' : 'text-text-secondary'}`}>
+                                {isExpired && <AlertTriangle size={10} />}
+                                {isExpiringSoon && <Clock size={10} />}
+                                {isKa ? 'ვადა:' : 'Exp:'} {doc.expiryDate}
                               </span>
-                            </>
-                          )}
+                            )}
+                          </div>
                         </div>
                       </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteDocument(doc.id, doc.name)}
+                          className="w-7 h-7 rounded-full flex items-center justify-center text-text-tertiary hover:text-danger hover:bg-danger-light transition-all cursor-pointer border-none bg-transparent opacity-0 group-hover:opacity-100"
+                          title={isKa ? 'წაშლა' : 'Delete'}
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
                     </div>
-
-                    <div className="flex items-center gap-1 shrink-0">
-                      <span className="text-text-tertiary hover:text-text-primary cursor-pointer p-1.5 transition-colors" title="View">
-                        <ExternalLink size={14} />
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteDocument(doc.id, doc.name)}
-                        className="bg-transparent border-none text-danger hover:bg-danger-light cursor-pointer p-1.5 flex items-center justify-center rounded transition-colors"
-                        title={isKa ? 'დოკუმენტის წაშლა' : 'Delete document'}
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 
-        {/* TAB 3: DUTY STATISTICS & HISTORY */}
+        {/* TAB 3: STATISTICS */}
         {activeTab === 'stats' && (
-          <div>
-            <div className="bg-surface-secondary rounded-sm p-4 border border-border-subtle mb-4">
-              <div className="flex justify-between items-center mb-1">
-                <span className="text-[0.825rem] text-text-secondary">
-                  {t('total_shifts_handled')}:
-                </span>
-                <span className="text-[1.05rem] font-bold text-text-primary">
-                  {totalDutiesServed}
-                </span>
-              </div>
-
-              <SplitProgressBar
-                yellowPercent={talentDutySharePct}
-                darkPercent={Math.max(0, 100 - fairnessScore)}
-                stripedPercent={0}
-                height={10}
-              />
-
-              <div className="flex justify-between text-[0.725rem] text-text-secondary mt-2.5">
-                <span>
-                  {isKa ? `პირადი წილი: ${talentDutySharePct}%` : `Duty share: ${talentDutySharePct}%`}
-                </span>
-                <span className={`font-semibold ${fairnessScore >= 85 ? 'text-emerald-600' :
-                    fairnessScore >= 60 ? 'text-amber-600' : 'text-rose-600'
-                  }`}>
-                  {isKa ? 'სამართლ. ქულა:' : 'Fairness:'} {fairnessScore}%
-                </span>
-              </div>
+          <div className="flex flex-col gap-4">
+            {/* Sub-tab switcher */}
+            <div className="flex items-center gap-2 bg-surface-secondary rounded-lg p-0.5 border border-border-subtle">
+              <button
+                type="button"
+                onClick={() => setStatsSubTab('rotation')}
+                className={`flex-1 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer border-none ${statsSubTab === 'rotation' ? 'bg-surface text-text-primary shadow-xs' : 'bg-transparent text-text-secondary hover:text-text-primary'}`}
+              >
+                {isKa ? 'როტაცია' : 'Rotation'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setStatsSubTab('shows')}
+                className={`flex-1 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer border-none ${statsSubTab === 'shows' ? 'bg-surface text-text-primary shadow-xs' : 'bg-transparent text-text-secondary hover:text-text-primary'}`}
+              >
+                {isKa ? 'შოუები' : 'Shows'}
+              </button>
             </div>
 
-            {/* Inner Sub-Tabs */}
-            <div className="flex gap-1.5 p-1 bg-surface-secondary rounded-md border border-border-subtle mb-3.5">
-              {([
-                {
-                  key: 'rotation' as const,
-                  label: isKa ? 'როტაცია' : 'Rotation',
-                  icon: <RotateCw size={13} strokeWidth={2} />,
-                  count: servedShifts.length
-                },
-                {
-                  key: 'shows' as const,
-                  label: isKa ? 'შოუები' : 'Shows',
-                  icon: <Calendar size={13} strokeWidth={2} />,
-                  count: talentShows.length
-                }
-              ]).map((tab) => (
-                <button
-                  key={tab.key}
-                  onClick={() => setStatsSubTab(tab.key)}
-                  className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded-sm border-none cursor-pointer text-[0.8rem] transition-all duration-150 ${statsSubTab === tab.key
-                      ? 'font-bold bg-surface text-text-primary shadow-sm'
-                      : 'font-medium bg-transparent text-text-secondary hover:text-text-primary'
-                    }`}
-                >
-                  {tab.icon}
-                  {tab.label}
-                  <span
-                    className={`text-[0.7rem] font-bold min-w-[18px] h-[18px] inline-flex items-center justify-center rounded-full transition-colors ${statsSubTab === tab.key
-                        ? 'bg-brand-primary text-white'
-                        : 'bg-border-medium text-text-secondary'
-                      }`}
-                  >
-                    {tab.count}
-                  </span>
-                </button>
-              ))}
-            </div>
-
-            {/* Rotation Sub-Tab */}
             {statsSubTab === 'rotation' && (
-              <div>
-                <div className="text-[0.8rem] font-semibold text-text-secondary mb-2.5 flex items-center gap-1.5">
-                  <Clock size={14} />
-                  <span>{t('duty_history')}</span>
+              <>
+                {/* KPI Cards */}
+                <div className="grid grid-cols-3 gap-2.5">
+                  <div className="p-3 rounded-xl bg-surface border border-border-subtle flex flex-col items-center text-center gap-1">
+                    <span className="text-[11px] font-medium text-text-secondary">{isKa ? 'სამართლიანობა' : 'Fairness'}</span>
+                    <span className={`text-xl font-black ${fairnessScore >= 80 ? 'text-emerald-600' : fairnessScore >= 60 ? 'text-amber-600' : 'text-danger'}`}>
+                      {fairnessScore}%
+                    </span>
+                  </div>
+                  <div className="p-3 rounded-xl bg-surface border border-border-subtle flex flex-col items-center text-center gap-1">
+                    <span className="text-[11px] font-medium text-text-secondary">{isKa ? 'სულ მორიგ.' : 'Total Shifts'}</span>
+                    <span className="text-xl font-black text-text-primary">{totalDutiesServed}</span>
+                  </div>
+                  <div className="p-3 rounded-xl bg-surface border border-border-subtle flex flex-col items-center text-center gap-1">
+                    <span className="text-[11px] font-medium text-text-secondary">{isKa ? 'წილი' : 'Duty Share'}</span>
+                    <span className="text-xl font-black text-brand-primary">{talentDutySharePct}%</span>
+                  </div>
                 </div>
 
-                {servedShifts.length === 0 ? (
-                  <div className="p-6 text-center bg-surface-secondary rounded-sm border border-dashed border-border-medium text-text-secondary text-[0.8rem]">
-                    <Info size={18} className="mb-1.5 mx-auto opacity-50" />
-                    <div>{t('no_shifts_yet')}</div>
+                {/* Groups */}
+                {memberGroups.length === 0 ? (
+                  <div className="text-center py-8 text-text-tertiary">
+                    <Users size={32} className="mx-auto mb-2 opacity-30" />
+                    <p className="text-sm">{isKa ? 'ჯგუფში არ არის' : 'Not in any group'}</p>
                   </div>
                 ) : (
-                  <div className="flex flex-col gap-2">
-                    {servedShifts.map((shift, idx) => (
-                      <div
-                        key={idx}
-                        className="px-3 py-2.5 rounded-sm bg-surface-secondary border border-border-subtle flex items-center justify-between text-[0.8rem]"
-                      >
-                        <div>
-                          <div className="font-semibold text-text-primary">
-                            {shift.eventTitle}
-                          </div>
-                          <div className="text-[0.725rem] text-text-secondary mt-0.5 flex items-center gap-1">
-                            <Calendar size={12} strokeWidth={2} className="shrink-0" />
-                            <span>{new Date(shift.eventDate).toLocaleDateString()}</span>
-                          </div>
+                  <div className="flex flex-col gap-3">
+                    {memberGroups.map((group) => (
+                      <div key={group.id} className="p-3.5 rounded-xl border border-border-subtle bg-surface">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div
+                            className="w-3 h-3 rounded-full shrink-0"
+                            style={{ backgroundColor: group.colorAccent || '#6366f1' }}
+                          />
+                          <span className="text-sm font-bold text-text-primary">{group.name}</span>
+                          <span className="ml-auto text-xs text-text-secondary">{group.memberTalentIds?.length || 0} {isKa ? 'წევრი' : 'members'}</span>
                         </div>
-
-                        <span className="bg-brand-primary text-white text-[0.725rem] font-semibold px-2 py-0.5 rounded-pill border border-brand-primary-hover">
-                          {shift.itemName}
-                        </span>
+                        <div className="text-xs text-text-secondary">
+                          {(group.inventoryRequirements || []).length} {isKa ? 'მოთხოვნა' : 'requirements'}
+                        </div>
                       </div>
                     ))}
                   </div>
                 )}
-              </div>
+
+                {/* Recent Shifts */}
+                {servedShifts.length > 0 && (
+                  <div>
+                    <h4 className="text-xs font-bold text-text-secondary uppercase tracking-wider mb-2">
+                      {isKa ? 'ბოლო მორიგეობები' : 'Recent Shifts'}
+                    </h4>
+                    <div className="flex flex-col gap-1.5 max-h-48 overflow-y-auto">
+                      {servedShifts.slice(0, 10).map((shift, idx) => (
+                        <div key={idx} className="flex items-center justify-between text-xs px-2.5 py-1.5 rounded-lg bg-surface-secondary/70 border border-border-subtle gap-2">
+                          <div className="flex items-center gap-2 truncate">
+                            <span className="font-bold text-text-primary truncate">{shift.eventTitle}</span>
+                            <span className="text-text-secondary">•</span>
+                            <span className="text-brand-primary font-medium truncate">{shift.itemName}</span>
+                          </div>
+                          <span className="text-[11px] text-text-secondary shrink-0 font-mono">
+                            {new Date(shift.eventDate).toLocaleDateString()}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
             )}
 
-            {/* Shows Sub-Tab */}
             {statsSubTab === 'shows' && (
-              <div>
-                <div className="text-[0.8rem] font-semibold text-text-secondary mb-2.5 flex items-center gap-1.5">
-                  <CalendarCheck size={14} />
-                  <span>{isKa ? 'შოუების ისტორია' : 'Show History'}</span>
-                </div>
-
+              <div className="flex flex-col gap-2">
                 {talentShows.length === 0 ? (
-                  <div className="p-6 text-center bg-surface-secondary rounded-sm border border-dashed border-border-medium text-text-secondary text-[0.8rem]">
-                    <Info size={18} className="mb-1.5 mx-auto opacity-50" />
-                    <div>{isKa ? 'შოუები ჯერ არ არის' : 'No shows yet'}</div>
+                  <div className="text-center py-8 text-text-tertiary">
+                    <Calendar size={32} className="mx-auto mb-2 opacity-30" />
+                    <p className="text-sm">{isKa ? 'შოუები არ არის' : 'No shows found'}</p>
                   </div>
                 ) : (
-                  <div className="flex flex-col gap-2">
-                    {talentShows.map((ev) => {
-                      const isPast = new Date(ev.endDateTime) < new Date();
-                      const startDt = new Date(ev.startDateTime);
-                      const endDt = new Date(ev.endDateTime);
-                      return (
-                        <div
-                          key={ev.id}
-                          className={`px-3 py-2.5 rounded-sm border text-[0.8rem] ${isPast
-                              ? 'bg-black/[0.02] border-border-subtle opacity-85'
-                              : 'bg-brand-primary/5 border-brand-primary/20'
-                            }`}
-                        >
-                          <div className="flex justify-between items-start mb-1">
-                            <div className="font-semibold text-text-primary truncate flex-1 mr-2">
-                              {ev.title}
-                            </div>
-                            <span
-                              className={`text-[0.68rem] font-bold px-2 py-0.5 rounded-pill shrink-0 flex items-center gap-1 border ${isPast
-                                  ? 'bg-surface-secondary text-text-secondary border-border-subtle'
-                                  : 'bg-brand-primary/10 text-brand-primary border-brand-primary/25'
-                                }`}
-                            >
-                              {isPast && <Check size={10} strokeWidth={2.5} />}
-                              {isPast ? (isKa ? 'დასრულდა' : 'Done') : (isKa ? 'დაგეგმილი' : 'Upcoming')}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-3 text-[0.725rem] text-text-secondary">
-                            <span className="flex items-center gap-1">
-                              <Calendar size={11} strokeWidth={2} />
-                              {startDt.toLocaleDateString(isKa ? 'ka-GE' : 'en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Clock size={11} strokeWidth={2} />
-                              {formatTimeRange(startDt, endDt)}
-                            </span>
+                  talentShows.slice(0, 20).map((ev) => {
+                    const isPast = new Date(ev.endDateTime).getTime() < Date.now();
+                    return (
+                      <div key={ev.id} className={`flex items-center justify-between p-3 rounded-lg border gap-3 ${isPast ? 'bg-canvas/40 border-border-subtle opacity-75' : 'bg-surface border-border-subtle'}`}>
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className={`w-2 h-2 rounded-full shrink-0 ${isPast ? 'bg-text-tertiary' : 'bg-emerald-500'}`} />
+                          <div className="min-w-0">
+                            <div className="text-sm font-semibold text-text-primary truncate">{ev.title}</div>
+                            <div className="text-xs text-text-secondary">{formatTimeRange(ev.startDateTime, ev.endDateTime)}</div>
                           </div>
                         </div>
-                      );
-                    })}
-                  </div>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${isPast ? 'bg-surface-secondary text-text-tertiary' : 'bg-emerald-500/10 text-emerald-700'}`}>
+                          {isPast ? (isKa ? 'დასრ.' : 'Past') : (isKa ? 'მოახლ.' : 'Upcoming')}
+                        </span>
+                      </div>
+                    );
+                  })
                 )}
               </div>
             )}
           </div>
         )}
 
-        {/* TAB 4: REVIEWS & ARCHIVE */}
-        {activeTab === 'reviews' && (() => {
-          const reviewsList = talent.reviews || [];
-          const averageRating = reviewsList.length > 0
-            ? Number((reviewsList.reduce((acc, r) => acc + (r.rating ?? r.overallRating ?? 0), 0) / reviewsList.length).toFixed(1))
-            : null;
+        {/* TAB 4: REVIEWS */}
+        {activeTab === 'reviews' && (
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <span className="text-[0.8rem] font-semibold text-text-secondary">
+                {isKa ? 'შეფასებები' : 'Performance Reviews'} ({(talent.reviews || []).length})
+              </span>
+              <button
+                type="button"
+                onClick={() => handleOpenReview('End of Season')}
+                className="bg-transparent border-none text-brand-primary text-[0.775rem] font-semibold cursor-pointer flex items-center gap-1 hover:text-brand-primary-hover"
+              >
+                <Plus size={14} /> {isKa ? 'შეფასების დამატება' : 'Add Review'}
+              </button>
+            </div>
 
-          const effectiveRehireStatus = talent.rehireStatus || (reviewsList.length > 0 ? reviewsList[0].rehireStatus : 'eligible');
-
-          return (
-            <div className="flex flex-col gap-3.5 animate-in fade-in duration-150">
-              <div className="p-3 rounded-xl bg-slate-50 dark:bg-surface-secondary/40 border border-slate-100 dark:border-border-subtle flex items-center justify-between gap-3 text-xs">
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="text-text-secondary font-medium shrink-0">
-                    {isKa ? 'სტატუსი:' : 'Status:'}
-                  </span>
-                  {reviewsList.length === 0 ? (
-                    <span className="px-2.5 py-0.5 rounded-md text-xs font-semibold bg-brand-primary/10 text-brand-primary border border-brand-primary/20 shrink-0">
-                      {isKa ? 'ახალი ტალანტი' : 'New Talent'}
-                    </span>
-                  ) : (
-                    <RehireBadge status={effectiveRehireStatus} />
-                  )}
-                </div>
-
-                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 font-semibold text-xs shrink-0">
-                  <Star
-                    size={13}
-                    className={averageRating !== null ? 'fill-amber-400 text-amber-400 shrink-0' : 'text-slate-300 shrink-0'}
-                  />
-                  <span>
-                    {averageRating !== null
-                      ? `${averageRating} / 5.0`
-                      : '— / 5.0'}
-                  </span>
-                  {reviewsList.length > 0 && (
-                    <span className="text-amber-600/75 dark:text-amber-400/75 font-normal">
-                      ({reviewsList.length} {isKa ? 'შეფასება' : 'reviews'})
-                    </span>
-                  )}
-                </div>
+            {(talent.reviews || []).length === 0 ? (
+              <div className="text-center py-10 text-text-tertiary">
+                <Star size={32} className="mx-auto mb-2 opacity-30" />
+                <p className="text-sm">{isKa ? 'შეფასებები არ არის' : 'No reviews yet'}</p>
               </div>
-
-              <div className="flex flex-col gap-2.5">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-bold text-text-primary uppercase tracking-wider m-0">
-                    {isKa ? 'ისტორია' : 'History'} ({reviewsList.length})
-                  </h4>
-                </div>
-
-                {reviewsList.length === 0 ? (
-                  <div className="py-7 px-4 rounded-xl bg-slate-50/70 dark:bg-surface-secondary/30 border border-dashed border-border-subtle text-center flex flex-col items-center justify-center gap-2.5">
-                    <div className="w-8 h-8 rounded-full bg-surface text-text-secondary flex items-center justify-center border border-border-subtle shadow-xs">
-                      <Star size={15} className="text-slate-400" />
-                    </div>
-                    <div className="text-xs font-semibold text-text-secondary">
-                      {isKa ? 'შეფასებების ისტორია ცარიელია' : 'Evaluation history is empty'}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-2.5">
-                    {reviewsList.map((review) => {
-                      const isTerminatedEarly = review.contractStatus === 'terminated' || review.completionStatus === 'Terminated Early';
-
-                      return (
-                        <div
-                          key={review.id}
-                          className="p-3.5 rounded-lg bg-surface border border-border-subtle shadow-xs hover:border-border-medium transition-all flex flex-col gap-2"
-                        >
-                          <div className="flex items-start justify-between gap-2.5">
-                            <div className="min-w-0">
-                              <h5 className="text-xs sm:text-[13px] font-semibold text-text-primary m-0 tracking-tight truncate">
-                                {review.projectName}
-                              </h5>
-                              <div className="flex items-center gap-1.5 text-[11px] text-text-secondary mt-0.5">
-                                <span className="flex items-center gap-1">
-                                  <Calendar size={11} className="text-text-tertiary shrink-0" />
-                                  <span>{review.period}</span>
-                                </span>
-                                <span>•</span>
-                                <span className="text-[11px] text-text-tertiary">
-                                  {review.contractStatus === 'terminated' || review.reviewType === 'Early Termination'
-                                    ? (isKa ? 'ვადაზე ადრე შეწყვეტა' : 'Early Termination')
-                                    : (isKa ? 'სეზონის დასასრული' : 'End of Season')}
-                                </span>
-                              </div>
-                            </div>
-
-                            <div className="flex items-center gap-2 shrink-0">
-                              {review.rehireStatus ? (
-                                <RehireBadge status={review.rehireStatus} />
-                              ) : (
-                                <span
-                                  className={`text-xs font-semibold px-2.5 py-0.5 rounded-md flex items-center gap-1 border shrink-0 ${isTerminatedEarly
-                                      ? 'bg-rose-100 text-rose-800 border-rose-300 dark:bg-rose-950 dark:text-rose-300 dark:border-rose-800'
-                                      : 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800'
-                                    }`}
-                                >
-                                  {isTerminatedEarly ? (
-                                    <>
-                                      <AlertTriangle size={11} strokeWidth={2.5} />
-                                      <span>{isKa ? 'ვადაზე ადრე შეწყდა' : 'Terminated Early'}</span>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <Check size={11} strokeWidth={2.5} />
-                                      <span>{isKa ? 'დასრულდა' : 'Completed'}</span>
-                                    </>
-                                  )}
-                                </span>
-                              )}
-
-                              <div className="flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-300 font-semibold text-xs border border-amber-500/20 shrink-0">
-                                <Star size={11} className="fill-amber-400 text-amber-400 shrink-0" />
-                                <span>{(review.rating ?? review.overallRating ?? 5.0).toFixed(1)}</span>
-                              </div>
-                            </div>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {(talent.reviews || []).map((review, idx) => {
+                  const isTerminated = review.contractStatus === 'terminated' || review.completionStatus === 'Terminated Early';
+                  return (
+                    <div
+                      key={review.id || idx}
+                      className={`p-4 rounded-xl border ${isTerminated ? 'border-rose-300 dark:border-rose-900/50 bg-rose-500/5' : 'border-border-subtle bg-surface'}`}
+                    >
+                      <div className="flex items-start justify-between gap-3 mb-3">
+                        <div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${isTerminated ? 'bg-danger-light text-danger border border-danger-border' : 'bg-brand-primary/10 text-brand-primary border border-brand-primary/20'}`}>
+                              {review.reviewType || (isKa ? 'შეფასება' : 'Review')}
+                            </span>
+                            {review.rehireStatus && (
+                              <RehireBadge status={review.rehireStatus} />
+                            )}
                           </div>
-
-                          {(review.internalNote || review.privateNote) && (
-                            <p className="m-0 text-xs text-text-secondary italic leading-relaxed">
-                              "{review.internalNote || review.privateNote}"
-                            </p>
-                          )}
-
-                          <div className="flex items-center justify-between text-[11px] text-text-tertiary pt-1.5 border-t border-border-subtle/50">
-                            <span className="font-medium text-text-secondary">
-                              {review.reviewedBy || review.reviewerName}
-                            </span>
-                            <span>
-                              {new Date(review.reviewDate || review.createdAt || '').toLocaleDateString(isKa ? 'ka-GE' : 'en-US', {
-                                year: 'numeric',
-                                month: 'short',
-                                day: 'numeric'
-                              })}
-                            </span>
+                          <div className="text-[11px] text-text-tertiary mt-1">
+                            {review.reviewDate} · {review.reviewedBy || review.reviewerName}
                           </div>
                         </div>
-                      );
-                    })}
-                  </div>
-                )}
+                        <div className="flex items-center gap-0.5 shrink-0">
+                          {[1,2,3,4,5].map((s) => (
+                            <Star key={s} size={13} className={s <= (review.rating || review.overallRating || 0) ? 'text-amber-400 fill-amber-400' : 'text-text-tertiary'} />
+                          ))}
+                        </div>
+                      </div>
+
+                      {review.terminationReason && (
+                        <div className="text-xs text-rose-700 dark:text-rose-300 font-medium mb-2">
+                          {isKa ? 'შეწყვეტის მიზეზი:' : 'Termination reason:'} <strong>{review.terminationReason}</strong>
+                        </div>
+                      )}
+
+                      {(review.internalNote || review.privateNote) && (
+                        <p className="text-xs text-text-secondary leading-relaxed m-0 italic">
+                          "{review.internalNote || review.privateNote}"
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
-            </div>
-          );
-        })()}
+            )}
+          </div>
+        )}
       </div>
 
       {/* Review Modal */}
@@ -1494,39 +1319,83 @@ export const TalentDetailDrawer: React.FC<TalentDetailDrawerProps> = ({
           talent={talent}
           initialReviewType={selectedReviewType}
           onSubmit={(newReview) => {
-            const currentReviews = talent.reviews || [];
-            const updatedReviews = [newReview, ...currentReviews];
             const isEarlyEnd =
               newReview.contractStatus === 'terminated' ||
               newReview.completionStatus === 'Terminated Early' ||
               newReview.reviewType === 'Early Termination';
 
-            updateTalent(talent.id, {
-              reviews: updatedReviews,
-              rehireStatus: newReview.rehireStatus,
-              contractExpiryDate: undefined,
-              status: isEarlyEnd ? 'Terminated' : 'Rest',
-              isArchived: isEarlyEnd,
-              contractStatus: isEarlyEnd ? 'terminated' : 'completed',
-              terminationReason: newReview.terminationReason,
-              terminationDate: newReview.reviewDate || new Date().toISOString().split('T')[0]
-            });
-
-            setIsReviewModalOpen(false);
             if (isEarlyEnd) {
-              onClose();
+              // ── Pre-flight Cascade Impact Check ──
+              const report = analyzeContractTerminationImpact(
+                talent,
+                talents,
+                groups,
+                schedule
+              );
+              setPendingTerminationReview(newReview);
+              setCascadeReport(report);
+              setIsReviewModalOpen(false);
+              setIsCascadeModalOpen(true);
+              return;
             }
 
+            // Non-termination end-of-season close
+            const currentReviews = talent.reviews || [];
+            updateTalent(talent.id, {
+              reviews: [newReview, ...currentReviews],
+              rehireStatus: newReview.rehireStatus,
+              contractExpiryDate: undefined,
+              status: 'Rest',
+              isArchived: false,
+              contractStatus: 'completed',
+            });
+            setIsReviewModalOpen(false);
+            toast.success(isKa ? 'სეზონი წარმატებით დაიხურა და გადავიდა არქივში' : 'Season successfully closed and archived');
+          }}
+        />
+      )}
+
+      {/* Cascade Impact Modal */}
+      {isCascadeModalOpen && cascadeReport && (
+        <CascadeImpactModal
+          isOpen={isCascadeModalOpen}
+          onClose={() => {
+            setIsCascadeModalOpen(false);
+            setCascadeReport(null);
+            setPendingTerminationReview(null);
+          }}
+          report={cascadeReport}
+          onConfirm={(caseAResolutions, caseBResolutions) => {
+            terminateTalentWithCascade(
+              talent.id,
+              { caseAResolutions, caseBResolutions },
+              pendingTerminationReview ?? undefined
+            );
+            setIsCascadeModalOpen(false);
+            setCascadeReport(null);
+            setPendingTerminationReview(null);
+            onClose();
             toast.success(
               isKa
-                ? isEarlyEnd
-                  ? 'კონტრაქტი ვადაზე ადრე შეწყდა — ტალანტი გადავიდა არქივში'
-                  : 'სეზონი წარმატებით დაიხურა და გადავიდა არქივში'
-                : isEarlyEnd
-                  ? 'Contract terminated early — performer archived'
-                  : 'Season successfully closed and archived'
+                ? 'კონტრაქტი ვადაზე ადრე შეწყდა — ტალანტი გადავიდა არქივში'
+                : 'Contract terminated early — performer archived'
             );
           }}
+        />
+      )}
+      {isStatusImpactModalOpen && (
+        <StatusChangeImpactModal
+          isOpen={isStatusImpactModalOpen}
+          onClose={() => setIsStatusImpactModalOpen(false)}
+          talent={talent}
+          targetStatus={pendingTargetStatus}
+          affectedShifts={futureShifts}
+          groups={groups}
+          allTalents={talents}
+          schedule={schedule}
+          formatTimeRange={formatTimeRange}
+          onConfirmAutoReassign={handleConfirmAutoReassign}
+          onConfirmManualReplacements={handleConfirmManualReplacements}
         />
       )}
     </Drawer>

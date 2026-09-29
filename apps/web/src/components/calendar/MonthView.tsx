@@ -6,7 +6,17 @@ import { Group } from '../../types/group';
 import { HotelVenue } from '../../types/venue';
 import { useLanguage } from '../../context/LanguageContext';
 import { useApp } from '../../context/AppContext';
-import { Check, X, CalendarDays, MapPin } from 'lucide-react';
+import { Check, X, CalendarDays, MapPin, AlertTriangle } from 'lucide-react';
+
+// Convert a hex color (#RRGGBB) to an "r, g, b" string for CSS rgba()
+const hexToRgb = (hex: string): string => {
+  const clean = hex.replace('#', '');
+  const r = parseInt(clean.substring(0, 2), 16);
+  const g = parseInt(clean.substring(2, 4), 16);
+  const b = parseInt(clean.substring(4, 6), 16);
+  if (isNaN(r) || isNaN(g) || isNaN(b)) return '99, 102, 241';
+  return `${r}, ${g}, ${b}`;
+};
 
 interface MonthViewProps {
   currentDate: Date;
@@ -130,7 +140,7 @@ export const MonthView: React.FC<MonthViewProps> = ({
       ? ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz']
       : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-  // Helper to format popover header title (e.g. „26 სექტემბერი — 4 შოუ“)
+  // Helper to format popover header title (e.g. „26 სექტემბერი — 4 შოუ")
   const formatPopoverTitle = (dateStr: string, count: number) => {
     const [y, m, d] = dateStr.split('-').map(Number);
     const dateObj = new Date(y, m - 1, d);
@@ -150,6 +160,27 @@ export const MonthView: React.FC<MonthViewProps> = ({
     const groupName = evGroup?.name || ev.title;
     const hotelName = evVenue?.name || ev.hotelId;
 
+    // Group accent color
+    const accent = evGroup?.colorAccent || '#6366F1';
+    const rgb = hexToRgb(accent);
+
+    const cardStyle = isEventPast
+      ? {
+          borderLeftColor: `rgba(${rgb}, 0.45)`,
+          backgroundColor: `rgba(${rgb}, 0.05)`
+        }
+      : {
+          borderLeftColor: accent,
+          backgroundColor: `rgba(${rgb}, 0.10)`,
+          borderColor: `rgba(${rgb}, 0.2)`
+        };
+
+    const totalVacancies = (ev.dutyAssignments || []).reduce((acc, d) => {
+      const needed = Math.max(1, d.requiredHeadcount || 1);
+      const assigned = d.assignedTalentIds?.length || 0;
+      return acc + Math.max(0, needed - assigned);
+    }, 0);
+
     return (
       <div
         key={ev.id}
@@ -158,10 +189,11 @@ export const MonthView: React.FC<MonthViewProps> = ({
           if (inPopover) setPopoverDate(null);
           onSelectEvent(ev);
         }}
+        style={cardStyle}
         className={`px-2.5 py-1.5 rounded-r-md border border-l-4 text-xs leading-tight flex flex-col gap-0.5 shrink-0 cursor-pointer transition-all duration-150 group ${
           isEventPast
-            ? 'bg-slate-100 dark:bg-surface-secondary border-border-subtle border-l-slate-400 dark:border-l-slate-500 opacity-80 hover:opacity-100 text-text-secondary'
-            : 'bg-brand-primary/10 dark:bg-blue-500/15 border-blue-500/20 dark:border-blue-500/30 border-l-brand-primary hover:bg-brand-primary/15 text-text-primary shadow-2xs hover:shadow-xs'
+            ? 'opacity-80 hover:opacity-100 text-text-secondary'
+            : 'text-text-primary shadow-2xs hover:shadow-xs hover:brightness-[0.97]'
         }`}
         title={`${ev.title}\n${t('group_label')}: ${groupName}\n${t('hotel_label')}: ${
           hotelName
@@ -182,14 +214,20 @@ export const MonthView: React.FC<MonthViewProps> = ({
             </span>
           </div>
         ) : (
-          <div className="flex items-center gap-1.5 text-xs leading-none">
-            <span className="font-bold text-brand-primary dark:text-blue-400">
+          <div className="flex items-center gap-1.5 text-xs leading-none flex-wrap">
+            <span className="font-bold" style={{ color: accent }}>
               {startTime}
             </span>
             <span className="text-text-tertiary">•</span>
-            <span className="text-[11px] font-semibold text-brand-primary dark:text-blue-300">
+            <span className="text-[11px] font-semibold" style={{ color: accent }}>
               {isKa ? 'შოუ' : 'Show'}
             </span>
+            {totalVacancies > 0 && (
+              <span className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/30">
+                <AlertTriangle size={10} className="text-amber-600 dark:text-amber-400 shrink-0" />
+                <span>{totalVacancies} {isKa ? 'ვაკანსია' : totalVacancies === 1 ? 'Vacancy' : 'Vacancies'}</span>
+              </span>
+            )}
           </div>
         )}
 
@@ -198,7 +236,7 @@ export const MonthView: React.FC<MonthViewProps> = ({
           className={`truncate text-xs font-bold leading-tight ${
             isEventPast
               ? 'text-slate-600 dark:text-slate-300'
-              : 'text-slate-800 dark:text-slate-100 group-hover:text-brand-primary dark:group-hover:text-blue-400 transition-colors'
+              : 'text-slate-800 dark:text-slate-100 transition-colors'
           }`}
         >
           {groupName}
@@ -215,11 +253,7 @@ export const MonthView: React.FC<MonthViewProps> = ({
           >
             <MapPin
               size={10}
-              className={`shrink-0 ${
-                isEventPast
-                  ? 'text-text-tertiary'
-                  : 'text-brand-primary/80 dark:text-blue-400/80'
-              }`}
+              className="shrink-0 text-text-tertiary"
             />
             <span className="truncate">{hotelName}</span>
           </div>

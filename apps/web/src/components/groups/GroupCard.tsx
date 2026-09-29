@@ -141,7 +141,7 @@ export const GroupCard: React.FC<GroupCardProps> = ({
     <div
       onClick={handleClick}
       style={{ borderTopColor: accent, borderTopWidth: '3px' }}
-      className="group relative bg-surface rounded-md border border-border-subtle p-6 shadow-sm flex flex-col justify-between cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-border-medium"
+      className="group relative bg-surface rounded-xl border border-border-subtle p-6 shadow-sm flex flex-col justify-between cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-border-medium"
     >
       <div>
         {/* Top Row: Title + Color Accent Users Badge */}

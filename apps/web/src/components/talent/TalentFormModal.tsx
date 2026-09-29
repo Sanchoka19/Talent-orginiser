@@ -29,25 +29,32 @@ interface FormDocItem {
   parseDetected?: boolean | null;
 }
 
-const DEFAULT_SPECIALIZATIONS = [
-  'Aerialist & Silk Performer',
-  'Acrobatic Base & Porter',
-  'Acrobatic Flyer',
-  'Contemporary & Jazz Dancer',
-  'Ballet Dancer',
-  'Commercial Jazz Dancer',
-  'Breakdancer & Tumbler',
-  'Lead Soul Vocalist',
-  'Backing Vocalist',
-  'Fire Manipulator & Juggler',
-  'Cyr Wheel & Acrobatic Flyer',
-  'Contortion & Hand Balance',
-  'Rhythmic Gymnast & Hoop Artist',
-  'Magician & Illusionist',
-  'Stilt Walker & LED Performer',
-  'Aerial Straps & Hoop Specialist',
-  'Pole Acrobat & Aerialist',
-  'Martial Arts & Stunt Performer'
+interface SpecializationItem {
+  id: string;
+  en: string;
+  ka: string;
+  tr: string;
+}
+
+const SPECIALIZATIONS_DATA: SpecializationItem[] = [
+  { id: 'aerialist_silk', en: 'Aerialist & Silk Performer', ka: 'ჰაეროვანი აკრობატიკა & აბრეშუმი', tr: 'Hava Akrobasisi & İpek' },
+  { id: 'acrobatic_base', en: 'Acrobatic Base & Porter', ka: 'აკრობატული ბაზა / დამჭერი', tr: 'Akrobasi Tabanı & Taşıyıcı' },
+  { id: 'acrobatic_flyer', en: 'Acrobatic Flyer', ka: 'აკრობატული მფრინავი (Flyer)', tr: 'Akrobasi Havada / Uçucu' },
+  { id: 'contemporary_jazz', en: 'Contemporary & Jazz Dancer', ka: 'თანამედროვე & ჯაზ-ცეკვა', tr: 'Çağdaş & Caz Dansçısı' },
+  { id: 'ballet_dancer', en: 'Ballet Dancer', ka: 'ბალეტის მოცეკვავე', tr: 'Bale Dansçısı' },
+  { id: 'commercial_jazz', en: 'Commercial Jazz Dancer', ka: 'კომერციული ჯაზ-ცეკვა', tr: 'Ticari Caz Dansçısı' },
+  { id: 'breakdancer_tumbler', en: 'Breakdancer & Tumbler', ka: 'ბრეიქდანსი & ტამბლინგი', tr: 'Breakdans & Taklacı' },
+  { id: 'lead_soul_vocalist', en: 'Lead Soul Vocalist', ka: 'მთავარი ვოკალისტი (Soul)', tr: 'Baş Vokalist (Soul)' },
+  { id: 'backing_vocalist', en: 'Backing Vocalist', ka: 'ბექ-ვოკალისტი', tr: 'Geri Vokalist' },
+  { id: 'fire_juggler', en: 'Fire Manipulator & Juggler', ka: 'ცეცხლის მანიპულატორი & ჟონგლიორი', tr: 'Ateşbaz & Jonglör' },
+  { id: 'cyr_wheel_flyer', en: 'Cyr Wheel & Acrobatic Flyer', ka: 'სირის რგოლი (Cyr Wheel) & აკრობატი', tr: 'Cyr Wheel & Akrobat' },
+  { id: 'contortion_handbalance', en: 'Contortion & Hand Balance', ka: 'კონტორსია (კაუჩუკი) & ბალანსი', tr: 'Esneklik & Denge' },
+  { id: 'rhythmic_gymnast_hoop', en: 'Rhythmic Gymnast & Hoop Artist', ka: 'მხატვრული ტანვარჯიში & რგოლი', tr: 'Ritmik Cimnastik & Çember' },
+  { id: 'magician_illusionist', en: 'Magician & Illusionist', ka: 'ილუზიონისტი & ფოკუსნიკი', tr: 'İllüzyonist & Sihirbaz' },
+  { id: 'stilt_led_performer', en: 'Stilt Walker & LED Performer', ka: 'ჯამბაზი ხიმინჯებზე & LED შოუ', tr: 'Tahta Bacak & LED Gösterisi' },
+  { id: 'aerial_straps_hoop', en: 'Aerial Straps & Hoop Specialist', ka: 'საჰაერო ღვედები & რგოლი', tr: 'Hava İpleri & Çember Uzmanı' },
+  { id: 'pole_acrobat', en: 'Pole Acrobat & Aerialist', ka: 'პილონის აკრობატი & ჰაეროვანი', tr: 'Direk Akrobasisi (Pole)' },
+  { id: 'martial_arts_stunt', en: 'Martial Arts & Stunt Performer', ka: 'საბრძოლო ხელოვნება & კასკადიორი', tr: 'Dövüş Sanatları & Dublör' }
 ];
 
 export const TalentFormModal: React.FC<TalentFormModalProps> = ({
@@ -69,10 +76,12 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
   const [heightCm, setHeightCm] = useState<number | ''>(170);
   const [weightKg, setWeightKg] = useState<number | ''>(60);
   const [status, setStatus] = useState<TalentStatus>('Active');
+
+  // primarySkill ინახავს უნივერსალურ დასახელებას (en)
   const [primarySkill, setPrimarySkill] = useState('');
   const [customSpecializations, setCustomSpecializations] = useState<string[]>([]);
   const [isSpecDropdownOpen, setIsSpecDropdownOpen] = useState(false);
-  const [isFiltering, setIsFiltering] = useState(false);
+  const [specSearchQuery, setSpecSearchQuery] = useState('');
   const [isCreatingCustomSpec, setIsCreatingCustomSpec] = useState(false);
   const [newCustomSpecInput, setNewCustomSpecInput] = useState('');
   const specDropdownRef = useRef<HTMLDivElement>(null);
@@ -84,31 +93,69 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
   const [avatarUrl, setAvatarUrl] = useState<string>('');
   const avatarFileInputRef = useRef<HTMLInputElement>(null);
 
-  // Aggregate all unique specializations: defaults + existing talents' skills + dynamically added
-  const allSpecializations = useMemo(() => {
-    const set = new Set<string>(DEFAULT_SPECIALIZATIONS);
+  // დამხმარე ფუნქცია სპეციალობის ლოკალიზებული სახელის მისაღებად
+  const getLocalizedSpecLabel = (skillName: string): string => {
+    if (!skillName) return '';
+    const match = SPECIALIZATIONS_DATA.find(
+      (item) =>
+        item.en.toLowerCase() === skillName.toLowerCase() ||
+        item.ka.toLowerCase() === skillName.toLowerCase() ||
+        item.tr.toLowerCase() === skillName.toLowerCase()
+    );
+    if (!match) return skillName;
+    if (language === 'ka') return match.ka;
+    if (language === 'tr') return match.tr;
+    return match.en;
+  };
+
+  // ყველა სპეციალობის გაერთიანება: წინასწარ განსაზღვრული + ბაზაში არსებული + ხელით დამატებული
+  const allSpecializationOptions = useMemo(() => {
+    const list = [...SPECIALIZATIONS_DATA];
+
+    // ბაზაში არსებული უნიკალური უნარები, რომლებიც სტანდარტულ სიაში არაა
     talents.forEach((tal) => {
-      if (tal.primarySkill) set.add(tal.primarySkill.trim());
+      if (tal.primarySkill) {
+        const trimmed = tal.primarySkill.trim();
+        const exists = list.some((item) => item.en.toLowerCase() === trimmed.toLowerCase());
+        if (!exists) {
+          list.push({ id: trimmed, en: trimmed, ka: trimmed, tr: trimmed });
+        }
+      }
     });
-    customSpecializations.forEach((s) => set.add(s.trim()));
-    return Array.from(set);
+
+    // დინამიურად დამატებული სპეციალობები
+    customSpecializations.forEach((custom) => {
+      const trimmed = custom.trim();
+      const exists = list.some((item) => item.en.toLowerCase() === trimmed.toLowerCase());
+      if (!exists) {
+        list.push({ id: trimmed, en: trimmed, ka: trimmed, tr: trimmed });
+      }
+    });
+
+    return list;
   }, [talents, customSpecializations]);
 
-  // Filtered list based on primarySkill input when actively filtering
+  // გაფილტრული სია საძიებო ველის მიხედვით
   const filteredSpecializations = useMemo(() => {
-    if (!isFiltering) return allSpecializations;
-    const query = primarySkill.trim().toLowerCase();
-    if (!query) return allSpecializations;
-    return allSpecializations.filter((s) => s.toLowerCase().includes(query));
-  }, [allSpecializations, primarySkill, isFiltering]);
+    const query = specSearchQuery.trim().toLowerCase();
+    if (!query) return allSpecializationOptions;
 
-  // Close dropdown on outside click
+    return allSpecializationOptions.filter((item) => {
+      return (
+        item.en.toLowerCase().includes(query) ||
+        item.ka.toLowerCase().includes(query) ||
+        item.tr.toLowerCase().includes(query)
+      );
+    });
+  }, [allSpecializationOptions, specSearchQuery]);
+
+  // Dropdown-ის გარეთ დაკლიკებისას დახურვა
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (specDropdownRef.current && !specDropdownRef.current.contains(e.target as Node)) {
         setIsSpecDropdownOpen(false);
-        setIsFiltering(false);
         setIsCreatingCustomSpec(false);
+        setSpecSearchQuery('');
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -156,20 +203,28 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
       avatarFileInputRef.current.value = '';
     }
     setIsSpecDropdownOpen(false);
-    setIsFiltering(false);
     setIsCreatingCustomSpec(false);
     setNewCustomSpecInput('');
+    setSpecSearchQuery('');
   }, [editingTalent, isOpen]);
 
-  const handleSelectSpec = (spec: string) => {
-    setPrimarySkill(spec);
-    if (!allSpecializations.includes(spec)) {
-      setCustomSpecializations((prev) => [...prev, spec]);
+  const handleSelectSpec = (specItem: SpecializationItem | string) => {
+    const enValue = typeof specItem === 'string' ? specItem : specItem.en;
+    setPrimarySkill(enValue);
+
+    if (typeof specItem === 'string') {
+      const exists = allSpecializationOptions.some(
+        (opt) => opt.en.toLowerCase() === specItem.toLowerCase()
+      );
+      if (!exists) {
+        setCustomSpecializations((prev) => [...prev, specItem]);
+      }
     }
+
     setIsSpecDropdownOpen(false);
-    setIsFiltering(false);
     setIsCreatingCustomSpec(false);
     setNewCustomSpecInput('');
+    setSpecSearchQuery('');
   };
 
   const handleAddDocField = () => {
@@ -220,11 +275,11 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
       prev.map((d) =>
         d.id === id
           ? {
-              ...d,
-              file,
-              name: d.name === 'Passport Copy' || d.name.endsWith('Document') ? file.name.replace(/\.[^/.]+$/, '') : d.name,
-              isParsing: d.type === 'Contract'
-            }
+            ...d,
+            file,
+            name: d.name === 'Passport Copy' || d.name.endsWith('Document') ? file.name.replace(/\.[^/.]+$/, '') : d.name,
+            isParsing: d.type === 'Contract'
+          }
           : d
       )
     );
@@ -385,7 +440,7 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
       }
     >
       <form id="talent-form" onSubmit={handleSubmit} className="flex flex-col gap-4">
-        {/* Avatar Upload / Change Section */}
+        {/* Avatar Section */}
         {(() => {
           const displayAvatar =
             avatarUrl ||
@@ -398,7 +453,6 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
 
           return (
             <div className="flex items-center gap-4 p-3.5 rounded-xl border border-border-subtle bg-surface-secondary/50 transition-all duration-200 hover:border-border-medium">
-              {/* Avatar circle with hover overlay */}
               <div className="relative group shrink-0">
                 <div
                   onClick={() => avatarFileInputRef.current?.click()}
@@ -417,7 +471,6 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
                     </div>
                   )}
 
-                  {/* Hover Overlay with Change Icon and Label */}
                   <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white transition-opacity duration-200 backdrop-blur-[1px]">
                     <Camera size={20} className="mb-0.5 transform group-hover:scale-110 transition-transform duration-200" />
                     <span className="text-[10px] font-semibold tracking-wide">
@@ -426,7 +479,6 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
                   </div>
                 </div>
 
-                {/* Badge button in corner */}
                 <button
                   type="button"
                   onClick={() => avatarFileInputRef.current?.click()}
@@ -436,7 +488,6 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
                   <Camera size={12} />
                 </button>
 
-                {/* Hidden File Input */}
                 <input
                   ref={avatarFileInputRef}
                   type="file"
@@ -446,7 +497,6 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
                 />
               </div>
 
-              {/* Avatar Info & Actions */}
               <div className="flex flex-col justify-center flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="text-xs sm:text-sm font-semibold text-text-primary">
@@ -592,31 +642,26 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
           </div>
         </div>
 
-        {/* Primary Role / Specialization Dropdown */}
+        {/* Multilingual Primary Role / Specialization Dropdown */}
         <div className="flex flex-col gap-1.5 relative" ref={specDropdownRef}>
           <label className="text-xs font-semibold text-text-secondary">{t('primary_role_spec')} *</label>
 
-          {/* Main Dropdown Input with Chevron */}
+          {/* Display Trigger Input */}
           <div
             className="relative flex items-center cursor-pointer"
             onClick={() => {
               setIsSpecDropdownOpen((prev) => !prev);
-              setIsFiltering(false);
               setIsCreatingCustomSpec(false);
+              setSpecSearchQuery('');
             }}
           >
             <input
               ref={specInputRef}
               type="text"
               required
+              readOnly
               className="w-full text-xs sm:text-sm px-3 py-2 pr-9 rounded-md border border-border-subtle bg-surface-secondary text-text-primary outline-none transition-all duration-150 focus:bg-surface focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20 cursor-pointer placeholder:text-text-tertiary"
-              value={primarySkill}
-              readOnly={!isSpecDropdownOpen}
-              onChange={(e) => {
-                setPrimarySkill(e.target.value);
-                setIsFiltering(true);
-              }}
-              onFocus={() => setIsSpecDropdownOpen(true)}
+              value={getLocalizedSpecLabel(primarySkill)}
               placeholder={t('select_specialization')}
             />
             <div className="absolute right-3 pointer-events-none text-text-secondary flex items-center justify-center">
@@ -627,26 +672,47 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
             </div>
           </div>
 
-          {/* Dropdown Menu */}
+          {/* Dropdown Popover */}
           {isSpecDropdownOpen && (
             <div className="absolute top-[calc(100%+6px)] left-0 right-0 bg-surface rounded-md border border-border-medium shadow-modal z-50 overflow-hidden flex flex-col">
+              {/* Internal Search Bar */}
+              <div className="p-2 border-b border-border-subtle bg-surface">
+                <input
+                  type="text"
+                  autoFocus
+                  value={specSearchQuery}
+                  onChange={(e) => setSpecSearchQuery(e.target.value)}
+                  placeholder={t('search_specialization') || (isKa ? 'ძებნა სპეციალიზაციით...' : 'Search specialization...')}
+                  className="w-full text-xs px-2.5 py-1.5 rounded-md border border-border-subtle bg-surface-secondary text-text-primary outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20"
+                />
+              </div>
+
               {/* Options List */}
-              <div className="max-h-[230px] overflow-y-auto thin-scrollbar flex flex-col">
+              <div className="max-h-[220px] overflow-y-auto thin-scrollbar flex flex-col">
                 {filteredSpecializations.length > 0 ? (
                   filteredSpecializations.map((spec) => {
-                    const isSelected = spec.toLowerCase() === primarySkill.trim().toLowerCase();
+                    const isSelected = spec.en.toLowerCase() === primarySkill.trim().toLowerCase();
+                    const label = language === 'ka' ? spec.ka : language === 'tr' ? spec.tr : spec.en;
+                    const subLabel = language !== 'en' ? spec.en : '';
+
                     return (
                       <div
-                        key={spec}
+                        key={spec.id}
                         onClick={() => handleSelectSpec(spec)}
-                        className={`px-3.5 py-2.5 text-xs flex items-center justify-between cursor-pointer transition-colors duration-150 ${
-                          isSelected
+                        className={`px-3.5 py-2 text-xs flex items-center justify-between cursor-pointer transition-colors duration-150 ${isSelected
                             ? 'bg-brand-primary text-white font-semibold'
                             : 'text-text-primary hover:bg-surface-secondary'
-                        }`}
+                          }`}
                       >
-                        <span>{spec}</span>
-                        {isSelected && <Check size={14} className="text-white" strokeWidth={2.5} />}
+                        <div className="flex flex-col min-w-0">
+                          <span className="truncate">{label}</span>
+                          {subLabel && (
+                            <span className={`text-[10px] truncate ${isSelected ? 'text-white/80' : 'text-text-tertiary'}`}>
+                              {subLabel}
+                            </span>
+                          )}
+                        </div>
+                        {isSelected && <Check size={14} className="text-white shrink-0 ml-2" strokeWidth={2.5} />}
                       </div>
                     );
                   })
@@ -657,34 +723,22 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
                 )}
               </div>
 
-              {/* Add New Specialization Footer */}
+              {/* Add Custom Specialty Footer */}
               <div className="p-2.5 border-t border-border-subtle bg-surface-secondary">
                 {!isCreatingCustomSpec ? (
                   <button
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      const trimmed = primarySkill.trim();
-                      if (trimmed && !allSpecializations.some((s) => s.toLowerCase() === trimmed.toLowerCase())) {
-                        handleSelectSpec(trimmed);
-                      } else {
-                        setIsCreatingCustomSpec(true);
-                        setNewCustomSpecInput(trimmed);
-                      }
+                      setIsCreatingCustomSpec(true);
+                      setNewCustomSpecInput(specSearchQuery);
                     }}
                     className="w-full py-2 px-3.5 bg-surface border border-border-subtle rounded-md text-xs font-semibold text-text-primary hover:border-brand-primary hover:bg-brand-primary-light transition-all duration-150 flex items-center justify-center cursor-pointer"
                   >
-                    <span>
-                      {primarySkill.trim() && !allSpecializations.some((s) => s.toLowerCase() === primarySkill.trim().toLowerCase())
-                        ? `${t('add_new_specialty_btn')}: "${primarySkill.trim()}"`
-                        : t('add_new_specialty_btn')}
-                    </span>
+                    <span>{t('add_new_specialty_btn')}</span>
                   </button>
                 ) : (
-                  <div
-                    className="flex gap-1.5 items-center"
-                    onClick={(e) => e.stopPropagation()}
-                  >
+                  <div className="flex gap-1.5 items-center" onClick={(e) => e.stopPropagation()}>
                     <input
                       type="text"
                       autoFocus
@@ -758,7 +812,6 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
                   key={doc.id || idx}
                   className="bg-surface p-3 rounded-lg border border-border-subtle flex flex-col gap-2.5"
                 >
-                  {/* File Upload area */}
                   <input
                     type="file"
                     accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
@@ -871,7 +924,7 @@ export const TalentFormModal: React.FC<TalentFormModalProps> = ({
                     </button>
                   </div>
 
-                  {/* Contract Expiration Date (ONLY when doc.type === 'Contract') */}
+                  {/* Contract Expiration Date */}
                   {doc.type === 'Contract' && (
                     <div className="mt-2 p-2.5 rounded-md bg-brand-primary-light/40 border border-brand-primary/20 flex flex-col gap-1.5">
                       <div className="flex items-center justify-between">

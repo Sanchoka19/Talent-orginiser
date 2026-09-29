@@ -257,11 +257,8 @@ export const ArchiveView: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-brand-primary/10 text-brand-primary flex items-center justify-center border border-brand-primary/20 shadow-xs shrink-0">
-                <Archive size={18} strokeWidth={2.2} />
-              </div>
               <div>
-                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-text-primary">
+                <h1 className="text-4xl font-semibold tracking-tight text-text-primary mb-1">
                   {t('archive_title')}
                 </h1>
                 <p className="text-xs sm:text-sm text-text-secondary mt-0.5">

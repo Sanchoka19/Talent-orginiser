@@ -230,7 +230,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       {/* Header Banner */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-text-primary tracking-tight m-0">
+          <h1 className="text-4xl font-semibold tracking-tight text-text-primary mb-1">
             {t('dashboard_title')}
           </h1>
           <p className="text-sm text-text-secondary mt-1 m-0">
@@ -355,10 +355,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   >
                     <div
                       className={`w-full rounded-md transition-all duration-200 ${d.isToday
-                          ? 'bg-brand-primary shadow-xs ring-2 ring-brand-primary/30'
-                          : d.count > 0
-                            ? 'bg-blue-500/80 hover:bg-blue-600'
-                            : 'bg-surface-secondary'
+                        ? 'bg-brand-primary shadow-xs ring-2 ring-brand-primary/30'
+                        : d.count > 0
+                          ? 'bg-blue-500/80 hover:bg-blue-600'
+                          : 'bg-surface-secondary'
                         }`}
                       style={{ height: `${heightPercent}%` }}
                     />
@@ -445,8 +445,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
                 <span
                   className={`text-xs font-semibold px-2.5 py-1 rounded-full ${todayShows.length > 0
-                      ? 'bg-brand-primary text-white shadow-xs'
-                      : 'bg-surface-secondary text-text-secondary'
+                    ? 'bg-brand-primary text-white shadow-xs'
+                    : 'bg-surface-secondary text-text-secondary'
                     }`}
                 >
                   {todayShows.length} {todayShows.length === 1 ? t('show') : t('shows')}
@@ -587,8 +587,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     <div
                       key={`doc-${alert.talentId}-${idx}`}
                       className={`p-3.5 rounded-xl border flex flex-col gap-2.5 shadow-xs ${alert.isExpired
-                          ? 'border-rose-200/90 dark:border-rose-900/50 bg-rose-50/50 dark:bg-rose-950/20'
-                          : 'border-amber-200/90 dark:border-amber-900/50 bg-amber-50/50 dark:bg-amber-950/20'
+                        ? 'border-rose-200/90 dark:border-rose-900/50 bg-rose-50/50 dark:bg-rose-950/20'
+                        : 'border-amber-200/90 dark:border-amber-900/50 bg-amber-50/50 dark:bg-amber-950/20'
                         }`}
                     >
                       <div className="flex items-start justify-between gap-2">
